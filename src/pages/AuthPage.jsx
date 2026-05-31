@@ -19,7 +19,9 @@ const [loading,setLoading]=useState(false)
 const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition"
 
 const submit=async()=>{
-  if(!email||!password){
+  const cleanEmail=email.trim().toLowerCase()
+
+  if(!cleanEmail||!password){
     toast.error("Add your email and password")
     return
   }
@@ -28,7 +30,7 @@ const submit=async()=>{
 
   if(mode==="login"){
     const {error}=await supabase.auth.signInWithPassword({
-      email,
+      email:cleanEmail,
       password
     })
 
@@ -39,11 +41,11 @@ const submit=async()=>{
     }
   }else{
     const {error}=await supabase.auth.signUp({
-      email,
+      email:cleanEmail,
       password,
       options:{
         data:{
-          full_name:name||email.split("@")[0]
+          full_name:name.trim()||cleanEmail.split("@")[0]
         }
       }
     })
@@ -57,6 +59,7 @@ const submit=async()=>{
     toast.success("Account created")
   }
 
+  setEmail(cleanEmail)
   setLoading(false)
 }
 
@@ -134,6 +137,10 @@ onChange={(e)=>setName(e.target.value)}
 className={fieldClass}
 placeholder="Email"
 type="email"
+inputMode="email"
+autoCapitalize="none"
+autoComplete="email"
+spellCheck="false"
 value={email}
 onChange={(e)=>setEmail(e.target.value)}
 />
@@ -142,6 +149,7 @@ onChange={(e)=>setEmail(e.target.value)}
 className={fieldClass}
 placeholder="Password"
 type="password"
+autoComplete={mode==="login"?"current-password":"new-password"}
 value={password}
 onChange={(e)=>setPassword(e.target.value)}
 />
