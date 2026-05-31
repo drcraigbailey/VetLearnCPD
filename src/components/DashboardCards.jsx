@@ -1,103 +1,147 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
+
 import {
-BookOpen,
-Clock3,
-GraduationCap
-}
-from "lucide-react";
+  BookOpen,
+  Clock3,
+  GraduationCap
+} from "lucide-react";
 
-export default function DashboardCards(){
+export default function DashboardCards() {
 
-const cards=[
+  const [stats, setStats] = useState({
+    articles: 0,
+    hours: 0,
+    cpd: 0
+  });
 
-{
+  const loadStats = async () => {
 
-title:"Articles",
-value:"12",
-icon:<BookOpen size={18}/>
+    const { data, error } = await supabase
+      .from("cpd_reading")
+      .select("*");
 
-},
+    if (error) return;
 
-{
+    const articles = data.length;
 
-title:"Hours",
-value:"4.5",
-icon:<Clock3 size={18}/>
+    const totalMinutes = data.reduce(
+      (sum, item) => sum + (item.duration_minutes || 0),
+      0
+    );
 
-},
+    const hours = (totalMinutes / 60).toFixed(1);
 
-{
+    const annualTarget = 35;
 
-title:"CPD",
-value:"68%",
-icon:<GraduationCap size={18}/>
+    const cpd = Math.min(
+      Math.round((hours / annualTarget) * 100),
+      100
+    );
 
-}
+    setStats({
+      articles,
+      hours,
+      cpd
+    });
+  };
 
-]
+  useEffect(() => {
 
-return(
+    loadStats();
 
-<div className="grid grid-cols-3 gap-3 mb-6">
+    const refresh = () => loadStats();
 
-{cards.map((card,index)=>(
+    window.addEventListener(
+      "cpdUpdated",
+      refresh
+    );
 
-<div
+    return () => {
+      window.removeEventListener(
+        "cpdUpdated",
+        refresh
+      );
+    };
 
-key={index}
+  }, []);
 
-className="
-bg-white
-rounded-[28px]
-p-4
-shadow-sm
-"
+  const cards = [
 
->
+    {
+      title: "Articles",
+      value: stats.articles,
+      icon: <BookOpen size={18}/>
+    },
 
-<div
-className="
-bg-[#E8F8F5]
-w-fit
-p-3
-rounded-2xl
-mb-4
-text-[#062F63]
-"
->
+    {
+      title: "Hours",
+      value: stats.hours,
+      icon: <Clock3 size={18}/>
+    },
 
-{card.icon}
+    {
+      title: "CPD",
+      value: `${stats.cpd}%`,
+      icon: <GraduationCap size={18}/>
+    }
 
-</div>
+  ];
 
-<div
-className="
-text-2xl
-font-bold
-text-[#062F63]
-"
->
+  return (
 
-{card.value}
+    <div className="grid grid-cols-3 gap-3 mb-6">
 
-</div>
+      {cards.map((card,index)=>(
 
-<div
-className="
-text-xs
-text-slate-500
-"
->
+        <div
+          key={index}
+          className="
+          bg-white
+          rounded-[28px]
+          p-4
+          shadow-sm
+          "
+        >
 
-{card.title}
+          <div
+            className="
+            bg-[#E8F8F5]
+            w-fit
+            p-3
+            rounded-2xl
+            mb-4
+            text-[#062F63]
+            "
+          >
+            {card.icon}
+          </div>
 
-</div>
+          <div
+            className="
+            text-2xl
+            font-bold
+            text-[#062F63]
+            "
+          >
+            {card.value}
+          </div>
 
-</div>
+          <div
+            className="
+            text-xs
+            text-slate-500
+            "
+          >
+            {card.title}
+          </div>
 
-))}
+        </div>
 
-</div>
+      ))}
 
-)
+    </div>
+
+  );
 
 }
