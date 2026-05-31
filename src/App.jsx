@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LogOut, Moon, Sun } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 
+import FloatingReadingTimer from "./components/FloatingReadingTimer";
 import Navbar from "./components/Navbar";
 import { supabase } from "./supabaseClient";
 
@@ -16,11 +17,24 @@ function App() {
   const [session,setSession]=useState(null)
   const [profile,setProfile]=useState(null)
   const [loading,setLoading]=useState(true)
+  const [savingReading,setSavingReading]=useState(false)
+  const [activeReading,setActiveReading]=useState(()=>{
+    const saved=localStorage.getItem("vetlearn-active-reading")
+    return saved?JSON.parse(saved):null
+  })
   const [darkMode,setDarkMode]=useState(()=>localStorage.getItem("vetlearn-theme")==="dark")
 
   useEffect(()=>{
     localStorage.setItem("vetlearn-theme",darkMode?"dark":"light")
   },[darkMode])
+
+  useEffect(()=>{
+    if(activeReading){
+      localStorage.setItem("vetlearn-active-reading",JSON.stringify(activeReading))
+    }else{
+      localStorage.removeItem("vetlearn-active-reading")
+    }
+  },[activeReading])
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>{
@@ -56,6 +70,74 @@ function App() {
 
   const signOut=async()=>{
     await supabase.auth.signOut()
+  }
+
+  const startReadingSession=(reading)=>{
+    if(!session?.user){
+      toast.error("Please sign in first")
+      return
+    }
+
+    if(!reading.title?.trim()){
+      toast.error("Add an article title first")
+      return
+    }
+
+    setActiveReading({
+      ...reading,
+      title:reading.title.trim(),
+      url:reading.url?.trim()||"",
+      notes:reading.notes?.trim()||"",
+      reflection:reading.reflection?.trim()||"",
+      started_at:new Date().toISOString()
+    })
+
+    toast.success("Reading timer started")
+  }
+
+  const finishReadingSession=async(extra={})=>{
+    if(!activeReading||!session?.user||savingReading) return
+
+    setSavingReading(true)
+
+    const finishedAt=new Date()
+    const startedAt=new Date(activeReading.started_at)
+    const duration=Math.max(1,Math.round((finishedAt-startedAt)/(1000*60)))
+    const finalReading={...activeReading,...extra}
+
+    toast.loading("Saving CPD...",{id:"save-reading"})
+
+    const {error}=await supabase
+      .from("cpd_reading")
+      .insert({
+        user_id:session.user.id,
+        title:finalReading.title,
+        article_url:finalReading.url||null,
+        category:finalReading.category||"Medicine",
+        notes:finalReading.notes||null,
+        started_at:activeReading.started_at,
+        finished_at:finishedAt.toISOString(),
+        duration_minutes:duration,
+        reflection:finalReading.reflection||"",
+        user_reflection:finalReading.reflection||"",
+        ai_reflection:finalReading.reflection||""
+      })
+
+    if(error){
+      toast.error(error.message,{id:"save-reading"})
+      setSavingReading(false)
+      return
+    }
+
+    setActiveReading(null)
+    setSavingReading(false)
+    window.dispatchEvent(new Event("cpdUpdated"))
+    toast.success("Reading saved",{id:"save-reading"})
+  }
+
+  const cancelReadingSession=()=>{
+    setActiveReading(null)
+    toast.success("Reading timer cancelled")
   }
 
   const shellClass=darkMode
@@ -140,13 +222,20 @@ function App() {
         <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
 
           <Routes>
-            <Route path="/" element={<Dashboard user={session.user} profile={profile} darkMode={darkMode} />} />
+            <Route path="/" element={<Dashboard user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} savingReading={savingReading} />} />
             <Route path="/future" element={<FutureReading user={session.user} darkMode={darkMode} />} />
             <Route path="/history" element={<History user={session.user} darkMode={darkMode} />} />
             <Route path="/analytics" element={<Analytics user={session.user} darkMode={darkMode} />} />
           </Routes>
 
         </div>
+
+        <FloatingReadingTimer
+          session={activeReading}
+          onFinish={()=>finishReadingSession()}
+          onCancel={cancelReadingSession}
+          darkMode={darkMode}
+        />
 
         <Navbar darkMode={darkMode} />
 
