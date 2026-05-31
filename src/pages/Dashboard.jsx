@@ -77,9 +77,9 @@ Your CPD records and future reading are saved to your profile, so they follow yo
 
 </div>
 
-<DashboardCards user={user}/>
+<DashboardCards user={user} darkMode={darkMode}/>
 
-<ReadingForm user={user}/>
+<ReadingForm user={user} darkMode={darkMode}/>
 
 </div>
 
