@@ -1,7 +1,8 @@
 import DashboardCards from "../components/DashboardCards";
 import ReadingForm from "../components/ReadingForm";
+import { Cloud } from "lucide-react";
 
-export default function Dashboard({user,profile}){
+export default function Dashboard({user,profile,darkMode=false}){
 
 const firstName=(profile?.full_name||user?.user_metadata?.full_name||"there").split(" ")[0]
 
@@ -10,20 +11,17 @@ return(
 <div>
 
 <div
-className="
+className={`
 relative
 overflow-hidden
 bg-gradient-to-br
-from-white
-to-[#DFF7F3]
 border
-border-[#CDEBE7]
 rounded-lg
 p-6
-text-[#113247]
 mb-6
 shadow-[0_18px_45px_rgba(11,55,96,0.08)]
-"
+${darkMode?"from-[#12323A] to-[#0B242B] border-white/10 text-white":"from-white to-[#DFF7F3] border-[#CDEBE7] text-[#113247]"}
+`}
 >
 
 <img
@@ -44,14 +42,15 @@ pointer-events-none
 
 <div className="relative">
 
-<div className="flex items-center gap-2 mb-5">
+<div className="flex items-center gap-2 mb-5 flex-wrap">
 
-<span className="bg-white text-[#0B3760] border border-[#DCEDEA] rounded-full px-3 py-2 text-xs font-bold">
+<span className={`${darkMode?"bg-white/10 text-[#71CFC2] border-white/10":"bg-white text-[#0B3760] border-[#DCEDEA]"} border rounded-full px-3 py-2 text-xs font-bold`}>
 35 hr target
 </span>
 
-<span className="bg-white text-[#0F8F83] border border-[#DCEDEA] rounded-full px-3 py-2 text-xs font-bold">
-Your profile
+<span className={`${darkMode?"bg-white/10 text-slate-100 border-white/10":"bg-white text-[#0F8F83] border-[#DCEDEA]"} border rounded-full px-3 py-2 text-xs font-bold flex items-center gap-1`}>
+<Cloud size={13}/>
+Supabase sync
 </span>
 
 </div>
@@ -69,14 +68,9 @@ Good evening, {firstName}
 </h2>
 
 <p
-className="
-text-sm
-text-slate-600
-leading-6
-max-w-[240px]
-"
+className={`text-sm leading-6 max-w-[260px] ${darkMode?"text-slate-300":"text-slate-600"}`}
 >
-Keep building your own learning trail with a calmer CPD dashboard.
+Your CPD records and future reading are saved to your profile, so they follow you between devices.
 </p>
 
 </div>
