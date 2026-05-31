@@ -11,7 +11,7 @@ import {
   Trash2
 } from "lucide-react";
 
-export default function FutureReading(){
+export default function FutureReading({user}){
 
 const [items,setItems]=useState([])
 const [loading,setLoading]=useState(true)
@@ -43,14 +43,17 @@ const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#7
 
 useEffect(()=>{
   loadFutureReading()
-},[])
+},[user])
 
 const loadFutureReading=async()=>{
+  if(!user) return
+
   setLoading(true)
 
   const {data,error}=await supabase
     .from("future_reading")
     .select("*")
+    .eq("user_id",user.id)
     .order("status",{ascending:false})
     .order("due_date",{ascending:true,nullsFirst:false})
     .order("created_at",{ascending:false})
@@ -73,6 +76,11 @@ const updateForm=(field,value)=>{
 }
 
 const addItem=async()=>{
+  if(!user){
+    toast.error("Please sign in first")
+    return
+  }
+
   if(!form.title.trim()){
     toast.error("Add a title first")
     return
@@ -83,6 +91,7 @@ const addItem=async()=>{
   const {error}=await supabase
     .from("future_reading")
     .insert({
+      user_id:user.id,
       title:form.title.trim(),
       url:form.url.trim()||null,
       category:form.category,
@@ -120,6 +129,7 @@ const markDone=async(item)=>{
     .from("future_reading")
     .update({status:nextStatus})
     .eq("id",item.id)
+    .eq("user_id",user.id)
 
   if(error){
     toast.error(error.message)
@@ -143,6 +153,7 @@ const deleteItem=async(id)=>{
     .from("future_reading")
     .delete()
     .eq("id",id)
+    .eq("user_id",user.id)
 
   if(error){
     toast.error(error.message)
