@@ -11,7 +11,7 @@ BarChart3
 
 from "lucide-react";
 
-export default function Navbar(){
+export default function Navbar({darkMode=false}){
 
 const items=[
 
@@ -58,19 +58,17 @@ pb-4
 >
 
 <div
-className="
+className={`
 w-full
 max-w-md
-bg-white/90
 backdrop-blur-xl
 border
-border-[#DCEDEA]
 rounded-full
-shadow-[0_14px_32px_rgba(11,55,96,0.14)]
 p-2
 flex
 justify-around
-"
+${darkMode?"bg-[#071A24]/90 border-white/10 shadow-[0_14px_32px_rgba(0,0,0,0.28)]":"bg-white/90 border-[#DCEDEA] shadow-[0_14px_32px_rgba(11,55,96,0.14)]"}
+`}
 >
 
 {items.map(item=>(
@@ -91,7 +89,7 @@ isActive
 ?
 "bg-[#71CFC2] text-[#062F63]"
 :
-"text-slate-500"
+darkMode?"text-slate-300":"text-slate-500"
 }`
 
 }
