@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VetLearn CPD</string>
+    <string name="title_activity_main">VetLearn CPD</string>
+    <string name="package_name">com.vetlearn.cpd</string>
+    <string name="custom_url_scheme">com.vetlearn.cpd</string>
+</resources>
