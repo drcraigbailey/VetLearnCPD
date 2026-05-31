@@ -2,7 +2,7 @@ import DashboardCards from "../components/DashboardCards";
 import ReadingForm from "../components/ReadingForm";
 import { Cloud } from "lucide-react";
 
-export default function Dashboard({user,profile,darkMode=false}){
+export default function Dashboard({user,profile,darkMode=false,activeReading,onStartReading,onFinishReading,savingReading=false}){
 
 const firstName=(profile?.full_name||user?.user_metadata?.full_name||"there").split(" ")[0]
 
@@ -79,7 +79,14 @@ Your CPD records and future reading are saved to your profile, so they follow yo
 
 <DashboardCards user={user} darkMode={darkMode}/>
 
-<ReadingForm user={user} darkMode={darkMode}/>
+<ReadingForm
+  user={user}
+  darkMode={darkMode}
+  activeReading={activeReading}
+  onStartReading={onStartReading}
+  onFinishReading={onFinishReading}
+  savingReading={savingReading}
+/>
 
 </div>
 
