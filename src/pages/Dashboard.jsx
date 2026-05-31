@@ -9,83 +9,72 @@ return(
 
 <div
 className="
+relative
+overflow-hidden
 bg-gradient-to-br
-from-[#062F63]
-to-[#0A4A8A]
-rounded-[32px]
+from-white
+to-[#DFF7F3]
+border
+border-[#CDEBE7]
+rounded-lg
 p-6
-text-white
+text-[#113247]
 mb-6
-shadow-lg
+shadow-[0_18px_45px_rgba(11,55,96,0.08)]
 "
 >
-
-<div className="flex items-center gap-4">
 
 <img
-
 src="/logo.png"
-
+alt=""
+aria-hidden="true"
 className="
-w-20
-h-20
-rounded-3xl
-bg-white
-p-2
+absolute
+-right-8
+-bottom-12
+w-44
+h-44
+object-contain
+opacity-[0.12]
+pointer-events-none
 "
-
 />
 
-<div>
+<div className="relative">
 
-<h1
-className="
-font-bold
-text-3xl
-"
->
+<div className="flex items-center gap-2 mb-5">
 
-VetLearn
+<span className="bg-white text-[#0B3760] border border-[#DCEDEA] rounded-full px-3 py-2 text-xs font-bold">
+35 hr target
+</span>
 
-</h1>
-
-<p
-className="
-text-sm
-opacity-80
-"
->
-
-Veterinary CPD Hub
-
-</p>
+<span className="bg-white text-[#0F8F83] border border-[#DCEDEA] rounded-full px-3 py-2 text-xs font-bold">
+Today's trail
+</span>
 
 </div>
-
-</div>
-
-<div className="mt-6">
 
 <h2
 className="
-text-xl
-font-semibold
+text-3xl
+font-black
+leading-tight
+tracking-normal
+mb-2
 "
 >
-
-Good evening, Craig 👋
-
+Good evening, Craig
 </h2>
 
 <p
 className="
-opacity-80
 text-sm
+text-slate-600
+leading-6
+max-w-[240px]
 "
 >
-
-Keep building today's learning trail
-
+Keep building today's learning trail with a calmer CPD dashboard.
 </p>
 
 </div>
