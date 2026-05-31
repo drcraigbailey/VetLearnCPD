@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
 import { generateReflection } from "../utils/aiReflection";
 
 import toast from "react-hot-toast";
@@ -14,7 +13,7 @@ Search
 }
 from "lucide-react";
 
-export default function ReadingForm({user,darkMode=false}){
+export default function ReadingForm({user,darkMode=false,activeReading,onStartReading,onFinishReading,savingReading=false}){
 
 const [title,setTitle]=useState("")
 const [url,setUrl]=useState("")
@@ -24,12 +23,6 @@ const [template,setTemplate]=useState("rcvs")
 const [notes,setNotes]=useState("")
 const [reflection,setReflection]=useState("")
 
-const [reading,setReading]=useState(false)
-const [timer,setTimer]=useState("0 min")
-
-const [startTime,setStartTime]=useState(null)
-
-const [saving,setSaving]=useState(false)
 const [generating,setGenerating]=useState(false)
 const [fetchingTitle,setFetchingTitle]=useState(false)
 
@@ -45,9 +38,25 @@ const categories=[
 ]
 
 const templates={
-  rcvs:`What did I learn?\n\nHow is this relevant to my clinical work or professional role?\n\nWhat will I change, consider, or do differently as a result?\n\nWhat further learning or follow-up is needed?`,
-  clinical:`Clinical question:\n\nKey evidence or learning points:\n\nHow I will apply this in practice:\n\nRisks, limitations, or cases where this may not apply:`,
-  quick:`Key learning:\n\nPractical takeaway:\n\nFollow-up action:`
+  rcvs:`What did I learn?
+
+How is this relevant to my clinical work or professional role?
+
+What will I change, consider, or do differently as a result?
+
+What further learning or follow-up is needed?`,
+  clinical:`Clinical question:
+
+Key evidence or learning points:
+
+How I will apply this in practice:
+
+Risks, limitations, or cases where this may not apply:`,
+  quick:`Key learning:
+
+Practical takeaway:
+
+Follow-up action:`
 }
 
 const fieldClass=`w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition ${darkMode?"bg-white/10 text-white placeholder:text-slate-400":"bg-[#F0F6F5] text-[#113247]"}`
@@ -131,39 +140,26 @@ const applyTemplate=()=>{
   toast.success("Reflection template added")
 }
 
+const buildReadingPayload=()=>({
+  title,
+  url,
+  category,
+  notes,
+  reflection
+})
+
 const startReading=()=>{
+  onStartReading?.(buildReadingPayload())
+}
 
-const now=
-new Date()
+const finishReading=async()=>{
+  await onFinishReading?.(buildReadingPayload())
 
-setStartTime(now)
-
-setReading(true)
-
-toast.success(
-"Reading started"
-)
-
-const interval=
-setInterval(()=>{
-
-const mins=
-Math.floor(
-
-(new Date()-now)
-/(1000*60)
-
-)
-
-setTimer(
-`${mins} min`
-)
-
-},1000)
-
-window.cpdTimer=
-interval
-
+  setTitle("")
+  setUrl("")
+  setNotes("")
+  setReflection("")
+  setCategory("Medicine")
 }
 
 const generateAI=
@@ -205,9 +201,7 @@ setReflection(
 result
 )
 
-setGenerating(
-false
-)
+setGenerating(false)
 
 toast.success(
 "Reflection generated",
@@ -215,138 +209,6 @@ toast.success(
 id:"ai"
 }
 )
-
-}
-
-const finishReading=
-async()=>{
-
-if(!user){
-  toast.error("Please sign in first")
-  return
-}
-
-setSaving(
-true
-)
-
-toast.loading(
-"Saving to Supabase...",
-{
-id:"save"
-}
-)
-
-clearInterval(
-window.cpdTimer
-)
-
-const finish=
-new Date()
-
-const duration=
-Math.max(
-
-1,
-
-Math.round(
-
-(finish-startTime)
-/(1000*60)
-
-)
-
-)
-
-const {error}=
-
-await supabase
-.from(
-"cpd_reading"
-)
-.insert({
-
-user_id:user.id,
-
-title,
-
-article_url:url,
-
-category,
-
-notes,
-
-started_at:
-startTime,
-
-finished_at:
-finish,
-
-duration_minutes:
-duration,
-
-reflection,
-
-user_reflection:
-reflection,
-
-ai_reflection:
-reflection
-
-})
-
-if(error){
-
-toast.error(
-
-error.message,
-
-{
-id:"save"
-}
-
-)
-
-setSaving(
-false
-)
-
-return
-
-}
-
-window.dispatchEvent(
-
-new Event(
-"cpdUpdated"
-)
-
-)
-
-toast.success(
-
-"Saved and synced",
-
-{
-id:"save"
-}
-
-)
-
-setTitle("")
-setUrl("")
-setNotes("")
-setReflection("")
-
-setCategory(
-"Medicine"
-)
-
-setReading(false)
-
-setTimer("0 min")
-
-setSaving(false)
 
 }
 
@@ -520,21 +382,15 @@ e.target.value
 }
 />
 
-<div className={`mb-4 text-sm ${darkMode?"text-slate-300":"text-slate-600"}`}>
-
-Reading time:
-
-<strong className={darkMode?"text-[#71CFC2]":"text-[#0B3760]"}>
-
- {timer}
-
-</strong>
-
+{activeReading&&(
+<div className={`${darkMode?"bg-white/10 text-slate-200":"bg-[#E8F8F5] text-[#0B3760]"} mb-4 rounded-lg p-3 text-sm font-bold`}>
+Active timer: {activeReading.title}
 </div>
+)}
 
 {
 
-!reading
+!activeReading
 
 ?
 
@@ -550,14 +406,14 @@ Start Reading
 :
 
 <button
-disabled={saving}
+disabled={savingReading}
 onClick={finishReading}
 className="w-full bg-[#0F8F83] text-white rounded-lg p-4 flex justify-center items-center gap-2 font-bold"
 >
 
 {
 
-saving
+savingReading
 
 ?
 
