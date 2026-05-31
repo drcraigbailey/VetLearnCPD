@@ -39,6 +39,8 @@ const categories=[
 
 ]
 
+const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition"
+
 const getPubmedTitle=async(url)=>{
 
 try{
@@ -302,18 +304,17 @@ setTimer(
 )
 
 setSaving(
-false
-)
+false)
 
 }
 
 return(
 
-<div className="bg-white rounded-3xl p-5 shadow-sm">
+<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]">
 
 <div className="mb-5">
 
-<h2 className="font-bold text-lg">
+<h2 className="font-black text-lg text-[#113247]">
 
 New Reading
 
@@ -328,7 +329,7 @@ Track articles and generate reflections
 </div>
 
 <input
-className="w-full bg-slate-100 rounded-2xl p-4 mb-3"
+className={fieldClass}
 placeholder="Article title"
 value={title}
 onChange={(e)=>
@@ -339,7 +340,7 @@ e.target.value
 />
 
 <input
-className="w-full bg-slate-100 rounded-2xl p-4 mb-3"
+className={fieldClass}
 placeholder="Article URL"
 value={url}
 onChange={(e)=>{
@@ -356,7 +357,7 @@ e.target.value
 />
 
 <select
-className="w-full bg-slate-100 rounded-2xl p-4 mb-3"
+className={fieldClass}
 value={category}
 onChange={(e)=>
 setCategory(
@@ -382,7 +383,7 @@ key={cat}
 <textarea
 rows="3"
 placeholder="Key learning points or notes..."
-className="w-full bg-slate-100 rounded-2xl p-4 mb-3"
+className={fieldClass}
 value={notes}
 onChange={(e)=>
 setNotes(
@@ -394,7 +395,7 @@ e.target.value
 <button
 onClick={generateAI}
 disabled={generating}
-className="w-full bg-purple-600 text-white rounded-2xl p-4 mb-4 flex justify-center items-center gap-2 disabled:opacity-50"
+className="w-full bg-[#0B3760] text-white rounded-lg p-4 mb-4 flex justify-center items-center gap-2 disabled:opacity-50 font-bold shadow-[0_12px_24px_rgba(11,55,96,0.16)]"
 >
 
 {
@@ -433,7 +434,7 @@ Generate AI Reflection
 <textarea
 rows="5"
 placeholder="Write your own reflection or edit AI-generated reflection..."
-className="w-full bg-slate-100 rounded-2xl p-4 mb-4"
+className={fieldClass}
 value={reflection}
 onChange={(e)=>
 setReflection(
@@ -442,11 +443,11 @@ e.target.value
 }
 />
 
-<div className="mb-4 text-sm">
+<div className="mb-4 text-sm text-slate-600">
 
 Reading time:
 
-<strong>
+<strong className="text-[#0B3760]">
 
  {timer}
 
@@ -461,7 +462,7 @@ Reading time:
 ?
 
 <button
-className="w-full bg-blue-600 text-white rounded-2xl p-4"
+className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-4 font-black shadow-[0_12px_24px_rgba(15,143,131,0.16)]"
 onClick={startReading}
 >
 
@@ -474,7 +475,7 @@ Start Reading
 <button
 disabled={saving}
 onClick={finishReading}
-className="w-full bg-green-600 text-white rounded-2xl p-4 flex justify-center items-center gap-2"
+className="w-full bg-[#0F8F83] text-white rounded-lg p-4 flex justify-center items-center gap-2 font-bold"
 >
 
 {
