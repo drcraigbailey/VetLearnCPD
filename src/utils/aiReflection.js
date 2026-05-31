@@ -1,42 +1,32 @@
 import OpenAI from "openai"
 
-const client = new OpenAI({
-
-apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-
-dangerouslyAllowBrowser:true
-
-})
-
 export async function generateReflection(
+  title,
+  category,
+  notes = "",
+  draft = ""
+) {
+  const isEnabled = localStorage.getItem("vetlearn-ai-enabled") === "true"
+  const apiKey = localStorage.getItem("vetlearn-openai-key")
 
-title,
-category,
-notes="",
-draft=""
+  if (!isEnabled || !apiKey) {
+    return draft || `Reviewed ${title} and identified learning points relevant to first opinion practice.`
+  }
 
-){
+  const client = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true
+  })
 
-try{
-
-const response=
-
-await client.chat.completions.create({
-
-model:"gpt-4.1-mini",
-
-messages:[
-
-{
-
-role:"system",
-
-content:`
-
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini", // Updated to the faster/cheaper model
+      messages: [
+        {
+          role: "system",
+          content: `
 Generate a concise veterinary CPD reflection suitable for RCVS CPD recording.
-
 Requirements:
-
 • 50-100 words
 • Professional tone
 • Mention learning gained
@@ -45,52 +35,19 @@ Requirements:
 • Incorporate user draft thoughts where relevant
 • Single paragraph
 • Avoid generic wording
-
 `
+        },
+        {
+          role: "user",
+          content: `Topic: ${title}\nCategory: ${category}\nUser Notes: ${notes}\nUser Draft: ${draft}`
+        }
+      ]
+    })
 
-},
+    return response.choices[0].message.content
 
-{
-
-role:"user",
-
-content:
-
-`
-
-Topic:
-${title}
-
-Category:
-${category}
-
-User Notes:
-${notes}
-
-User Draft:
-${draft}
-
-`
-
-}
-
-]
-
-})
-
-return response
-.choices[0]
-.message
-.content
-
-}
-
-catch{
-
-return draft ||
-
-`Reviewed ${title} and identified learning points relevant to first opinion practice.`
-
-}
-
+  } catch (error) {
+    console.error("AI Generation Error:", error)
+    return draft || `Reviewed ${title} and identified learning points relevant to first opinion practice.`
+  }
 }
