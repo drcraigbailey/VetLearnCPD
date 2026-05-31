@@ -13,7 +13,7 @@ Search
 }
 from "lucide-react";
 
-export default function ReadingForm({user,darkMode=false,activeReading,onStartReading,onFinishReading,savingReading=false}){
+export default function ReadingForm({darkMode=false,activeReading,onStartReading,onFinishReading,savingReading=false}){
 
 const [title,setTitle]=useState("")
 const [url,setUrl]=useState("")
