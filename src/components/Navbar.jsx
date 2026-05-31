@@ -39,13 +39,14 @@ return(
 <div
 className="
 fixed
-top-0
+bottom-0
 left-0
 right-0
 z-50
 flex
 justify-center
-pt-3
+px-4
+pb-4
 "
 >
 
@@ -53,11 +54,12 @@ pt-3
 className="
 w-full
 max-w-md
-mx-3
 bg-white/90
-backdrop-blur
-rounded-3xl
-shadow-sm
+backdrop-blur-xl
+border
+border-[#DCEDEA]
+rounded-full
+shadow-[0_14px_32px_rgba(11,55,96,0.14)]
 p-2
 flex
 justify-around
@@ -74,7 +76,7 @@ to={item.path}
 
 className={({isActive})=>
 
-`flex flex-col items-center p-2 rounded-2xl transition
+`flex flex-col items-center justify-center min-w-20 h-12 rounded-full transition text-xs font-bold
 
 ${
 isActive
@@ -90,9 +92,7 @@ isActive
 
 {item.icon}
 
-<div
-className="text-xs"
->
+<div>
 
 {item.label}
 
