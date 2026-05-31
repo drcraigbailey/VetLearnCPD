@@ -80,7 +80,6 @@ Your CPD records and future reading are saved to your profile, so they follow yo
 <DashboardCards user={user} darkMode={darkMode}/>
 
 <ReadingForm
-  user={user}
   darkMode={darkMode}
   activeReading={activeReading}
   onStartReading={onStartReading}
