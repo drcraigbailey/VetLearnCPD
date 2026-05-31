@@ -9,7 +9,8 @@ Clock3,
 Trash2,
 Save,
 Sparkles,
-Loader2
+Loader2,
+ExternalLink
 
 }
 
@@ -284,6 +285,18 @@ m
 </div>
 
 </div>
+
+{item.article_url&&(
+<a
+href={item.article_url}
+target="_blank"
+rel="noreferrer"
+className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#0F8F83] bg-[#E8F8F5] rounded-lg px-3 py-2 break-all"
+>
+<ExternalLink size={15}/>
+{item.article_url}
+</a>
+)}
 
 <textarea
 rows="5"
