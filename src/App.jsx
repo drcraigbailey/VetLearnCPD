@@ -104,7 +104,14 @@ function App() {
     const finishedAt=new Date()
     const startedAt=new Date(activeReading.started_at)
     const duration=Math.max(1,Math.round((finishedAt-startedAt)/(1000*60)))
-    const finalReading={...activeReading,...extra}
+    const finalReading={
+      ...activeReading,
+      title:extra.title?.trim()||activeReading.title,
+      url:extra.url?.trim()||activeReading.url||"",
+      category:extra.category||activeReading.category||"Medicine",
+      notes:extra.notes?.trim()||activeReading.notes||"",
+      reflection:extra.reflection?.trim()||activeReading.reflection||""
+    }
 
     toast.loading("Saving CPD...",{id:"save-reading"})
 
@@ -114,14 +121,14 @@ function App() {
         user_id:session.user.id,
         title:finalReading.title,
         article_url:finalReading.url||null,
-        category:finalReading.category||"Medicine",
+        category:finalReading.category,
         notes:finalReading.notes||null,
         started_at:activeReading.started_at,
         finished_at:finishedAt.toISOString(),
         duration_minutes:duration,
-        reflection:finalReading.reflection||"",
-        user_reflection:finalReading.reflection||"",
-        ai_reflection:finalReading.reflection||""
+        reflection:finalReading.reflection,
+        user_reflection:finalReading.reflection,
+        ai_reflection:finalReading.reflection
       })
 
     if(error){
