@@ -1,7 +1,9 @@
 import DashboardCards from "../components/DashboardCards";
 import ReadingForm from "../components/ReadingForm";
 
-export default function Dashboard(){
+export default function Dashboard({user,profile}){
+
+const firstName=(profile?.full_name||user?.user_metadata?.full_name||"there").split(" ")[0]
 
 return(
 
@@ -49,7 +51,7 @@ pointer-events-none
 </span>
 
 <span className="bg-white text-[#0F8F83] border border-[#DCEDEA] rounded-full px-3 py-2 text-xs font-bold">
-Today's trail
+Your profile
 </span>
 
 </div>
@@ -63,7 +65,7 @@ tracking-normal
 mb-2
 "
 >
-Good evening, Craig
+Good evening, {firstName}
 </h2>
 
 <p
@@ -74,16 +76,16 @@ leading-6
 max-w-[240px]
 "
 >
-Keep building today's learning trail with a calmer CPD dashboard.
+Keep building your own learning trail with a calmer CPD dashboard.
 </p>
 
 </div>
 
 </div>
 
-<DashboardCards/>
+<DashboardCards user={user}/>
 
-<ReadingForm/>
+<ReadingForm user={user}/>
 
 </div>
 
