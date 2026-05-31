@@ -14,7 +14,7 @@ Search
 }
 from "lucide-react";
 
-export default function ReadingForm({user}){
+export default function ReadingForm({user,darkMode=false}){
 
 const [title,setTitle]=useState("")
 const [url,setUrl]=useState("")
@@ -45,28 +45,13 @@ const categories=[
 ]
 
 const templates={
-  rcvs:`What did I learn?
-
-How is this relevant to my clinical work or professional role?
-
-What will I change, consider, or do differently as a result?
-
-What further learning or follow-up is needed?`,
-  clinical:`Clinical question:
-
-Key evidence or learning points:
-
-How I will apply this in practice:
-
-Risks, limitations, or cases where this may not apply:`,
-  quick:`Key learning:
-
-Practical takeaway:
-
-Follow-up action:`
+  rcvs:`What did I learn?\n\nHow is this relevant to my clinical work or professional role?\n\nWhat will I change, consider, or do differently as a result?\n\nWhat further learning or follow-up is needed?`,
+  clinical:`Clinical question:\n\nKey evidence or learning points:\n\nHow I will apply this in practice:\n\nRisks, limitations, or cases where this may not apply:`,
+  quick:`Key learning:\n\nPractical takeaway:\n\nFollow-up action:`
 }
 
-const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition text-[#113247]"
+const fieldClass=`w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition ${darkMode?"bg-white/10 text-white placeholder:text-slate-400":"bg-[#F0F6F5] text-[#113247]"}`
+const compactFieldClass=`w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition ${darkMode?"bg-white/10 text-white placeholder:text-slate-400":"bg-[#F0F6F5] text-[#113247]"}`
 
 const extractPubmedId=(value)=>{
   const trimmed=value.trim()
@@ -359,9 +344,7 @@ setCategory(
 
 setReading(false)
 
-setTimer(
-"0 min"
-)
+setTimer("0 min")
 
 setSaving(false)
 
@@ -369,25 +352,25 @@ setSaving(false)
 
 return(
 
-<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]">
+<div className={`${darkMode?"bg-white/10 border-white/10":"bg-white/90 border-[#DCEDEA]"} border rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]`}>
 
 <div className="mb-5 flex items-start justify-between gap-3">
 
 <div>
-<h2 className="font-black text-lg text-[#113247]">
+<h2 className={`font-black text-lg ${darkMode?"text-white":"text-[#113247]"}`}>
 
 New Reading
 
 </h2>
 
-<p className="text-sm text-slate-500">
+<p className={`text-sm ${darkMode?"text-slate-300":"text-slate-500"}`}>
 
 Track articles and generate reflections
 
 </p>
 </div>
 
-<div className="bg-[#E8F8F5] text-[#0B3760] rounded-full px-3 py-2 text-xs font-bold flex items-center gap-1 shrink-0">
+<div className={`${darkMode?"bg-white/10 text-[#71CFC2]":"bg-[#E8F8F5] text-[#0B3760]"} rounded-full px-3 py-2 text-xs font-bold flex items-center gap-1 shrink-0`}>
 <Cloud size={14}/>
 Cloud sync
 </div>
@@ -407,7 +390,7 @@ e.target.value
 
 <div className="flex gap-2 mb-3">
 <input
-className="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition text-[#113247]"
+className={compactFieldClass}
 placeholder="PubMed link, PMID, or article URL"
 value={url}
 onChange={(e)=>{
@@ -421,7 +404,7 @@ onBlur={()=>getPubmedTitle(url)}
 />
 
 <button
-className="w-14 rounded-lg bg-[#E8F8F5] text-[#0B3760] grid place-items-center shrink-0"
+className={`${darkMode?"bg-white/10 text-[#71CFC2]":"bg-[#E8F8F5] text-[#0B3760]"} w-14 rounded-lg grid place-items-center shrink-0`}
 onClick={()=>getPubmedTitle(url)}
 disabled={fetchingTitle}
 aria-label="Fetch PubMed title"
@@ -468,7 +451,7 @@ e.target.value
 
 <div className="grid grid-cols-[1fr_auto] gap-2 mb-3">
 <select
-className="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition text-[#113247]"
+className={compactFieldClass}
 value={template}
 onChange={(e)=>setTemplate(e.target.value)}
 >
@@ -478,7 +461,7 @@ onChange={(e)=>setTemplate(e.target.value)}
 </select>
 
 <button
-className="bg-[#E8F8F5] text-[#0B3760] rounded-lg px-4 font-bold grid place-items-center"
+className={`${darkMode?"bg-white/10 text-[#71CFC2]":"bg-[#E8F8F5] text-[#0B3760]"} rounded-lg px-4 font-bold grid place-items-center`}
 onClick={applyTemplate}
 aria-label="Add reflection template"
 >
@@ -537,11 +520,11 @@ e.target.value
 }
 />
 
-<div className="mb-4 text-sm text-slate-600">
+<div className={`mb-4 text-sm ${darkMode?"text-slate-300":"text-slate-600"}`}>
 
 Reading time:
 
-<strong className="text-[#0B3760]">
+<strong className={darkMode?"text-[#71CFC2]":"text-[#0B3760]"}>
 
  {timer}
 
