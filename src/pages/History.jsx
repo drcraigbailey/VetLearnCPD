@@ -23,7 +23,7 @@ import { exportCPD } from "../utils/pdfExport";
 import { generateReflection }
 from "../utils/aiReflection";
 
-export default function History({user}){
+export default function History({user,darkMode=false}){
 
 const [history,setHistory]=useState([])
 
@@ -34,6 +34,11 @@ const [loadingId,setLoadingId]=useState(null)
 useEffect(()=>{
 
 loadHistory()
+
+const refresh=()=>loadHistory()
+window.addEventListener("cpdUpdated",refresh)
+
+return ()=>window.removeEventListener("cpdUpdated",refresh)
 
 },[user])
 
@@ -219,7 +224,7 @@ History
 
 </h1>
 
-<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-3 mb-5 flex gap-2">
+<div className={`${darkMode?"bg-white/10 border-white/10":"bg-white/90 border-[#DCEDEA]"} border rounded-lg p-3 mb-5 flex gap-2`}>
 
 <Search size={18}/>
 
@@ -250,24 +255,30 @@ filtered
 
 <div className="space-y-4">
 
+{filtered.length===0&&(
+<div className={`${darkMode?"bg-white/10 border-white/10 text-slate-300":"bg-white/90 border-[#DCEDEA] text-slate-500"} border rounded-lg p-5 text-sm`}>
+No saved readings yet. Start a reading, then use Finish to save it here.
+</div>
+)}
+
 {filtered.map(item=>(
 
 <div
 key={item.id}
-className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_10px_24px_rgba(11,55,96,0.06)]"
+className={`${darkMode?"bg-white/10 border-white/10":"bg-white/90 border-[#DCEDEA]"} border rounded-lg p-5 shadow-[0_10px_24px_rgba(11,55,96,0.06)]`}
 >
 
 <div className="flex justify-between gap-3">
 
 <div>
 
-<div className="font-black text-[#113247]">
+<div className={`font-black ${darkMode?"text-white":"text-[#113247]"}`}>
 
 {item.title}
 
 </div>
 
-<div className="text-sm text-slate-500">
+<div className={`text-sm ${darkMode?"text-slate-300":"text-slate-500"}`}>
 
 {item.category}
 
@@ -300,7 +311,7 @@ className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#0F8F83] 
 
 <textarea
 rows="5"
-className="w-full bg-[#F0F6F5] rounded-lg p-4 mt-4 outline-none"
+className={`${darkMode?"bg-white/10 text-white placeholder:text-slate-400":"bg-[#F0F6F5]"} w-full rounded-lg p-4 mt-4 outline-none`}
 value={
 item.user_reflection||""
 }
