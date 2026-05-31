@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
 
 House,
+BookmarkPlus,
 History,
 BarChart3
 
@@ -21,6 +22,12 @@ path:"/"
 },
 
 {
+icon:<BookmarkPlus size={18}/>,
+label:"Future",
+path:"/future"
+},
+
+{
 icon:<History size={18}/>,
 label:"History",
 path:"/history"
@@ -28,7 +35,7 @@ path:"/history"
 
 {
 icon:<BarChart3 size={18}/>,
-label:"Analytics",
+label:"Stats",
 path:"/analytics"
 }
 
@@ -73,10 +80,11 @@ justify-around
 key={item.path}
 
 to={item.path}
+end={item.path==="/"}
 
 className={({isActive})=>
 
-`flex flex-col items-center justify-center min-w-20 h-12 rounded-full transition text-xs font-bold
+`flex flex-col items-center justify-center min-w-16 h-12 rounded-full transition text-xs font-bold
 
 ${
 isActive
