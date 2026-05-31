@@ -8,27 +8,26 @@ import Analytics from "./pages/Analytics";
 function App() {
   return (
     <BrowserRouter>
-      <div className="bg-slate-100 min-h-screen">
+      <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]">
 
-        {/* Header Banner */}
-        <div className="sticky top-0 z-50 bg-white shadow-sm">
+        <div className="sticky top-0 z-40 border-b border-[#DCEDEA] bg-white/85 backdrop-blur-xl">
 
-          <div className="max-w-md mx-auto px-4 py-3">
+          <div className="max-w-md mx-auto px-5 py-3">
 
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center gap-3">
 
               <img
                 src="/logo.png"
                 alt="VetLearn CPD"
-                className="w-14 h-14 object-contain"
+                className="w-12 h-12 object-contain"
               />
 
               <div>
-                <h1 className="text-xl font-bold text-slate-800">
+                <h1 className="text-xl font-black tracking-normal text-[#113247]">
                   VetLearn
                 </h1>
 
-                <p className="text-sm text-teal-500 font-medium">
+                <p className="text-sm text-[#0F8F83] font-semibold">
                   CPD Tracker
                 </p>
               </div>
@@ -39,8 +38,7 @@ function App() {
 
         </div>
 
-        {/* Mobile App Container */}
-        <div className="max-w-md mx-auto min-h-screen pb-24">
+        <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
 
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -50,7 +48,6 @@ function App() {
 
         </div>
 
-        {/* Bottom nav stays fixed */}
         <Navbar />
 
       </div>
