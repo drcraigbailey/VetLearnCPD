@@ -7,7 +7,7 @@ import {
   GraduationCap
 } from "lucide-react";
 
-export default function DashboardCards() {
+export default function DashboardCards({user}) {
 
   const [stats, setStats] = useState({
     articles: 0,
@@ -17,9 +17,12 @@ export default function DashboardCards() {
 
   const loadStats = async () => {
 
+    if(!user) return;
+
     const { data, error } = await supabase
       .from("cpd_reading")
-      .select("*");
+      .select("*")
+      .eq("user_id",user.id);
 
     if (error) return;
 
@@ -64,7 +67,7 @@ export default function DashboardCards() {
       );
     };
 
-  }, []);
+  }, [user]);
 
   const cards = [
 
