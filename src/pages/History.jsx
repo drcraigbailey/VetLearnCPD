@@ -6,7 +6,6 @@ import {
 Search,
 Download,
 Clock3,
-BookOpen,
 Trash2,
 Save,
 Sparkles,
@@ -23,7 +22,7 @@ import { exportCPD } from "../utils/pdfExport";
 import { generateReflection }
 from "../utils/aiReflection";
 
-export default function History(){
+export default function History({user}){
 
 const [history,setHistory]=useState([])
 
@@ -35,13 +34,16 @@ useEffect(()=>{
 
 loadHistory()
 
-},[])
+},[user])
 
 const loadHistory=async()=>{
+
+if(!user) return
 
 const {data}=await supabase
 .from("cpd_reading")
 .select("*")
+.eq("user_id",user.id)
 .order(
 "created_at",
 {ascending:false}
@@ -55,13 +57,20 @@ const deleteEntry=async(id)=>{
 
 setLoadingId(id)
 
-await supabase
+const {error}=await supabase
 .from("cpd_reading")
 .delete()
 .eq(
 "id",
 id
 )
+.eq("user_id",user.id)
+
+if(error){
+  toast.error(error.message)
+  setLoadingId(null)
+  return
+}
 
 setHistory(
 
@@ -91,7 +100,7 @@ async(item)=>{
 
 setLoadingId(item.id)
 
-await supabase
+const {error}=await supabase
 .from("cpd_reading")
 .update({
 
@@ -106,6 +115,13 @@ item.user_reflection
 "id",
 item.id
 )
+.eq("user_id",user.id)
+
+if(error){
+  toast.error(error.message)
+  setLoadingId(null)
+  return
+}
 
 toast.success(
 "Reflection saved"
@@ -196,19 +212,19 @@ return(
 
 <div>
 
-<h1 className="text-3xl font-bold mb-5">
+<h1 className="text-3xl font-black mb-5">
 
 History
 
 </h1>
 
-<div className="bg-white rounded-2xl p-3 mb-5 flex gap-2">
+<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-3 mb-5 flex gap-2">
 
 <Search size={18}/>
 
 <input
 placeholder="Search..."
-className="w-full outline-none"
+className="w-full outline-none bg-transparent"
 value={search}
 onChange={(e)=>
 setSearch(
@@ -237,14 +253,14 @@ filtered
 
 <div
 key={item.id}
-className="bg-white rounded-3xl p-5 shadow-sm"
+className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_10px_24px_rgba(11,55,96,0.06)]"
 >
 
-<div className="flex justify-between">
+<div className="flex justify-between gap-3">
 
 <div>
 
-<div className="font-bold">
+<div className="font-black text-[#113247]">
 
 {item.title}
 
@@ -258,7 +274,7 @@ className="bg-white rounded-3xl p-5 shadow-sm"
 
 </div>
 
-<div className="flex gap-2">
+<div className="flex gap-2 text-[#0B3760] text-sm font-bold">
 
 <Clock3 size={16}/>
 
@@ -271,7 +287,7 @@ m
 
 <textarea
 rows="5"
-className="w-full bg-slate-100 rounded-2xl p-4 mt-4"
+className="w-full bg-[#F0F6F5] rounded-lg p-4 mt-4 outline-none"
 value={
 item.user_reflection||""
 }
@@ -286,6 +302,7 @@ e.target.value
 <div className="flex justify-end gap-3 mt-3">
 
 <button
+className="bg-[#E8F8F5] text-[#0B3760] rounded-lg p-3"
 onClick={()=>
 generateAIReflection(item)
 }
@@ -296,6 +313,7 @@ generateAIReflection(item)
 </button>
 
 <button
+className="bg-[#E8F8F5] text-[#0B3760] rounded-lg p-3"
 onClick={()=>
 saveReflection(item)
 }
@@ -306,6 +324,7 @@ saveReflection(item)
 </button>
 
 <button
+className="bg-slate-100 text-slate-500 rounded-lg p-3"
 onClick={()=>
 deleteEntry(item.id)
 }
