@@ -7,7 +7,7 @@ import {
   GraduationCap
 } from "lucide-react";
 
-export default function DashboardCards({user}) {
+export default function DashboardCards({user,darkMode=false}) {
 
   const [stats, setStats] = useState({
     articles: 0,
@@ -99,45 +99,42 @@ export default function DashboardCards({user}) {
 
         <div
           key={index}
-          className="
-          bg-white/90
+          className={`
           border
-          border-[#DCEDEA]
           rounded-lg
           p-4
-          shadow-[0_10px_24px_rgba(11,55,96,0.06)]
-          "
+          ${darkMode?"bg-white/10 border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.18)]":"bg-white/90 border-[#DCEDEA] shadow-[0_10px_24px_rgba(11,55,96,0.06)]"}
+          `}
         >
 
           <div
-            className="
-            bg-[#E8F8F5]
+            className={`
             w-fit
             p-3
             rounded-lg
             mb-4
-            text-[#0B3760]
-            "
+            ${darkMode?"bg-white/10 text-[#71CFC2]":"bg-[#E8F8F5] text-[#0B3760]"}
+            `}
           >
             {card.icon}
           </div>
 
           <div
-            className="
+            className={`
             text-2xl
             font-black
-            text-[#0B3760]
-            "
+            ${darkMode?"text-white":"text-[#0B3760]"}
+            `}
           >
             {card.value}
           </div>
 
           <div
-            className="
+            className={`
             text-xs
             font-medium
-            text-slate-500
-            "
+            ${darkMode?"text-slate-300":"text-slate-500"}
+            `}
           >
             {card.title}
           </div>
