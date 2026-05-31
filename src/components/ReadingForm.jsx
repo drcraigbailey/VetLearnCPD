@@ -153,7 +153,9 @@ const startReading=()=>{
 }
 
 const finishReading=async()=>{
-  await onFinishReading?.(buildReadingPayload())
+  const saved=await onFinishReading?.(buildReadingPayload())
+
+  if(!saved) return
 
   setTitle("")
   setUrl("")
