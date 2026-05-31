@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Analytics from "./pages/Analytics";
+import FutureReading from "./pages/FutureReading";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
 
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/future" element={<FutureReading />} />
             <Route path="/history" element={<History />} />
             <Route path="/analytics" element={<Analytics />} />
           </Routes>
