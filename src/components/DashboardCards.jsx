@@ -97,10 +97,12 @@ export default function DashboardCards() {
         <div
           key={index}
           className="
-          bg-white
-          rounded-[28px]
+          bg-white/90
+          border
+          border-[#DCEDEA]
+          rounded-lg
           p-4
-          shadow-sm
+          shadow-[0_10px_24px_rgba(11,55,96,0.06)]
           "
         >
 
@@ -109,9 +111,9 @@ export default function DashboardCards() {
             bg-[#E8F8F5]
             w-fit
             p-3
-            rounded-2xl
+            rounded-lg
             mb-4
-            text-[#062F63]
+            text-[#0B3760]
             "
           >
             {card.icon}
@@ -120,8 +122,8 @@ export default function DashboardCards() {
           <div
             className="
             text-2xl
-            font-bold
-            text-[#062F63]
+            font-black
+            text-[#0B3760]
             "
           >
             {card.value}
@@ -130,6 +132,7 @@ export default function DashboardCards() {
           <div
             className="
             text-xs
+            font-medium
             text-slate-500
             "
           >
