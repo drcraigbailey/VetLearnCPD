@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LogOut } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
 import { supabase } from "./supabaseClient";
@@ -54,20 +55,29 @@ function App() {
 
   if(loading){
     return(
-      <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] grid place-items-center text-[#113247] font-bold">
-        Loading VetLearn...
-      </div>
+      <>
+        <Toaster position="top-center"/>
+        <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] grid place-items-center text-[#113247] font-bold">
+          Loading VetLearn...
+        </div>
+      </>
     )
   }
 
   if(!session){
-    return <AuthPage />
+    return(
+      <>
+        <Toaster position="top-center"/>
+        <AuthPage />
+      </>
+    )
   }
 
   const displayName=profile?.full_name||session.user.user_metadata?.full_name||session.user.email
 
   return (
     <BrowserRouter>
+      <Toaster position="top-center"/>
       <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]">
 
         <div className="sticky top-0 z-40 border-b border-[#DCEDEA] bg-white/85 backdrop-blur-xl">
