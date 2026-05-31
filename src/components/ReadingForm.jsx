@@ -11,7 +11,7 @@ Sparkles
 }
 from "lucide-react";
 
-export default function ReadingForm(){
+export default function ReadingForm({user}){
 
 const [title,setTitle]=useState("")
 const [url,setUrl]=useState("")
@@ -183,6 +183,11 @@ id:"ai"
 const finishReading=
 async()=>{
 
+if(!user){
+  toast.error("Please sign in first")
+  return
+}
+
 setSaving(
 true
 )
@@ -222,6 +227,8 @@ await supabase
 "cpd_reading"
 )
 .insert({
+
+user_id:user.id,
 
 title,
 
@@ -303,8 +310,7 @@ setTimer(
 "0 min"
 )
 
-setSaving(
-false)
+setSaving(false)
 
 }
 
