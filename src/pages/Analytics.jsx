@@ -26,7 +26,7 @@ YAxis
 }
 from "recharts"
 
-export default function Analytics(){
+export default function Analytics({user}){
 
 const [data,setData]=useState([])
 
@@ -42,13 +42,16 @@ useEffect(()=>{
 
 loadData()
 
-},[])
+},[user])
 
 const loadData=async()=>{
+
+if(!user) return
 
 const {data}=await supabase
 .from("cpd_reading")
 .select("*")
+.eq("user_id",user.id)
 
 if(!data) return
 
@@ -102,7 +105,7 @@ return(
 
 <div>
 
-<h1 className="text-3xl font-bold mb-6">
+<h1 className="text-3xl font-black mb-6">
 
 Analytics
 
@@ -110,15 +113,15 @@ Analytics
 
 <div className="grid grid-cols-3 gap-3 mb-6">
 
-<div className="bg-white p-4 rounded-3xl">
+<div className="bg-white/90 border border-[#DCEDEA] p-4 rounded-lg">
 
-<div className="text-2xl font-bold">
+<div className="text-2xl font-black text-[#0B3760]">
 
 {stats.articles}
 
 </div>
 
-<div className="text-sm">
+<div className="text-sm text-slate-500">
 
 Articles
 
@@ -126,15 +129,15 @@ Articles
 
 </div>
 
-<div className="bg-white p-4 rounded-3xl">
+<div className="bg-white/90 border border-[#DCEDEA] p-4 rounded-lg">
 
-<div className="text-2xl font-bold">
+<div className="text-2xl font-black text-[#0B3760]">
 
 {stats.hours}
 
 </div>
 
-<div className="text-sm">
+<div className="text-sm text-slate-500">
 
 Hours
 
@@ -142,15 +145,15 @@ Hours
 
 </div>
 
-<div className="bg-white p-4 rounded-3xl">
+<div className="bg-white/90 border border-[#DCEDEA] p-4 rounded-lg">
 
-<div className="text-2xl font-bold">
+<div className="text-2xl font-black text-[#0B3760]">
 
 {stats.streak}
 
 </div>
 
-<div className="text-sm">
+<div className="text-sm text-slate-500">
 
 Day Streak
 
@@ -160,9 +163,9 @@ Day Streak
 
 </div>
 
-<div className="bg-white rounded-3xl p-5 mb-5">
+<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 mb-5">
 
-<div className="font-bold mb-3">
+<div className="font-black mb-3">
 
 Category Breakdown
 
@@ -188,6 +191,7 @@ outerRadius={80}
 
 <Cell
 key={index}
+fill={["#71CFC2","#0B3760","#0F8F83","#A7E8DF","#8AA8BD"][index%5]}
 />
 
 ))}
@@ -202,9 +206,9 @@ key={index}
 
 </div>
 
-<div className="bg-white rounded-3xl p-5">
+<div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5">
 
-<div className="font-bold mb-3">
+<div className="font-black mb-3">
 
 Weekly Reading
 
@@ -229,6 +233,7 @@ dataKey="name"
 
 <Bar
 dataKey="value"
+fill="#71CFC2"
 />
 
 </BarChart>
