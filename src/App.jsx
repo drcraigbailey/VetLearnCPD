@@ -75,12 +75,12 @@ function App() {
   const startReadingSession=(reading)=>{
     if(!session?.user){
       toast.error("Please sign in first")
-      return
+      return false
     }
 
     if(!reading.title?.trim()){
       toast.error("Add an article title first")
-      return
+      return false
     }
 
     setActiveReading({
@@ -93,10 +93,11 @@ function App() {
     })
 
     toast.success("Reading timer started")
+    return true
   }
 
   const finishReadingSession=async(extra={})=>{
-    if(!activeReading||!session?.user||savingReading) return
+    if(!activeReading||!session?.user||savingReading) return false
 
     setSavingReading(true)
 
@@ -126,13 +127,14 @@ function App() {
     if(error){
       toast.error(error.message,{id:"save-reading"})
       setSavingReading(false)
-      return
+      return false
     }
 
     setActiveReading(null)
     setSavingReading(false)
     window.dispatchEvent(new Event("cpdUpdated"))
     toast.success("Reading saved",{id:"save-reading"})
+    return true
   }
 
   const cancelReadingSession=()=>{
