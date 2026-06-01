@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+.relative.overflow-hidden.bg-gradient-to-br.border.rounded-lg.p-6.mb-6.shadow-sm::after {
+  content: "";
+  position: absolute;
+  right: -2rem;
+  bottom: -3rem;
+  width: 11rem;
+  height: 11rem;
+  background: url("/logo.png") center / contain no-repeat;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.relative.overflow-hidden.bg-gradient-to-br.border.rounded-lg.p-6.mb-6.shadow-sm > .relative {
+  z-index: 1;
+}
+
+.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
+  justify-content: center;
+}
