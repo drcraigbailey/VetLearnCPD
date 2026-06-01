@@ -2,15 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   AlertTriangle,
-  Ban,
   BookOpen,
   ChevronRight,
-  ClipboardList,
   Copy,
   FileText,
   History as HistoryIcon,
   Loader2,
-  MessageSquare,
   Plus,
   Printer,
   RefreshCw,
@@ -56,7 +53,6 @@ const inputClass = (darkMode) =>
 export default function Drugs({ user, darkMode = false }) {
   const [activeTab, setActiveTab] = useState("library");
   const [drugs, setDrugs] = useState([]);
-  const [protocols, setProtocols] = useState([]);
   const [allAliases, setAllAliases] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +70,6 @@ export default function Drugs({ user, darkMode = false }) {
   const [monographOpen, setMonographOpen] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [selectedProtocolId, setSelectedProtocolId] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
   const [shareBusyId, setShareBusyId] = useState(null);
@@ -85,10 +80,6 @@ export default function Drugs({ user, darkMode = false }) {
   const [calcPatient, setCalcPatient] = useState({ name: "", weight: "", species: "Dog" });
   const [selectedCalcDrugs, setSelectedCalcDrugs] = useState([]);
   const [history, setHistory] = useState([]);
-
-  const [protocolSearch, setProtocolSearch] = useState("");
-  const [protoDrugSearch, setProtoDrugSearch] = useState("");
-  const [protocolForm, setProtocolForm] = useState({ name: "", drug_ids: [] });
 
   const [checkingInteractions, setCheckingInteractions] = useState(false);
   const [interactionDrugA, setInteractionDrugA] = useState("");
@@ -112,14 +103,12 @@ export default function Drugs({ user, darkMode = false }) {
   const loadDatabase = async () => {
     setLoading(true);
     try {
-      const [drugsRes, protoRes, aliasesRes] = await Promise.all([
+      const [drugsRes, aliasesRes] = await Promise.all([
         supabase.from("drugs").select("*").or(`user_id.is.null,user_id.eq.${user.id}`).eq("active", true).order("name"),
-        supabase.from("protocols").select("*").or(`user_id.is.null,user_id.eq.${user.id}`).order("name"),
         supabase.from("drug_aliases").select("*")
       ]);
       if (drugsRes.error) throw drugsRes.error;
       setDrugs(drugsRes.data || []);
-      setProtocols(protoRes.data || []);
       setAllAliases(aliasesRes.data || []);
     } catch (error) {
       toast.error("Failed to load formulary");
@@ -242,7 +231,6 @@ export default function Drugs({ user, darkMode = false }) {
     setActiveSummary(summaryCache[formattedName] || null);
     setMonographOpen(true);
     setShareOpen(false);
-    setSelectedProtocolId("");
 
     const savedNotes = JSON.parse(localStorage.getItem("vetlearn-drug-notes") || "{}");
     setNoteText(savedNotes[formattedName] || "");
@@ -333,21 +321,6 @@ export default function Drugs({ user, darkMode = false }) {
     toast.success("Drug note saved");
   };
 
-  const addActiveDrugToProtocol = async () => {
-    if (!selectedProtocolId) return toast.error("Choose a protocol first");
-    const protocol = protocols.find((item) => String(item.id) === String(selectedProtocolId));
-    if (!protocol) return;
-
-    const doseIds = activeDrugDoses.map((dose) => dose.id);
-    const existingIds = Array.isArray(protocol.drug_ids) ? protocol.drug_ids : [];
-    const nextIds = unique([...existingIds, ...doseIds]);
-
-    const { error } = await supabase.from("protocols").update({ drug_ids: nextIds }).eq("id", protocol.id).eq("user_id", user.id);
-    if (error) return toast.error("Could not add drug to protocol");
-    toast.success("Added to protocol");
-    loadDatabase();
-  };
-
   const loadFriendsForSharing = async () => {
     setShareOpen(true);
     const { data, error } = await supabase
@@ -426,29 +399,6 @@ export default function Drugs({ user, darkMode = false }) {
     loadDatabase();
   };
 
-  const saveProtocol = async () => {
-    if (!protocolForm.name.trim()) return toast.error("Protocol name required");
-    const { error } = await supabase.from("protocols").insert({ ...protocolForm, name: protocolForm.name.trim(), user_id: user.id });
-    if (error) return toast.error(error.message);
-    toast.success("Protocol saved");
-    setProtocolForm({ name: "", drug_ids: [] });
-    loadDatabase();
-  };
-
-  const deleteProtocol = async (id) => {
-    const { error } = await supabase.from("protocols").delete().eq("id", id).eq("user_id", user.id);
-    if (error) return toast.error("You do not have permission to delete this protocol");
-    toast.success("Protocol deleted");
-    loadDatabase();
-  };
-
-  const toggleProtocolDrug = (id) => {
-    setProtocolForm((prev) => ({
-      ...prev,
-      drug_ids: prev.drug_ids.includes(id) ? prev.drug_ids.filter((drugId) => String(drugId) !== String(id)) : [...prev.drug_ids, id]
-    }));
-  };
-
   const addDrugToActiveCalc = (drug) => {
     if (selectedCalcDrugs.some((item) => String(item.id) === String(drug.id))) return;
     setSelectedCalcDrugs((prev) => [...prev, { ...drug, selectedDose: parseSafeNumber(drug.dose_min, 0) }]);
@@ -457,16 +407,6 @@ export default function Drugs({ user, darkMode = false }) {
   const handleAddDrugToCalc = (event) => {
     const drug = drugs.find((item) => String(item.id) === String(event.target.value));
     if (drug) addDrugToActiveCalc(drug);
-    event.target.value = "";
-  };
-
-  const handleAddProtocolToCalc = (event) => {
-    const protocol = protocols.find((item) => String(item.id) === String(event.target.value));
-    if (!protocol) return;
-    const matchingDrugs = (protocol.drug_ids || [])
-      .map((id) => drugs.find((drug) => String(drug.id) === String(id) && drug.species === calcPatient.species))
-      .filter(Boolean);
-    setSelectedCalcDrugs((prev) => [...prev, ...matchingDrugs.filter((drug) => !prev.some((item) => String(item.id) === String(drug.id))).map((drug) => ({ ...drug, selectedDose: parseSafeNumber(drug.dose_min, 0) }))]);
     event.target.value = "";
   };
 
@@ -506,8 +446,6 @@ export default function Drugs({ user, darkMode = false }) {
   }, [activeDrugDoses]);
 
   const availableCalcDrugs = drugs.filter((drug) => drug.species === calcPatient.species);
-  const filteredProtocols = protocols.filter((protocol) => normalise(protocol.name).includes(normalise(protocolSearch)));
-  const filteredProtoDrugs = drugs.filter((drug) => normalise(drug.name).includes(normalise(protoDrugSearch))).slice(0, 80);
 
   const copyDrugSummary = () => {
     navigator.clipboard.writeText(`VetLearn Formulary: ${activeDrugName}\nClass: ${activeDrugRecord?.category || "Uncategorised"}`);
@@ -534,10 +472,6 @@ export default function Drugs({ user, darkMode = false }) {
         noteText={noteText}
         setNoteText={setNoteText}
         onSaveNote={saveDrugNote}
-        protocols={protocols}
-        selectedProtocolId={selectedProtocolId}
-        setSelectedProtocolId={setSelectedProtocolId}
-        onAddToProtocol={addActiveDrugToProtocol}
         onCopy={copyDrugSummary}
         onAddToCalculator={() => {
           if (activeDrugDoses[0]) {
@@ -565,7 +499,6 @@ export default function Drugs({ user, darkMode = false }) {
         {[
           { id: "library", label: "Library" },
           { id: "calculator", label: "Calculator" },
-          { id: "protocols", label: "Protocols" },
           { id: "history", label: "History" }
         ].map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
@@ -621,36 +554,13 @@ export default function Drugs({ user, darkMode = false }) {
               fieldClass={fieldClass}
               calcPatient={calcPatient}
               setCalcPatient={setCalcPatient}
-              protocols={protocols}
               availableCalcDrugs={availableCalcDrugs}
               selectedCalcDrugs={selectedCalcDrugs}
               setSelectedCalcDrugs={setSelectedCalcDrugs}
-              handleAddProtocolToCalc={handleAddProtocolToCalc}
               handleAddDrugToCalc={handleAddDrugToCalc}
               updateCalcDrugDose={updateCalcDrugDose}
               saveToHistory={saveToHistory}
               openMonograph={openMonograph}
-            />
-          )}
-
-          {activeTab === "protocols" && (
-            <ProtocolsTab
-              darkMode={darkMode}
-              panelClass={panelClass}
-              fieldClass={fieldClass}
-              protocolForm={protocolForm}
-              setProtocolForm={setProtocolForm}
-              protoDrugSearch={protoDrugSearch}
-              setProtoDrugSearch={setProtoDrugSearch}
-              filteredProtoDrugs={filteredProtoDrugs}
-              toggleProtocolDrug={toggleProtocolDrug}
-              saveProtocol={saveProtocol}
-              protocolSearch={protocolSearch}
-              setProtocolSearch={setProtocolSearch}
-              filteredProtocols={filteredProtocols}
-              drugs={drugs}
-              deleteProtocol={deleteProtocol}
-              user={user}
             />
           )}
 
@@ -887,10 +797,6 @@ function DrugMonograph(props) {
     noteText,
     setNoteText,
     onSaveNote,
-    protocols,
-    selectedProtocolId,
-    setSelectedProtocolId,
-    onAddToProtocol,
     onCopy,
     onAddToCalculator,
     shareOpen,
@@ -979,16 +885,8 @@ function DrugMonograph(props) {
                 <textarea className={`${inputClass(darkMode)} min-h-[110px] mb-3`} placeholder="Add personal notes for this drug..." value={noteText} onChange={(event) => setNoteText(event.target.value)} />
                 <button onClick={onSaveNote} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] py-3 font-black mb-4">Save Personal Notes</button>
 
-                <div className="grid grid-cols-[1fr_auto] gap-2 mb-4">
-                  <select className={inputClass(darkMode)} value={selectedProtocolId} onChange={(event) => setSelectedProtocolId(event.target.value)}>
-                    <option value="">Add to protocol...</option>
-                    {protocols.filter((protocol) => protocol.user_id === user.id).map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name}</option>)}
-                  </select>
-                  <button onClick={onAddToProtocol} className="rounded-lg bg-[#E8F8F5] text-[#0B3760] px-4 font-black">Add</button>
-                </div>
-
                 {shareOpen && (
-                  <div className={`rounded-lg p-3 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
+                  <div className={`rounded-lg p-3 mt-4 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
                     {friendsList.length === 0 ? <p className="text-sm opacity-55">No colleagues available to share with.</p> : friendsList.map((friend) => (
                       <div key={friend.connection_id} className="flex items-center justify-between gap-3 py-2">
                         <span className="text-sm font-bold">{friend.colleague?.title} {friend.colleague?.full_name}</span>
@@ -1055,7 +953,7 @@ function WarningGroup({ title, items, darkMode }) {
   );
 }
 
-function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcPatient, protocols, availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs, handleAddProtocolToCalc, handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph }) {
+function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcPatient, availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs, handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph }) {
   return (
     <div className="space-y-4">
       <div className={panelClass}>
@@ -1071,10 +969,6 @@ function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcP
 
       <div className={panelClass}>
         <h2 className="font-black mb-4 flex items-center gap-2"><Plus size={18} /> Add to Calculator</h2>
-        <select className={`${fieldClass} mb-3`} onChange={handleAddProtocolToCalc} defaultValue="">
-          <option value="" disabled>Load protocol...</option>
-          {protocols.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name}</option>)}
-        </select>
         <select className={fieldClass} onChange={handleAddDrugToCalc} defaultValue="">
           <option value="" disabled>Add single drug...</option>
           {availableCalcDrugs.map((drug) => <option key={drug.id} value={drug.id}>{drug.name} ({drug.route || "General"})</option>)}
@@ -1113,45 +1007,6 @@ function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcP
           <button onClick={saveToHistory} className="w-full mt-4 bg-[#71CFC2] text-[#062F63] rounded-lg p-3 font-bold flex justify-center items-center gap-2"><Save size={18} /> Log to History</button>
         </div>
       )}
-    </div>
-  );
-}
-
-function ProtocolsTab({ darkMode, panelClass, fieldClass, protocolForm, setProtocolForm, protoDrugSearch, setProtoDrugSearch, filteredProtoDrugs, toggleProtocolDrug, saveProtocol, protocolSearch, setProtocolSearch, filteredProtocols, drugs, deleteProtocol, user }) {
-  return (
-    <div className="space-y-4">
-      <div className={panelClass}>
-        <h2 className="font-black mb-4">Create Protocol</h2>
-        <input className={fieldClass} placeholder="Protocol name" value={protocolForm.name} onChange={(event) => setProtocolForm({ ...protocolForm, name: event.target.value })} />
-        <div className="flex items-center gap-2 mt-4 mb-2 border-b pb-2 border-slate-200 dark:border-white/10">
-          <Search size={16} className="opacity-50" />
-          <input placeholder="Search drugs to add..." className={`w-full outline-none bg-transparent text-sm ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247]"}`} value={protoDrugSearch} onChange={(event) => setProtoDrugSearch(event.target.value)} />
-        </div>
-        <div className="flex flex-wrap gap-2 mb-4 max-h-[200px] overflow-y-auto">
-          {filteredProtoDrugs.map((drug) => <button key={drug.id} onClick={() => toggleProtocolDrug(drug.id)} className={`px-3 py-1.5 rounded-full text-xs font-bold border ${protocolForm.drug_ids.includes(drug.id) ? "bg-[#71CFC2] border-[#71CFC2] text-[#071A24]" : darkMode ? "border-white/20 text-slate-300" : "border-slate-300 text-slate-600"}`}>{drug.name} ({drug.species} {drug.route})</button>)}
-        </div>
-        <button onClick={saveProtocol} className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-3 font-bold">Save Protocol</button>
-      </div>
-
-      <div className="flex items-center gap-2 mb-4 border-b pb-2 border-slate-200 dark:border-white/10">
-        <Search size={18} className="opacity-50" />
-        <input placeholder="Search saved protocols..." className={`w-full outline-none bg-transparent text-sm ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247]"}`} value={protocolSearch} onChange={(event) => setProtocolSearch(event.target.value)} />
-      </div>
-
-      {filteredProtocols.map((protocol) => (
-        <div key={protocol.id} className={panelClass}>
-          <div className="flex justify-between items-center mb-2">
-            <div className="font-bold">{protocol.name}</div>
-            {protocol.user_id === user.id && <button onClick={() => deleteProtocol(protocol.id)} className="text-red-400"><Trash2 size={16} /></button>}
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {(protocol.drug_ids || []).map((id) => {
-              const drug = drugs.find((item) => String(item.id) === String(id));
-              return drug ? <span key={`${protocol.id}-${id}`} className={`text-[10px] px-2 py-1 rounded font-bold ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>{drug.name} ({drug.species})</span> : null;
-            })}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

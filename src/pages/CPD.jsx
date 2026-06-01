@@ -10,8 +10,8 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
 
   const tabs = [
     { id: "dashboard", label: "Dashboard" },
-    { id: "future", label: "Future Reading" },
-    { id: "history", label: "History Log" },
+    { id: "future", label: "Future Reads" },
+    { id: "history", label: "History" },
     { id: "analytics", label: "Analytics" }
   ];
 
@@ -23,7 +23,8 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
         darkMode={darkMode}
       />
 
-      <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {/* Updated layout: single line, horizontally scrollable on mobile, centered on larger screens */}
+      <div className="flex overflow-x-auto justify-start sm:justify-center gap-2 mb-6 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {tabs.map(tab => (
           <button
             key={tab.id}

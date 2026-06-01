@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X } from "lucide-react";
+import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X, Paperclip, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -17,6 +17,10 @@ export default function Messages({ user, darkMode }) {
   const [chatLoading, setChatLoading] = useState(false);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // Local file storage state
+  const [attachment, setAttachment] = useState(null);
+  const [localFiles, setLocalFiles] = useState({});
 
   const messagesEndRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -94,6 +98,22 @@ export default function Messages({ user, darkMode }) {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams, loading, user?.id, conversations, colleagues]);
+
+  // Load locally stored files linked to current chat messages
+  useEffect(() => {
+    const files = {};
+    chatItems.forEach(item => {
+      const saved = localStorage.getItem(`vetlearn-file-${item.id}`);
+      if (saved) {
+        try {
+          files[item.id] = JSON.parse(saved);
+        } catch (e) {
+          console.error("Could not parse local file for message", item.id);
+        }
+      }
+    });
+    setLocalFiles(files);
+  }, [chatItems]);
 
   const refreshBadges = () => {
     window.dispatchEvent(new Event("messagesUpdated"));
@@ -309,9 +329,11 @@ export default function Messages({ user, darkMode }) {
 
   const handleSend = async (event) => {
     if (event) event.preventDefault();
-    if (!newMessage.trim() || !activeChat || sending) return;
+    if ((!newMessage.trim() && !attachment) || !activeChat || sending) return;
 
-    const content = newMessage.trim();
+    const content = newMessage.trim() || (attachment ? "📎 [Local File Attached]" : "");
+    const cachedMessage = newMessage;
+    
     setNewMessage("");
     setSending(true);
 
@@ -323,8 +345,27 @@ export default function Messages({ user, darkMode }) {
 
     if (error) {
       toast.error("Message failed to send");
-      setNewMessage(content);
+      setNewMessage(cachedMessage);
     } else {
+      if (attachment) {
+        if (attachment.size > 2 * 1024 * 1024) {
+          toast.error("File exceeds 2MB local storage limit");
+        } else {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const fileObj = { name: attachment.name, data: reader.result };
+            try {
+              localStorage.setItem(`vetlearn-file-${data.id}`, JSON.stringify(fileObj));
+              setLocalFiles(prev => ({ ...prev, [data.id]: fileObj }));
+            } catch (err) {
+              toast.error("Browser storage is full. Could not save file locally.");
+            }
+          };
+          reader.readAsDataURL(attachment);
+        }
+        setAttachment(null);
+      }
+
       setChatItems(prev => prev.some(item => item.id === data.id) ? prev : [...prev, data]);
       setConversations(prev => prev.map(conversation => conversation.id === activeChat.id ? { ...conversation, lastMsg: data, messages: [data, ...(conversation.messages || [])] } : conversation));
       notifyRecipient(data);
@@ -478,10 +519,18 @@ export default function Messages({ user, darkMode }) {
 
               {chatItems.map(item => {
                 const isMe = item.sender_id === user.id;
+                const fileObj = localFiles[item.id];
+                
                 return (
                   <div key={item.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap shadow-sm ${isMe ? "bg-[#71CFC2] text-[#0B3760] font-medium rounded-br-sm" : darkMode ? "bg-white/10 text-white rounded-bl-sm" : "bg-white border border-slate-100 text-[#113247] rounded-bl-sm"}`}>
-                      {item.content}
+                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMe ? "bg-[#71CFC2] text-[#0B3760] font-medium rounded-br-sm" : darkMode ? "bg-white/10 text-white rounded-bl-sm" : "bg-white border border-slate-100 text-[#113247] rounded-bl-sm"}`}>
+                      {item.content && <div className="whitespace-pre-wrap">{item.content}</div>}
+                      
+                      {fileObj && (
+                        <a href={fileObj.data} download={fileObj.name} className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition ${isMe ? "bg-black/10 hover:bg-black/20" : darkMode ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"}`}>
+                          <Download size={14} /> Download {fileObj.name}
+                        </a>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 mt-1 px-1">
                       <span className="text-[10px] opacity-40">{new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -494,7 +543,21 @@ export default function Messages({ user, darkMode }) {
             </div>
 
             <form onSubmit={handleSend} className={`p-4 bg-white dark:bg-[#0B242B] border-t ${darkMode ? "border-white/10" : "border-slate-100"}`}>
+              {attachment && (
+                <div className={`mb-3 px-4 py-2 rounded-lg flex justify-between items-center text-sm ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
+                  <span className="truncate opacity-80 flex items-center gap-2 font-medium">
+                    <Paperclip size={14} /> {attachment.name}
+                  </span>
+                  <button type="button" onClick={() => setAttachment(null)} className="text-red-400 hover:opacity-70 p-1">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-3 items-center">
+                <label className={`cursor-pointer p-3 rounded-xl transition shadow-sm ${darkMode ? "bg-[#071A24] border border-white/10 hover:bg-white/5" : "bg-white border border-slate-200 hover:bg-slate-50"}`}>
+                  <Paperclip size={18} className="opacity-70" />
+                  <input type="file" className="hidden" onChange={(e) => setAttachment(e.target.files[0])} />
+                </label>
                 <textarea
                   ref={chatInputRef}
                   value={newMessage}
@@ -504,7 +567,7 @@ export default function Messages({ user, darkMode }) {
                   className={`flex-1 rounded-xl px-5 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-[#71CFC2]/50 resize-none max-h-12 overflow-hidden shadow-sm ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-slate-200 text-[#113247]"}`}
                   rows={1}
                 />
-                <button type="submit" disabled={!newMessage.trim() || sending} className="h-11 w-11 rounded-xl bg-[#A3E4D7] hover:bg-[#71CFC2] text-[#0B3760] flex items-center justify-center disabled:opacity-50 disabled:grayscale transition-all shrink-0 shadow-sm">
+                <button type="submit" disabled={(!newMessage.trim() && !attachment) || sending} className="h-11 w-11 rounded-xl bg-[#A3E4D7] hover:bg-[#71CFC2] text-[#0B3760] flex items-center justify-center disabled:opacity-50 disabled:grayscale transition-all shrink-0 shadow-sm">
                   {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-1" />}
                 </button>
               </div>
