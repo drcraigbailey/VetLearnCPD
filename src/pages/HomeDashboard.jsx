@@ -26,6 +26,7 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
   const [sectionOrder, setSectionOrder] = useState(defaultSections);
   const [hiddenSections, setHiddenSections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [layoutOpen, setLayoutOpen] = useState(false);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -101,8 +102,12 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
       dashboard_config: { sectionOrder, hiddenSections },
       updated_at: new Date().toISOString()
     }, { onConflict: "user_id" });
-    if (error) toast.error("Could not save dashboard layout");
-    else toast.success("Dashboard layout saved");
+    if (error) {
+      toast.error("Could not save dashboard layout");
+      return;
+    }
+    toast.success("Dashboard layout saved");
+    setLayoutOpen(false);
   };
 
   const toggleSection = (section) => {
@@ -211,24 +216,31 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
       <PageBanner title="Dashboard" subtitle="Your VetLearn hub for clinical tools, CPD, messages and saved resources." darkMode={darkMode} />
 
       <section className={panelClass}>
-        <div className="flex items-center justify-between mb-4">
+        <div className={`flex items-center justify-between gap-3 ${layoutOpen ? "mb-4" : ""}`}>
           <div>
             <h2 className="font-black text-lg">Dashboard Layout</h2>
-            <p className="text-sm opacity-60">Reorder and hide sections.</p>
+            <p className="text-sm opacity-60">{layoutOpen ? "Reorder and hide sections." : "Customise section order and visibility."}</p>
           </div>
-          <button onClick={saveLayout} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black">Save</button>
+          <button
+            onClick={layoutOpen ? saveLayout : () => setLayoutOpen(true)}
+            className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black shrink-0"
+          >
+            {layoutOpen ? "Save" : "Customise"}
+          </button>
         </div>
-        <div className="space-y-2">
-          {sectionOrder.map(section => (
-            <div key={section} className={`flex items-center justify-between rounded-lg px-3 py-2 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-              <button onClick={() => toggleSection(section)} className={`text-sm font-bold ${hiddenSections.includes(section) ? "opacity-40" : ""}`}>{sectionLabels[section]}</button>
-              <div className="flex gap-1">
-                <button onClick={() => moveSection(section, -1)} className="p-1 opacity-70"><ChevronUp size={16} /></button>
-                <button onClick={() => moveSection(section, 1)} className="p-1 opacity-70"><ChevronDown size={16} /></button>
+        {layoutOpen && (
+          <div className="space-y-2">
+            {sectionOrder.map(section => (
+              <div key={section} className={`flex items-center justify-between rounded-lg px-3 py-2 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <button onClick={() => toggleSection(section)} className={`text-sm font-bold ${hiddenSections.includes(section) ? "opacity-40" : ""}`}>{sectionLabels[section]}</button>
+                <div className="flex gap-1">
+                  <button onClick={() => moveSection(section, -1)} className="p-1 opacity-70"><ChevronUp size={16} /></button>
+                  <button onClick={() => moveSection(section, 1)} className="p-1 opacity-70"><ChevronDown size={16} /></button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {loading ? <div className={panelClass}>Loading dashboard...</div> : orderedVisibleSections.map(renderSection)}
