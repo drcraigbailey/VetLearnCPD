@@ -12,7 +12,7 @@ import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
 import Caselogs from "./pages/Caselogs";
 import Profile from "./pages/Profile";
-import Drugs from "./pages/Drugs";
+import Drugs from "./pages/drugs.jsx";
 import SettingsPage from "./pages/Settings";
 import Network from "./pages/Network";
 import Messages from "./pages/Messages";
