@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Copy, Eye, EyeOff, KeyRound, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
+import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
 
@@ -143,7 +144,7 @@ export default function Vault({ user, darkMode }) {
         </div>
       </section>
 
-      {loading ? <section className={panelClass}>Loading Vault...</section> : filteredEntries.length === 0 ? (
+      {loading ? <section className={panelClass}><LoadingState label="Loading Vault..." darkMode={darkMode} /></section> : filteredEntries.length === 0 ? (
         <section className={panelClass}><p className="text-sm opacity-60">No Vault entries found.</p></section>
       ) : filteredEntries.map(entry => {
         const visible = visiblePasswords[entry.id];
