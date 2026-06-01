@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Search, Plus, Share2, X, Loader2, Trash2, Edit3, ClipboardList } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
+import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 
 export default function Protocols({ user, darkMode }) {
@@ -163,7 +164,7 @@ export default function Protocols({ user, darkMode }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {loading ? <div className={panelClass}><Loader2 className="animate-spin text-[#71CFC2]"/></div> : filteredProtocols.length === 0 ? <div className={panelClass}>No protocols found.</div> : filteredProtocols.map(p => (
+        {loading ? <div className={panelClass}><LoadingState label="Loading protocols..." darkMode={darkMode} /></div> : filteredProtocols.length === 0 ? <div className={panelClass}>No protocols found.</div> : filteredProtocols.map(p => (
           <div key={p.id} className={panelClass}>
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-bold text-lg">{p.name}</h3>
