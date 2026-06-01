@@ -3,6 +3,7 @@ import { Bell, Briefcase, Globe, GraduationCap, Image as ImageIcon, Loader2, Loc
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
+import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
 
 const profileDefaults = {
   avatar_url: "",
@@ -41,10 +42,13 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("profile");
   const [profileForm, setProfileForm] = useState(profileDefaults);
   const [aiPrefs, setAiPrefs] = useState(aiDefaults);
-  const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, theme: darkMode ? "dark" : "light" });
+  const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -61,9 +65,10 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
   const loadSettings = async () => {
     setLoading(true);
-    const [profileRes, prefsRes] = await Promise.all([
+    const [profileRes, prefsRes, biometricSupport] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-      supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle()
+      supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle(),
+      isBiometricAvailable()
     ]);
 
     if (!profileRes.error && profileRes.data) {
@@ -78,14 +83,56 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
     if (!prefsRes.error && prefsRes.data) {
       setAiPrefs({ ...aiDefaults, ...(prefsRes.data.ai_preferences || {}) });
-      setAppPrefs({ notifications: true, privacyMode: false, theme: darkMode ? "dark" : "light", ...(prefsRes.data.app_preferences || {}) });
+      setAppPrefs({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", ...(prefsRes.data.app_preferences || {}) });
     }
+
+    setBiometricAvailable(biometricSupport);
+    setBiometricEnabled(isBiometricEnabled(user.id));
     setLoading(false);
   };
 
   const updateProfile = (field, value) => setProfileForm(prev => ({ ...prev, [field]: value }));
   const updateAi = (field, value) => setAiPrefs(prev => ({ ...prev, [field]: value }));
   const updateApp = (field, value) => setAppPrefs(prev => ({ ...prev, [field]: value }));
+
+  const persistAppPreferences = async (nextAppPrefs) => {
+    await supabase.from("user_preferences").upsert({
+      user_id: user.id,
+      ai_preferences: aiPrefs,
+      app_preferences: nextAppPrefs,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+  };
+
+  const toggleBiometricUnlock = async (enabled) => {
+    if (enabled && !biometricAvailable) {
+      toast.error("Fingerprint or Face ID is not available on this device/browser");
+      return;
+    }
+
+    setBiometricBusy(true);
+    try {
+      if (enabled) {
+        await registerBiometric(user);
+        setBiometricEnabled(true);
+        const nextPrefs = { ...appPrefs, biometricUnlock: true };
+        setAppPrefs(nextPrefs);
+        await persistAppPreferences(nextPrefs);
+        toast.success("Fingerprint unlock enabled on this device");
+      } else {
+        disableBiometric(user.id);
+        setBiometricEnabled(false);
+        const nextPrefs = { ...appPrefs, biometricUnlock: false };
+        setAppPrefs(nextPrefs);
+        await persistAppPreferences(nextPrefs);
+        toast.success("Fingerprint unlock disabled");
+      }
+    } catch (error) {
+      toast.error(error.message || "Could not update fingerprint unlock");
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   const uploadAvatar = async (event) => {
     const file = event.target.files?.[0];
@@ -113,7 +160,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
     if (uploadError) {
       setUploadingAvatar(false);
-      toast.error("Could not upload image. Please run the Supabase storage SQL.");
+      toast.error(uploadError.message || "Could not upload image. Please run the Supabase storage SQL.");
       return;
     }
 
@@ -264,6 +311,16 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
               <SectionTitle icon={<Lock size={20} />} title="Application Settings" subtitle="Theme, notifications, privacy and account management." darkMode={darkMode} />
               <Toggle checked={darkMode} onChange={(value) => { setDarkMode?.(value); updateApp("theme", value ? "dark" : "light"); }} label="Dark mode" darkMode={darkMode} />
               <Toggle checked={appPrefs.notifications} onChange={(value) => updateApp("notifications", value)} label="Notifications" darkMode={darkMode} />
+              <Toggle
+                checked={biometricEnabled}
+                onChange={toggleBiometricUnlock}
+                label={biometricAvailable ? "Fingerprint / Face unlock on this device" : "Fingerprint / Face unlock unavailable"}
+                darkMode={darkMode}
+                disabled={!biometricAvailable || biometricBusy}
+              />
+              <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
+                Uses this phone or browser's built-in biometric/passkey prompt when available. You may need to enable it again if the app domain changes.
+              </p>
               <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
               <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
               <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
@@ -288,10 +345,10 @@ function InputWithIcon({ icon, children }) {
   return <div className="relative"><div className="absolute left-3 top-3.5 opacity-50">{icon}</div>{children}</div>;
 }
 
-function Toggle({ checked, onChange, label, darkMode }) {
+function Toggle({ checked, onChange, label, darkMode, disabled = false }) {
   return (
-    <label className="flex items-center gap-3 mb-4 cursor-pointer">
-      <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <label className={`flex items-center gap-3 mb-4 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+      <input type="checkbox" className="sr-only" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className={`relative block w-14 h-8 rounded-full transition-colors ${checked ? "bg-[#71CFC2]" : darkMode ? "bg-slate-600" : "bg-slate-300"}`}>
         <span className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${checked ? "translate-x-6" : ""}`} />
       </span>
