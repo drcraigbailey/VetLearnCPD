@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, FileText, Heart, KeyRound, MessageSquare, Network, Settings, ShieldPlus, Star, Syringe, UserRound } from "lucide-react";
+import { Bell, BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
