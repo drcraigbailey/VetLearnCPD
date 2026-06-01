@@ -134,3 +134,60 @@ create policy "Users can update own profile" on public.profiles for update to au
 
 drop policy if exists "Users can create own profile" on public.profiles;
 create policy "Users can create own profile" on public.profiles for insert to authenticated with check (id = auth.uid());
+
+-- Profile image uploads
+-- Creates a public bucket for small profile images. Users can only upload,
+-- replace or delete files inside their own user-id folder.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'profile-images',
+  'profile-images',
+  true,
+  2097152,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 2097152,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+drop policy if exists "Profile images are publicly readable" on storage.objects;
+create policy "Profile images are publicly readable"
+on storage.objects
+for select
+to public
+using (bucket_id = 'profile-images');
+
+drop policy if exists "Users can upload own profile images" on storage.objects;
+create policy "Users can upload own profile images"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'profile-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Users can update own profile images" on storage.objects;
+create policy "Users can update own profile images"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'profile-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'profile-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Users can delete own profile images" on storage.objects;
+create policy "Users can delete own profile images"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'profile-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
