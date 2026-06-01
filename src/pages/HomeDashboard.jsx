@@ -9,7 +9,7 @@ const defaultSections = ["profile", "quickActions", "favourites", "activity", "r
 
 const quickActions = [
   { title: "Clinical Protocols", path: "/protocols", type: "page", icon: ClipboardList },
-  { title: "Global Drugs", path: "/drugs", type: "page", icon: Syringe },
+  { title: "Formulary", path: "/drugs", type: "page", icon: Syringe },
   { title: "CPD Portfolio", path: "/cpd", type: "page", icon: FileText },
   { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical },
   { title: "Professional Network", path: "/network", type: "page", icon: Network },
