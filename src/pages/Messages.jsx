@@ -32,16 +32,13 @@ export default function Messages({ user, darkMode }) {
     const inboxSub = supabase
       .channel(`messages-inbox-${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        if (payload.new.sender_id !== user.id) {
-          toast.success("New message received");
-        }
+        if (payload.new.sender_id !== user.id) toast.success("New message received");
         loadConversations();
-        window.dispatchEvent(new Event("messagesUpdated"));
-        window.dispatchEvent(new Event("notificationsUpdated"));
+        refreshBadges();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => {
         loadConversations();
-        window.dispatchEvent(new Event("messagesUpdated"));
+        refreshBadges();
       })
       .subscribe();
 
@@ -49,7 +46,7 @@ export default function Messages({ user, darkMode }) {
   }, [user]);
 
   useEffect(() => {
-    if (!activeChat) return;
+    if (!activeChat || !user?.id) return;
     loadChatHistory(activeChat);
 
     const chatSub = supabase
@@ -61,7 +58,9 @@ export default function Messages({ user, darkMode }) {
         filter: `conversation_id=eq.${activeChat.id}`
       }, (payload) => {
         setChatItems(prev => prev.some(item => item.id === payload.new.id) ? prev : [...prev, payload.new]);
-        if (payload.new.sender_id !== user.id) markAsRead(activeChat.id);
+        if (payload.new.sender_id !== user.id) {
+          markAsRead(activeChat.id, [payload.new.id]);
+        }
       })
       .on("postgres_changes", {
         event: "UPDATE",
@@ -74,7 +73,12 @@ export default function Messages({ user, darkMode }) {
       .subscribe();
 
     return () => supabase.removeChannel(chatSub);
-  }, [activeChat, user.id]);
+  }, [activeChat?.id, user?.id]);
+
+  const refreshBadges = () => {
+    window.dispatchEvent(new Event("messagesUpdated"));
+    window.dispatchEvent(new Event("notificationsUpdated"));
+  };
 
   const loadColleagues = async () => {
     const { data, error } = await supabase
@@ -113,20 +117,21 @@ export default function Messages({ user, darkMode }) {
 
       if (error) throw error;
 
-      const formatted = (data || []).map(conversation => {
-        const colleague = conversation.user1_id === user.id ? conversation.user2 : conversation.user1;
-        const sortedMessages = [...(conversation.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        const lastMsg = sortedMessages[0];
-        const unread = sortedMessages.filter(message => message.sender_id !== user.id && !message.is_read).length;
-        return { ...conversation, colleague, lastMsg, unread };
-      });
-
+      const formatted = (data || []).map(conversation => formatConversation(conversation));
       setConversations(formatted);
     } catch (error) {
       toast.error("Failed to load inbox");
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatConversation = (conversation) => {
+    const colleague = String(conversation.user1_id) === String(user.id) ? conversation.user2 : conversation.user1;
+    const sortedMessages = [...(conversation.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const lastMsg = sortedMessages[0];
+    const unread = sortedMessages.filter(message => String(message.sender_id) !== String(user.id) && !message.is_read).length;
+    return { ...conversation, colleague, lastMsg, unread, messages: sortedMessages };
   };
 
   const loadChatHistory = async (chat) => {
@@ -140,29 +145,107 @@ export default function Messages({ user, darkMode }) {
     if (error) {
       toast.error("Failed to load conversation");
     } else {
-      setChatItems(data || []);
-      await markAsRead(chat.id);
+      const items = data || [];
+      setChatItems(items);
+      const unreadIncomingIds = items
+        .filter(item => String(item.sender_id) !== String(user.id) && !item.is_read)
+        .map(item => item.id);
+      await markAsRead(chat.id, unreadIncomingIds);
     }
     setChatLoading(false);
   };
 
-  const markAsRead = async (conversationId) => {
-    const { error } = await supabase
+  const isMissingFunctionError = (error) => {
+    return error?.code === "PGRST202" || error?.message?.toLowerCase().includes("function");
+  };
+
+  const directMarkMessagesRead = async (conversationId) => {
+    const readAt = new Date().toISOString();
+    const result = await supabase
       .from("messages")
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true, read_at: readAt })
       .eq("conversation_id", conversationId)
       .neq("sender_id", user.id)
       .eq("is_read", false);
 
-    if (error) {
-      toast.error("Could not update read status");
+    if (!result.error || !result.error.message?.includes("read_at")) return result;
+
+    return supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+      .eq("is_read", false);
+  };
+
+  const markRelatedNotificationsRead = async (messageIds) => {
+    if (!messageIds.length) return;
+    const readAt = new Date().toISOString();
+    const result = await supabase
+      .from("notifications")
+      .update({ is_read: true, read_at: readAt })
+      .eq("user_id", user.id)
+      .eq("type", "message")
+      .in("related_id", messageIds.map(String));
+
+    if (!result.error || !result.error.message?.includes("read_at")) return;
+
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id)
+      .eq("type", "message")
+      .in("related_id", messageIds.map(String));
+  };
+
+  const applyReadStateLocally = (conversationId) => {
+    setConversations(prev => prev.map(conversation => {
+      if (conversation.id !== conversationId) return conversation;
+      return {
+        ...conversation,
+        unread: 0,
+        messages: (conversation.messages || []).map(message => String(message.sender_id) !== String(user.id) ? { ...message, is_read: true } : message)
+      };
+    }));
+    setActiveChat(prev => prev?.id === conversationId ? { ...prev, unread: 0 } : prev);
+    setChatItems(prev => prev.map(item => String(item.sender_id) !== String(user.id) ? { ...item, is_read: true } : item));
+    refreshBadges();
+  };
+
+  const markAsRead = async (conversationId, unreadMessageIds = []) => {
+    if (!conversationId) return;
+
+    const idsToMark = unreadMessageIds.length
+      ? unreadMessageIds
+      : chatItems.filter(item => String(item.sender_id) !== String(user.id) && !item.is_read).map(item => item.id);
+
+    if (!idsToMark.length) {
+      applyReadStateLocally(conversationId);
       return;
     }
 
-    setConversations(prev => prev.map(conversation => conversation.id === conversationId ? { ...conversation, unread: 0 } : conversation));
-    setChatItems(prev => prev.map(item => item.sender_id !== user.id ? { ...item, is_read: true } : item));
-    window.dispatchEvent(new Event("messagesUpdated"));
-    window.dispatchEvent(new Event("notificationsUpdated"));
+    let saveError = null;
+    const rpcResult = await supabase.rpc("mark_conversation_messages_read", { conversation_uuid: conversationId });
+
+    if (rpcResult.error && isMissingFunctionError(rpcResult.error)) {
+      const directResult = await directMarkMessagesRead(conversationId);
+      saveError = directResult.error;
+    } else {
+      saveError = rpcResult.error;
+    }
+
+    if (saveError) {
+      toast.error("Read status could not be saved. Please run the latest Supabase SQL update.");
+      return;
+    }
+
+    await markRelatedNotificationsRead(idsToMark);
+    applyReadStateLocally(conversationId);
+    if (activeTab === "unread") setActiveTab("read");
+  };
+
+  const handleOpenChat = (chat) => {
+    setActiveChat(chat);
   };
 
   const handleStartNewChat = async (colleague) => {
@@ -198,7 +281,7 @@ export default function Messages({ user, darkMode }) {
       user_id: recipientId,
       type: "message",
       title: "New message",
-      message: `${activeChat.colleague?.full_name || "A colleague"} sent you a message.`,
+      message: "You have a new VetLearn message.",
       is_read: false,
       related_id: String(message.id)
     });
@@ -223,7 +306,7 @@ export default function Messages({ user, darkMode }) {
       setNewMessage(content);
     } else {
       setChatItems(prev => prev.some(item => item.id === data.id) ? prev : [...prev, data]);
-      setConversations(prev => prev.map(conversation => conversation.id === activeChat.id ? { ...conversation, lastMsg: data } : conversation));
+      setConversations(prev => prev.map(conversation => conversation.id === activeChat.id ? { ...conversation, lastMsg: data, messages: [data, ...(conversation.messages || [])] } : conversation));
       notifyRecipient(data);
       chatInputRef.current?.focus();
     }
@@ -232,6 +315,7 @@ export default function Messages({ user, darkMode }) {
 
   const unreadConversations = useMemo(() => conversations.filter(conversation => conversation.unread > 0), [conversations]);
   const readConversations = useMemo(() => conversations.filter(conversation => conversation.unread === 0 && conversation.lastMsg), [conversations]);
+  const unreadMessageCount = useMemo(() => conversations.reduce((total, conversation) => total + conversation.unread, 0), [conversations]);
 
   const visibleConversations = useMemo(() => {
     const source = activeTab === "unread" ? unreadConversations : readConversations;
@@ -262,7 +346,7 @@ export default function Messages({ user, darkMode }) {
           title="Messages"
           subtitle="Communicate securely with colleagues."
           darkMode={darkMode}
-          badges={[{ label: `${unreadConversations.length} unread`, icon: <MessageSquare size={13} />, accent: true }]}
+          badges={[{ label: `${unreadMessageCount} unread`, icon: <MessageSquare size={13} />, accent: true }]}
         />
       )}
 
@@ -328,23 +412,26 @@ export default function Messages({ user, darkMode }) {
                   <p className="text-sm">Use the edit icon above to start a new chat with a colleague.</p>
                 </div>
               ) : (
-                visibleConversations.map(chat => (
-                  <button key={chat.id} onClick={() => setActiveChat(chat)} className="w-full text-left p-5 border-b border-inherit transition-colors flex items-center gap-4 hover:bg-black/5 dark:hover:bg-white/5">
-                    <div className="h-12 w-12 rounded-full bg-[#71CFC2] text-[#0B3760] flex items-center justify-center shrink-0 font-bold text-lg">
-                      {chat.colleague?.full_name?.charAt(0) || <User size={20} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className={`font-bold text-lg truncate ${textPrimary}`}>{chat.colleague?.full_name}</span>
-                        {chat.lastMsg && <span className="text-xs font-medium opacity-50 whitespace-nowrap ml-2">{new Date(chat.lastMsg.created_at).toLocaleDateString()}</span>}
+                visibleConversations.map(chat => {
+                  const isUnread = chat.unread > 0;
+                  return (
+                    <button key={chat.id} onClick={() => handleOpenChat(chat)} className="w-full text-left p-5 border-b border-inherit transition-colors flex items-center gap-4 hover:bg-black/5 dark:hover:bg-white/5">
+                      <div className={`${isUnread ? "bg-[#71CFC2] text-[#0B3760]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"} h-12 w-12 rounded-full flex items-center justify-center shrink-0 font-bold text-lg`}>
+                        {chat.colleague?.full_name?.charAt(0) || <User size={20} />}
                       </div>
-                      <div className="text-sm opacity-70 truncate">
-                        {chat.lastMsg?.sender_id === user.id && "You: "}{chat.lastMsg?.content || "No messages yet"}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-1">
+                          <span className={`${isUnread ? "font-black" : "font-bold opacity-80"} text-lg truncate ${textPrimary}`}>{chat.colleague?.full_name}</span>
+                          {chat.lastMsg && <span className="text-xs font-medium opacity-50 whitespace-nowrap ml-2">{new Date(chat.lastMsg.created_at).toLocaleDateString()}</span>}
+                        </div>
+                        <div className={`${isUnread ? "font-semibold opacity-90" : "opacity-60"} text-sm truncate`}>
+                          {chat.lastMsg?.sender_id === user.id && "You: "}{chat.lastMsg?.content || "No messages yet"}
+                        </div>
                       </div>
-                    </div>
-                    {chat.unread > 0 && <div className="h-6 min-w-6 rounded-full bg-[#0F8F83] text-white text-xs font-bold flex items-center justify-center shrink-0 px-2 shadow-md">{chat.unread}</div>}
-                  </button>
-                ))
+                      {isUnread && <div className="h-6 min-w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0 px-2 shadow-md">{chat.unread}</div>}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
