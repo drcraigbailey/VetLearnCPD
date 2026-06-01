@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
+import { BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -14,7 +14,6 @@ const quickActions = [
   { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical },
   { title: "Professional Network", path: "/network", type: "page", icon: Network },
   { title: "Messages", path: "/messages", type: "page", icon: MessageSquare },
-  { title: "Notifications", path: "/notifications", type: "page", icon: Bell },
   { title: "Vault", path: "/vault", type: "page", icon: KeyRound },
   { title: "Settings", path: "/settings", type: "page", icon: Settings }
 ];
