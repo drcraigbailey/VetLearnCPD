@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
+import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
 
@@ -260,7 +261,7 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         )}
       </section>
 
-      {loading ? <div className={panelClass}>Loading dashboard...</div> : orderedVisibleSections.map(renderSection)}
+      {loading ? <section className={panelClass}><LoadingState label="Loading dashboard..." darkMode={darkMode} /></section> : orderedVisibleSections.map(renderSection)}
     </div>
   );
 }
