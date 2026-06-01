@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, Loader2, Search, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Check, Loader2, MessageSquare, Search, Trash2, UserPlus, Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
@@ -208,13 +209,22 @@ export default function Network({ user, darkMode = false }) {
               <div className="space-y-2">
                 {connections.map(connection => (
                   <div key={connection.connection_id} className={`${panelClass} flex justify-between items-center gap-4`}>
-                    <div>
-                      <div className="font-bold">{connection.colleague?.title} {connection.colleague?.full_name}</div>
-                      <div className="text-xs opacity-60">{connection.colleague?.email || "Connected colleague"}</div>
+                    <div className="min-w-0">
+                      <div className="font-bold truncate">{connection.colleague?.title} {connection.colleague?.full_name}</div>
+                      <div className="text-xs opacity-60 truncate">{connection.colleague?.email || "Connected colleague"}</div>
                     </div>
-                    <button onClick={() => handleRemoveConnection(connection.connection_id)} className="p-2 rounded-lg text-red-500 bg-red-50">
-                      {busyId === connection.connection_id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={18} />}
-                    </button>
+                    <div className="flex gap-2 shrink-0">
+                      <Link
+                        to={`/messages?colleague=${connection.colleague?.id}`}
+                        className="p-2 rounded-lg text-[#0F8F83] bg-[#E8F8F5]"
+                        aria-label={`Message ${connection.colleague?.full_name || "colleague"}`}
+                      >
+                        <MessageSquare size={18} />
+                      </Link>
+                      <button onClick={() => handleRemoveConnection(connection.connection_id)} className="p-2 rounded-lg text-red-500 bg-red-50" aria-label={`Remove ${connection.colleague?.full_name || "colleague"}`}>
+                        {busyId === connection.connection_id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={18} />}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
