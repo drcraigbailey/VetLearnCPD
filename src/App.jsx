@@ -17,7 +17,6 @@ import Drugs from "./pages/drugs.jsx";
 import SettingsPage from "./pages/Settings";
 import Network from "./pages/Network";
 import Messages from "./pages/Messages";
-import NotificationsPage from "./pages/Notifications";
 import Protocols from "./pages/Protocols";
 import Vault from "./pages/Vault";
 
@@ -35,7 +34,6 @@ const routeLabels = {
   "/drugs": { title: "Formulary", item_type: "drug" },
   "/network": { title: "Professional Network", item_type: "page" },
   "/messages": { title: "Messages", item_type: "page" },
-  "/notifications": { title: "Notifications", item_type: "page" },
   "/protocols": { title: "Clinical Protocols", item_type: "protocol" },
   "/vault": { title: "Vault", item_type: "page" },
   "/settings": { title: "Settings", item_type: "page" }
@@ -414,7 +412,6 @@ function App() {
     { to: "/protocols", label: "Clinical Protocols", icon: ClipboardList },
     { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessageCount },
-    { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadNotificationCount },
     { to: "/vault", label: "Vault", icon: KeyRound },
     { to: "/settings", label: "Settings", icon: SettingsIcon }
   ];
@@ -468,7 +465,6 @@ function App() {
             <Route path="/network" element={<Network user={session.user} darkMode={darkMode} />} />
             <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />
             <Route path="/messages" element={<Messages user={session.user} darkMode={darkMode} />} />
-            <Route path="/notifications" element={<NotificationsPage user={session.user} darkMode={darkMode} />} />
             <Route path="/protocols" element={<Protocols user={session.user} darkMode={darkMode} />} />
             <Route path="/vault" element={<Vault user={session.user} darkMode={darkMode} />} />
           </Routes>
