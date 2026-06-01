@@ -1,40 +1,37 @@
-import { NavLink } from "react-router-dom";
+import { LayoutDashboard, FileText, BriefcaseMedical, Syringe, Menu } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-import {
-  House,
-  BookmarkPlus,
-  History,
-  BarChart3,
-  Settings
-} from "lucide-react";
+export default function Navbar({ darkMode, onOpenMenu }) {
+  const location = useLocation();
+  const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
-export default function Navbar({darkMode=false}){
-
-  const items=[
-    { icon:<House size={18}/>, label:"Home", path:"/" },
-    { icon:<BookmarkPlus size={18}/>, label:"Future", path:"/future" },
-    { icon:<History size={18}/>, label:"History", path:"/history" },
-    { icon:<BarChart3 size={18}/>, label:"Stats", path:"/analytics" },
-    { icon:<Settings size={18}/>, label:"Settings", path:"/settings" }
-  ]
-
-  return(
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-4">
-      <div className={`w-full max-w-md backdrop-blur-xl border rounded-full p-2 flex justify-around ${darkMode?"bg-[#071A24]/90 border-white/10 shadow-[0_14px_32px_rgba(0,0,0,0.28)]":"bg-white/90 border-[#DCEDEA] shadow-[0_14px_32px_rgba(11,55,96,0.14)]"}`}>
-        {items.map(item=>(
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path==="/"}
-            className={({isActive})=>
-              `flex flex-col items-center justify-center min-w-16 h-12 rounded-full transition text-xs font-bold ${isActive?"bg-[#71CFC2] text-[#062F63]":darkMode?"text-slate-300":"text-slate-500"}`
-            }
-          >
-            {item.icon}
-            <div>{item.label}</div>
-          </NavLink>
-        ))}
+  return (
+    <div className={`fixed bottom-0 w-full border-t p-4 pb-safe z-30 ${darkMode ? "bg-[#0B242B] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
+      <div className="max-w-md mx-auto flex justify-between items-center px-4">
+        
+        {/* Primary App Functions */}
+        <Link to="/" className={`flex flex-col items-center gap-1 ${isActive("/")}`}>
+          <LayoutDashboard size={24} />
+        </Link>
+        <Link to="/cpd" className={`flex flex-col items-center gap-1 ${isActive("/cpd")}`}>
+          <FileText size={24} />
+        </Link>
+        <Link to="/caselogs" className={`flex flex-col items-center gap-1 ${isActive("/caselogs")}`}>
+          <BriefcaseMedical size={24} />
+        </Link>
+        <Link to="/drugs" className={`flex flex-col items-center gap-1 ${isActive("/drugs")}`}>
+          <Syringe size={24} />
+        </Link>
+        
+        {/* Hamburger Menu Trigger */}
+        <button 
+          onClick={onOpenMenu} 
+          className="flex flex-col items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
+        >
+          <Menu size={24} />
+        </button>
+        
       </div>
     </div>
-  )
+  );
 }
