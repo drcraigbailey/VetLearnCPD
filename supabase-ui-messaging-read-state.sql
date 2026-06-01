@@ -97,6 +97,55 @@ with check (
   )
 );
 
+-- Security-definer helper used by the app when opening a conversation.
+-- It only marks incoming messages as read when the signed-in user belongs to
+-- that conversation, then clears the matching message notifications.
+create or replace function public.mark_conversation_messages_read(conversation_uuid uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_user_id uuid := auth.uid();
+begin
+  if current_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not exists (
+    select 1
+    from public.conversations c
+    where c.id = conversation_uuid
+    and (c.user1_id = current_user_id or c.user2_id = current_user_id)
+  ) then
+    raise exception 'Conversation not found';
+  end if;
+
+  update public.messages m
+  set is_read = true,
+      read_at = coalesce(m.read_at, now())
+  where m.conversation_id = conversation_uuid
+    and m.sender_id <> current_user_id
+    and coalesce(m.is_read, false) = false;
+
+  update public.notifications n
+  set is_read = true,
+      read_at = coalesce(n.read_at, now())
+  where n.user_id = current_user_id
+    and n.type = 'message'
+    and coalesce(n.is_read, false) = false
+    and exists (
+      select 1
+      from public.messages m
+      where m.conversation_id = conversation_uuid
+        and m.id::text = n.related_id
+    );
+end;
+$$;
+
+grant execute on function public.mark_conversation_messages_read(uuid) to authenticated;
+
 -- Users can manage only their own notifications.
 drop policy if exists "Users can read own notifications" on public.notifications;
 create policy "Users can read own notifications"
