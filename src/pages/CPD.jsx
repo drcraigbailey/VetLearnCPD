@@ -3,6 +3,7 @@ import Dashboard from "./Dashboard";
 import FutureReading from "./FutureReading";
 import History from "./History";
 import Analytics from "./Analytics";
+import PageBanner from "../components/PageBanner";
 
 export default function CPD({ user, profile, darkMode, activeReading, onStartReading, onFinishReading, savingReading }) {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -16,7 +17,12 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
 
   return (
     <div>
-      {/* Scrollable Tab Menu */}
+      <PageBanner
+        title="CPD"
+        subtitle="Track reading, reflections, future learning and annual progress."
+        darkMode={darkMode}
+      />
+
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {tabs.map(tab => (
           <button
@@ -33,7 +39,6 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
         ))}
       </div>
 
-      {/* Tab Content Rendering */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === "dashboard" && (
           <Dashboard user={user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={onStartReading} onFinishReading={onFinishReading} savingReading={savingReading} />
