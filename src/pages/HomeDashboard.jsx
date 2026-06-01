@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe, UserRound } from "lucide-react";
+import { Bell, BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -219,7 +219,7 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         <div className={`flex items-center justify-between gap-3 ${layoutOpen ? "mb-4" : ""}`}>
           <div>
             <h2 className="font-black text-lg">Dashboard Layout</h2>
-            <p className="text-sm opacity-60">{layoutOpen ? "Reorder and hide sections." : "Customise section order and visibility."}</p>
+            <p className="text-sm opacity-60">{layoutOpen ? "Reorder, hide or show sections." : "Customise section order and visibility."}</p>
           </div>
           <button
             onClick={layoutOpen ? saveLayout : () => setLayoutOpen(true)}
@@ -230,15 +230,33 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         </div>
         {layoutOpen && (
           <div className="space-y-2">
-            {sectionOrder.map(section => (
-              <div key={section} className={`flex items-center justify-between rounded-lg px-3 py-2 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-                <button onClick={() => toggleSection(section)} className={`text-sm font-bold ${hiddenSections.includes(section) ? "opacity-40" : ""}`}>{sectionLabels[section]}</button>
-                <div className="flex gap-1">
-                  <button onClick={() => moveSection(section, -1)} className="p-1 opacity-70"><ChevronUp size={16} /></button>
-                  <button onClick={() => moveSection(section, 1)} className="p-1 opacity-70"><ChevronDown size={16} /></button>
+            {sectionOrder.map(section => {
+              const isHidden = hiddenSections.includes(section);
+              return (
+                <div key={section} className={`rounded-lg px-3 py-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className={`text-sm font-black truncate ${isHidden ? "opacity-45" : ""}`}>{sectionLabels[section]}</div>
+                      <div className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${isHidden ? "text-slate-400" : "text-[#0F8F83]"}`}>
+                        {isHidden ? "Hidden" : "Visible"}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => toggleSection(section)}
+                        className={`h-9 px-3 rounded-lg text-xs font-black flex items-center gap-1 ${isHidden ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-200" : "bg-white text-[#0B3760]"}`}
+                        aria-label={`${isHidden ? "Show" : "Hide"} ${sectionLabels[section]}`}
+                      >
+                        {isHidden ? <Eye size={15} /> : <EyeOff size={15} />}
+                        {isHidden ? "Show" : "Hide"}
+                      </button>
+                      <button onClick={() => moveSection(section, -1)} className="h-9 w-9 grid place-items-center opacity-70" aria-label={`Move ${sectionLabels[section]} up`}><ChevronUp size={16} /></button>
+                      <button onClick={() => moveSection(section, 1)} className="h-9 w-9 grid place-items-center opacity-70" aria-label={`Move ${sectionLabels[section]} down`}><ChevronDown size={16} /></button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
