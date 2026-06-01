@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-dom";
-import { Bell, BriefcaseMedical, ClipboardList, FileText, Home, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Syringe, Users, X } from "lucide-react";
+import { Bell, ClipboardList, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -152,7 +152,10 @@ function App() {
         if (payload.eventType === "INSERT" && !payload.new.is_read) toast.success(payload.new.message || "New notification");
         loadNotifications();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => loadUnreadMessageCount())
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        loadUnreadMessageCount();
+        loadNotifications();
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "connections" }, () => loadPendingRequestCount())
       .subscribe();
 
@@ -163,6 +166,29 @@ function App() {
     setUnreadNotificationCount(notifications.filter(notification => !notification.is_read).length);
   }, [notifications]);
 
+  const clearReadMessageNotifications = async (unreadItems) => {
+    const messageNotifications = unreadItems.filter(item => item.type === "message" && item.related_id);
+    if (messageNotifications.length === 0) return unreadItems;
+
+    const ids = messageNotifications.map(item => item.related_id);
+    const { data } = await supabase
+      .from("messages")
+      .select("id, is_read")
+      .in("id", ids);
+
+    const readMessageIds = (data || []).filter(message => message.is_read).map(message => String(message.id));
+    if (readMessageIds.length === 0) return unreadItems;
+
+    await supabase
+      .from("notifications")
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq("user_id", session.user.id)
+      .eq("type", "message")
+      .in("related_id", readMessageIds);
+
+    return unreadItems.filter(item => !(item.type === "message" && readMessageIds.includes(String(item.related_id))));
+  };
+
   const loadNotifications = async () => {
     if (!session?.user) return;
     const { data, error } = await supabase
@@ -172,7 +198,10 @@ function App() {
       .eq("is_read", false)
       .order("created_at", { ascending: false });
 
-    if (!error) setNotifications(data || []);
+    if (!error) {
+      const cleaned = await clearReadMessageNotifications(data || []);
+      setNotifications(cleaned);
+    }
   };
 
   const loadUnreadMessageCount = async () => {
@@ -285,11 +314,7 @@ function App() {
   const menuBadgeCount = unreadMessageCount + pendingRequestCount;
 
   const menuLinks = [
-    { to: "/", label: "Dashboard", icon: Home },
     { to: "/protocols", label: "Clinical Protocols", icon: ClipboardList },
-    { to: "/drugs", label: "Formulary", icon: Syringe },
-    { to: "/cpd", label: "CPD", icon: FileText },
-    { to: "/caselogs", label: "Case Logs", icon: BriefcaseMedical },
     { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessageCount },
     { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadNotificationCount },
@@ -304,7 +329,7 @@ function App() {
       <Toaster position="top-center" />
       <div className={shellClass}>
         <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
-          <div className="max-w-5xl mx-auto px-5 py-3">
+          <div className="max-w-md mx-auto px-5 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
@@ -355,7 +380,7 @@ function App() {
           </>
         )}
 
-        <div className="max-w-5xl mx-auto min-h-screen px-4 pt-5 pb-28">
+        <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
           <Routes>
             <Route path="/" element={<HomeDashboard user={session.user} profile={profile} darkMode={darkMode} unreadMessageCount={unreadMessageCount} unreadNotificationCount={unreadNotificationCount} />} />
             <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} savingReading={savingReading} />} />
