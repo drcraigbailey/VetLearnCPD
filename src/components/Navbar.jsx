@@ -5,20 +5,26 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   const location = useLocation();
   const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
+  const labelClass = "text-[10px] font-bold leading-none tracking-normal";
+
   return (
     <div className={`fixed bottom-0 w-full border-t p-4 pb-safe z-30 ${darkMode ? "bg-[#0B242B] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
-      <div className="max-w-md mx-auto flex justify-between items-center px-4">
-        <Link to="/" className={`flex flex-col items-center gap-1 ${isActive("/")}`}>
+      <div className="max-w-md mx-auto flex justify-between items-center px-2">
+        <Link to="/" className={`flex flex-col items-center gap-1 ${isActive("/")}`} aria-label="Dashboard">
           <LayoutDashboard size={24} />
+          <span className={labelClass}>Home</span>
         </Link>
-        <Link to="/cpd" className={`flex flex-col items-center gap-1 ${isActive("/cpd")}`}>
+        <Link to="/cpd" className={`flex flex-col items-center gap-1 ${isActive("/cpd")}`} aria-label="CPD">
           <FileText size={24} />
+          <span className={labelClass}>CPD</span>
         </Link>
-        <Link to="/caselogs" className={`flex flex-col items-center gap-1 ${isActive("/caselogs")}`}>
+        <Link to="/caselogs" className={`flex flex-col items-center gap-1 ${isActive("/caselogs")}`} aria-label="Case Logs">
           <BriefcaseMedical size={24} />
+          <span className={labelClass}>Cases</span>
         </Link>
-        <Link to="/drugs" className={`flex flex-col items-center gap-1 ${isActive("/drugs")}`}>
+        <Link to="/drugs" className={`flex flex-col items-center gap-1 ${isActive("/drugs")}`} aria-label="Formulary">
           <Syringe size={24} />
+          <span className={labelClass}>Formulary</span>
         </Link>
         <button
           onClick={onOpenMenu}
@@ -26,6 +32,7 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
           aria-label="Open menu"
         >
           <Menu size={24} />
+          <span className={labelClass}>More</span>
           {menuBadgeCount > 0 && (
             <span className="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 font-bold">
               {menuBadgeCount}
