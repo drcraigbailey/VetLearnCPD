@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-dom";
-import { Bell, ClipboardList, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Bell, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
+import { authenticateBiometric, isBiometricAvailable, isBiometricEnabled } from "./utils/biometricAuth";
 
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
@@ -59,6 +60,69 @@ function RecentRouteTracker({ user }) {
   return null;
 }
 
+function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotifications, onToggleDarkMode, onSignOut }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const showBack = location.pathname !== "/";
+
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
+  };
+
+  return (
+    <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
+      <div className="max-w-md mx-auto px-5 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {showBack && (
+              <button onClick={goBack} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Go back">
+                <ArrowLeft size={19} />
+              </button>
+            )}
+            <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
+            <div className="min-w-0">
+              <h1 className={`text-xl font-black tracking-normal ${darkMode ? "text-white" : "text-[#113247]"}`}>VetLearn</h1>
+              <p className="text-sm text-[#0F8F83] font-semibold truncate">{displayName}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={onOpenNotifications} className={`relative h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open notifications">
+              <Bell size={18} />
+              {unreadNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">{unreadNotificationCount}</span>}
+            </button>
+            <button onClick={onToggleDarkMode} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Toggle dark mode">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button onClick={onSignOut} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Sign out">
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BiometricGate({ darkMode, checking, onUnlock, onSignOut }) {
+  return (
+    <div className={`fixed inset-0 z-[120] grid place-items-center px-5 ${darkMode ? "bg-[#071A24] text-white" : "bg-[#F9FCFB] text-[#113247]"}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl ${darkMode ? "bg-white/10 border border-white/10" : "bg-white border border-[#DCEDEA]"}`}>
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-[#E8F8F5] text-[#0B3760] grid place-items-center">
+          <Lock size={28} />
+        </div>
+        <h2 className="text-2xl font-black mb-2">Unlock VetLearn</h2>
+        <p className="text-sm opacity-65 leading-6 mb-5">Use this device's fingerprint, Face ID or screen lock to continue.</p>
+        <button onClick={onUnlock} disabled={checking} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-4 font-black disabled:opacity-60">
+          {checking ? "Checking..." : "Unlock"}
+        </button>
+        <button onClick={onSignOut} className="mt-4 text-sm font-bold opacity-60">Sign out instead</button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -70,6 +134,8 @@ function App() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [savingReading, setSavingReading] = useState(false);
+  const [biometricLocked, setBiometricLocked] = useState(false);
+  const [biometricChecking, setBiometricChecking] = useState(false);
   const [activeReading, setActiveReading] = useState(() => {
     const saved = localStorage.getItem("vetlearn-active-reading");
     return saved ? JSON.parse(saved) : null;
@@ -97,6 +163,23 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const prepareBiometricLock = async () => {
+      if (!session?.user) {
+        setBiometricLocked(false);
+        return;
+      }
+      if (!isBiometricEnabled(session.user.id)) {
+        setBiometricLocked(false);
+        return;
+      }
+      const available = await isBiometricAvailable();
+      setBiometricLocked(available);
+    };
+
+    prepareBiometricLock();
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -232,7 +315,21 @@ function App() {
   };
 
   const signOut = async () => {
+    setBiometricLocked(false);
     await supabase.auth.signOut();
+  };
+
+  const unlockWithBiometric = async () => {
+    if (!session?.user) return;
+    setBiometricChecking(true);
+    try {
+      const unlocked = await authenticateBiometric(session.user);
+      if (unlocked) setBiometricLocked(false);
+    } catch (error) {
+      toast.error(error.message || "Could not unlock with this device");
+    } finally {
+      setBiometricChecking(false);
+    }
   };
 
   const startReadingSession = (reading) => {
@@ -328,32 +425,14 @@ function App() {
       <RecentRouteTracker user={session.user} />
       <Toaster position="top-center" />
       <div className={shellClass}>
-        <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
-          <div className="max-w-md mx-auto px-5 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
-                <div className="min-w-0">
-                  <h1 className={`text-xl font-black tracking-normal ${darkMode ? "text-white" : "text-[#113247]"}`}>VetLearn</h1>
-                  <p className="text-sm text-[#0F8F83] font-semibold truncate">{displayName}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button onClick={() => setNotificationsOpen(true)} className={`relative h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open notifications">
-                  <Bell size={18} />
-                  {unreadNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">{unreadNotificationCount}</span>}
-                </button>
-                <button onClick={() => setDarkMode(!darkMode)} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Toggle dark mode">
-                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-                <button onClick={signOut} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Sign out">
-                  <LogOut size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AppHeader
+          darkMode={darkMode}
+          displayName={displayName}
+          unreadNotificationCount={unreadNotificationCount}
+          onOpenNotifications={() => setNotificationsOpen(true)}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          onSignOut={signOut}
+        />
 
         <NotificationDrawer isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} setNotifications={setNotifications} darkMode={darkMode} />
 
@@ -395,6 +474,7 @@ function App() {
           </Routes>
         </div>
 
+        {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onSignOut={signOut} />}
         <FloatingReadingTimer session={activeReading} onFinish={() => finishReadingSession()} onCancel={cancelReadingSession} darkMode={darkMode} />
         <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} />
       </div>
