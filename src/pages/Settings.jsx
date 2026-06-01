@@ -1,103 +1,242 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Bell, Briefcase, Globe, GraduationCap, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
-import { Save, Sparkles, KeyRound } from "lucide-react";
 import PageBanner from "../components/PageBanner";
+import { supabase } from "../supabaseClient";
 
-export default function Settings({ darkMode = false }) {
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [apiKey, setApiKey] = useState("");
+const profileDefaults = {
+  avatar_url: "",
+  full_name: "",
+  title: "",
+  practice_name: "",
+  location: "",
+  email: "",
+  phone: "",
+  mobile: "",
+  website: "",
+  bio: "",
+  home_address: "",
+  work_address: "",
+  qualifications: "",
+  degrees: "",
+  certifications: "",
+  rcvs_number: "",
+  areas_of_interest: "",
+  memberships: ""
+};
 
-  useEffect(() => {
-    setAiEnabled(localStorage.getItem("vetlearn-ai-enabled") === "true");
-    setApiKey(localStorage.getItem("vetlearn-openai-key") || "");
-  }, []);
+const aiDefaults = {
+  enabled: false,
+  responseStyle: "Clear and practical",
+  assistantPreference: "Concise clinical support",
+  defaultTools: "CPD reflections, protocol drafting, clinical summaries",
+  clinicalAssistance: true,
+  cpdAssistance: true,
+  learningRecommendations: true
+};
 
-  const saveSettings = () => {
-    localStorage.setItem("vetlearn-ai-enabled", aiEnabled);
-    if (apiKey.trim()) {
-      localStorage.setItem("vetlearn-openai-key", apiKey.trim());
-    } else {
-      localStorage.removeItem("vetlearn-openai-key");
-    }
-    
-    window.dispatchEvent(new Event("settingsUpdated"));
-    toast.success("Settings saved locally");
-  };
+export default function Settings({ user, darkMode = false, setDarkMode }) {
+  const [activeTab, setActiveTab] = useState("profile");
+  const [profileForm, setProfileForm] = useState(profileDefaults);
+  const [aiPrefs, setAiPrefs] = useState(aiDefaults);
+  const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, theme: darkMode ? "dark" : "light" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const panelClass = darkMode
-    ? "bg-white/10 border border-white/10 rounded-lg p-6 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
-    : "bg-white/90 border border-[#DCEDEA] rounded-lg p-6 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
+    ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
+    : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
+  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"}`;
 
-  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition ${
-    darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"
-  }`;
+  useEffect(() => {
+    if (user) loadSettings();
+  }, [user]);
+
+  useEffect(() => {
+    setAppPrefs(prev => ({ ...prev, theme: darkMode ? "dark" : "light" }));
+  }, [darkMode]);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    const [profileRes, prefsRes] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle()
+    ]);
+
+    if (!profileRes.error && profileRes.data) {
+      setProfileForm({
+        ...profileDefaults,
+        email: user.email || "",
+        ...Object.fromEntries(Object.keys(profileDefaults).map(key => [key, profileRes.data[key] || ""]))
+      });
+    } else {
+      setProfileForm(prev => ({ ...prev, email: user.email || "" }));
+    }
+
+    if (!prefsRes.error && prefsRes.data) {
+      setAiPrefs({ ...aiDefaults, ...(prefsRes.data.ai_preferences || {}) });
+      setAppPrefs({ notifications: true, privacyMode: false, theme: darkMode ? "dark" : "light", ...(prefsRes.data.app_preferences || {}) });
+    }
+    setLoading(false);
+  };
+
+  const updateProfile = (field, value) => setProfileForm(prev => ({ ...prev, [field]: value }));
+  const updateAi = (field, value) => setAiPrefs(prev => ({ ...prev, [field]: value }));
+  const updateApp = (field, value) => setAppPrefs(prev => ({ ...prev, [field]: value }));
+
+  const saveProfile = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      ...profileForm,
+      email: profileForm.email || user.email,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "id" });
+
+    setSaving(false);
+    if (error) return toast.error("Could not save profile. Please run the latest Supabase SQL update.");
+    window.dispatchEvent(new Event("profileUpdated"));
+    toast.success("Profile saved");
+  };
+
+  const savePreferences = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("user_preferences").upsert({
+      user_id: user.id,
+      ai_preferences: aiPrefs,
+      app_preferences: appPrefs,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+
+    setSaving(false);
+    if (error) return toast.error("Could not save preferences. Please run the latest Supabase SQL update.");
+    toast.success("Preferences saved");
+  };
+
+  const tabs = [
+    { id: "profile", label: "Profile", icon: UserRound },
+    { id: "professional", label: "Professional", icon: GraduationCap },
+    { id: "ai", label: "AI", icon: Sparkles },
+    { id: "app", label: "App", icon: Shield }
+  ];
 
   return (
-    <div>
-      <PageBanner
-        title="Settings"
-        subtitle="Manage app preferences, AI features and local configuration."
-        darkMode={darkMode}
-      />
+    <div className="pb-8">
+      <PageBanner title="Settings" subtitle="Manage your profile, professional details, AI preferences and account settings." darkMode={darkMode} />
 
-      <div className={panelClass}>
-        <div className="flex items-center gap-3 mb-5">
-          <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3`}>
-            <Sparkles size={20} />
-          </div>
-          <div>
-            <h2 className={`font-black text-lg ${darkMode ? "text-white" : "text-[#113247]"}`}>
-              AI Reflections
-            </h2>
-            <p className={`text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
-              Configure local AI generation
-            </p>
-          </div>
-        </div>
-
-        <label className="flex items-center gap-3 mb-6 cursor-pointer">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={aiEnabled}
-              onChange={(e) => setAiEnabled(e.target.checked)}
-            />
-            <div className={`block w-14 h-8 rounded-full transition-colors ${aiEnabled ? "bg-[#71CFC2]" : (darkMode ? "bg-slate-600" : "bg-slate-300")}`}></div>
-            <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${aiEnabled ? "translate-x-6" : ""}`}></div>
-          </div>
-          <span className={`font-bold ${darkMode ? "text-slate-200" : "text-slate-700"}`}>
-            Enable AI Features
-          </span>
-        </label>
-
-        {aiEnabled && (
-          <div className="mb-6 animate-in fade-in slide-in-from-top-2">
-            <label className={`block text-sm font-bold mb-2 flex items-center gap-2 ${darkMode ? "text-slate-300" : "text-slate-600"}`}>
-              <KeyRound size={16} />
-              OpenAI API Key
-            </label>
-            <input
-              type="password"
-              placeholder="sk-..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className={fieldClass}
-            />
-            <p className={`text-xs mt-2 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
-              Your key is stored securely in your browser's local storage and is never sent to our servers.
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={saveSettings}
-          className="w-full bg-[#0B3760] text-white rounded-lg p-4 flex justify-center items-center gap-2 font-bold shadow-[0_12px_24px_rgba(11,55,96,0.16)]"
-        >
-          <Save size={18} />
-          Save Settings
-        </button>
+      <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
+        {tabs.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63] shadow-md" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+              <Icon size={15} /> {tab.label}
+            </button>
+          );
+        })}
       </div>
+
+      {loading ? <div className={panelClass}>Loading settings...</div> : (
+        <div className="space-y-5">
+          {activeTab === "profile" && (
+            <section className={panelClass}>
+              <SectionTitle icon={<UserRound size={20} />} title="Profile & Contact Information" subtitle="Shown on your dashboard, CPD records and shared professional areas." darkMode={darkMode} />
+              <div className="grid gap-3">
+                <input className={fieldClass} placeholder="Profile picture URL" value={profileForm.avatar_url} onChange={(e) => updateProfile("avatar_url", e.target.value)} />
+                <div className="grid grid-cols-[100px_1fr] gap-3">
+                  <input className={fieldClass} placeholder="Title" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} />
+                  <input className={fieldClass} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} />
+                </div>
+                <input className={fieldClass} placeholder="Practice / organisation" value={profileForm.practice_name} onChange={(e) => updateProfile("practice_name", e.target.value)} />
+                <InputWithIcon icon={<MapPin size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Location" value={profileForm.location} onChange={(e) => updateProfile("location", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Mail size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Email address" value={profileForm.email} onChange={(e) => updateProfile("email", e.target.value)} /></InputWithIcon>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputWithIcon icon={<Phone size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Phone" value={profileForm.phone} onChange={(e) => updateProfile("phone", e.target.value)} /></InputWithIcon>
+                  <InputWithIcon icon={<Phone size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Mobile" value={profileForm.mobile} onChange={(e) => updateProfile("mobile", e.target.value)} /></InputWithIcon>
+                </div>
+                <InputWithIcon icon={<Globe size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Website" value={profileForm.website} onChange={(e) => updateProfile("website", e.target.value)} /></InputWithIcon>
+                <textarea className={fieldClass} rows="3" placeholder="Biography / About me" value={profileForm.bio} onChange={(e) => updateProfile("bio", e.target.value)} />
+                <textarea className={fieldClass} rows="2" placeholder="Home address" value={profileForm.home_address} onChange={(e) => updateProfile("home_address", e.target.value)} />
+                <textarea className={fieldClass} rows="2" placeholder="Work / practice address" value={profileForm.work_address} onChange={(e) => updateProfile("work_address", e.target.value)} />
+              </div>
+              <SaveButton saving={saving} onClick={saveProfile} label="Save Profile" />
+            </section>
+          )}
+
+          {activeTab === "professional" && (
+            <section className={panelClass}>
+              <SectionTitle icon={<Briefcase size={20} />} title="Professional Information" subtitle="Qualifications, memberships and clinical interests." darkMode={darkMode} />
+              <div className="grid gap-3">
+                <input className={fieldClass} placeholder="Qualifications" value={profileForm.qualifications} onChange={(e) => updateProfile("qualifications", e.target.value)} />
+                <input className={fieldClass} placeholder="Degrees" value={profileForm.degrees} onChange={(e) => updateProfile("degrees", e.target.value)} />
+                <input className={fieldClass} placeholder="Certifications" value={profileForm.certifications} onChange={(e) => updateProfile("certifications", e.target.value)} />
+                <input className={fieldClass} placeholder="RCVS number / information" value={profileForm.rcvs_number} onChange={(e) => updateProfile("rcvs_number", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Areas of interest" value={profileForm.areas_of_interest} onChange={(e) => updateProfile("areas_of_interest", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Professional memberships" value={profileForm.memberships} onChange={(e) => updateProfile("memberships", e.target.value)} />
+              </div>
+              <SaveButton saving={saving} onClick={saveProfile} label="Save Professional Information" />
+            </section>
+          )}
+
+          {activeTab === "ai" && (
+            <section className={panelClass}>
+              <SectionTitle icon={<Sparkles size={20} />} title="AI Preferences" subtitle="Control how VetLearn assists with learning, CPD and clinical support." darkMode={darkMode} />
+              <Toggle checked={aiPrefs.enabled} onChange={(value) => updateAi("enabled", value)} label="Enable AI features" darkMode={darkMode} />
+              <input className={fieldClass} placeholder="AI response style" value={aiPrefs.responseStyle} onChange={(e) => updateAi("responseStyle", e.target.value)} />
+              <input className={fieldClass} placeholder="Assistant preferences" value={aiPrefs.assistantPreference} onChange={(e) => updateAi("assistantPreference", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Default AI tools" value={aiPrefs.defaultTools} onChange={(e) => updateAi("defaultTools", e.target.value)} />
+              <Toggle checked={aiPrefs.clinicalAssistance} onChange={(value) => updateAi("clinicalAssistance", value)} label="Clinical assistance" darkMode={darkMode} />
+              <Toggle checked={aiPrefs.cpdAssistance} onChange={(value) => updateAi("cpdAssistance", value)} label="CPD assistance" darkMode={darkMode} />
+              <Toggle checked={aiPrefs.learningRecommendations} onChange={(value) => updateAi("learningRecommendations", value)} label="Learning recommendations" darkMode={darkMode} />
+              <SaveButton saving={saving} onClick={savePreferences} label="Save AI Preferences" />
+            </section>
+          )}
+
+          {activeTab === "app" && (
+            <section className={panelClass}>
+              <SectionTitle icon={<Lock size={20} />} title="Application Settings" subtitle="Theme, notifications, privacy and account management." darkMode={darkMode} />
+              <Toggle checked={darkMode} onChange={(value) => { setDarkMode?.(value); updateApp("theme", value ? "dark" : "light"); }} label="Dark mode" darkMode={darkMode} />
+              <Toggle checked={appPrefs.notifications} onChange={(value) => updateApp("notifications", value)} label="Notifications" darkMode={darkMode} />
+              <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
+              <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
+              <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
+            </section>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function SectionTitle({ icon, title, subtitle, darkMode }) {
+  return (
+    <div className="flex items-start gap-3 mb-5">
+      <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3`}>{icon}</div>
+      <div><h2 className="font-black text-lg">{title}</h2><p className="text-sm opacity-60">{subtitle}</p></div>
+    </div>
+  );
+}
+
+function InputWithIcon({ icon, children }) {
+  return <div className="relative"><div className="absolute left-3 top-3.5 opacity-50">{icon}</div>{children}</div>;
+}
+
+function Toggle({ checked, onChange, label, darkMode }) {
+  return (
+    <label className="flex items-center gap-3 mb-4 cursor-pointer">
+      <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className={`relative block w-14 h-8 rounded-full transition-colors ${checked ? "bg-[#71CFC2]" : darkMode ? "bg-slate-600" : "bg-slate-300"}`}>
+        <span className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${checked ? "translate-x-6" : ""}`} />
+      </span>
+      <span className="font-bold text-sm">{label}</span>
+    </label>
+  );
+}
+
+function SaveButton({ saving, onClick, label }) {
+  return (
+    <button onClick={onClick} disabled={saving} className="w-full mt-5 bg-[#0B3760] text-white rounded-lg p-4 flex justify-center items-center gap-2 font-bold shadow-[0_12px_24px_rgba(11,55,96,0.16)] disabled:opacity-60">
+      {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+      {label}
+    </button>
   );
 }
