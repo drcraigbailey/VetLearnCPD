@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-dom";
-import { Bell, BriefcaseMedical, ClipboardList, FileText, Home, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldPlus, Sun, Syringe, Users, X } from "lucide-react";
+import { Bell, BriefcaseMedical, ClipboardList, FileText, Home, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Syringe, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -25,6 +25,37 @@ function ScrollToTop() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+  return null;
+}
+
+const routeLabels = {
+  "/cpd": { title: "CPD Portfolio", item_type: "cpd" },
+  "/caselogs": { title: "Case Logs", item_type: "case" },
+  "/drugs": { title: "Formulary", item_type: "drug" },
+  "/network": { title: "Professional Network", item_type: "page" },
+  "/messages": { title: "Messages", item_type: "page" },
+  "/notifications": { title: "Notifications", item_type: "page" },
+  "/protocols": { title: "Clinical Protocols", item_type: "protocol" },
+  "/vault": { title: "Vault", item_type: "page" },
+  "/settings": { title: "Settings", item_type: "page" }
+};
+
+function RecentRouteTracker({ user }) {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const route = routeLabels[pathname];
+    if (!user?.id || !route) return;
+
+    supabase.from("recently_viewed").insert({
+      user_id: user.id,
+      item_type: route.item_type,
+      title: route.title,
+      url: pathname,
+      metadata: { source: "navigation" }
+    }).then(() => {});
+  }, [pathname, user?.id]);
+
   return null;
 }
 
@@ -269,6 +300,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <RecentRouteTracker user={session.user} />
       <Toaster position="top-center" />
       <div className={shellClass}>
         <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
