@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Save, Sparkles, KeyRound } from "lucide-react";
+import PageBanner from "../components/PageBanner";
 
 export default function Settings({ darkMode = false }) {
   const [aiEnabled, setAiEnabled] = useState(false);
@@ -19,7 +20,6 @@ export default function Settings({ darkMode = false }) {
       localStorage.removeItem("vetlearn-openai-key");
     }
     
-    // Dispatch event so other components can re-render if needed
     window.dispatchEvent(new Event("settingsUpdated"));
     toast.success("Settings saved locally");
   };
@@ -34,9 +34,11 @@ export default function Settings({ darkMode = false }) {
 
   return (
     <div>
-      <h1 className={`text-3xl font-black mb-6 ${darkMode ? "text-white" : "text-[#113247]"}`}>
-        Settings
-      </h1>
+      <PageBanner
+        title="Settings"
+        subtitle="Manage app preferences, AI features and local configuration."
+        darkMode={darkMode}
+      />
 
       <div className={panelClass}>
         <div className="flex items-center gap-3 mb-5">
