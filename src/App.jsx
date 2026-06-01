@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, 
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
+import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
@@ -402,7 +403,7 @@ function App() {
     ? "min-h-screen bg-gradient-to-b from-[#071A24] to-[#0D2D35] text-slate-100"
     : "min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]";
 
-  if (loading) return <div className={shellClass + " grid place-items-center font-bold"}>Loading VetLearn...</div>;
+  if (loading) return <LoadingState label="Loading VetLearn..." darkMode={darkMode} fullScreen />;
   if (!session) return <><Toaster position="top-center" /><AuthPage /></>;
 
   const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
