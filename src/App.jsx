@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-dom";
-import { LogOut, Moon, Sun, X, Users, Settings as SettingsIcon, Bell, MessageSquare, ClipboardList } from "lucide-react";
+import { Bell, BriefcaseMedical, ClipboardList, FileText, Home, KeyRound, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldPlus, Sun, Syringe, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -11,13 +11,14 @@ import { supabase } from "./supabaseClient";
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
 import Caselogs from "./pages/Caselogs";
-import Profile from "./pages/Profile";
+import HomeDashboard from "./pages/HomeDashboard";
 import Drugs from "./pages/drugs.jsx";
 import SettingsPage from "./pages/Settings";
 import Network from "./pages/Network";
 import Messages from "./pages/Messages";
 import NotificationsPage from "./pages/Notifications";
 import Protocols from "./pages/Protocols";
+import Vault from "./pages/Vault";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -49,11 +50,8 @@ function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    if (activeReading) {
-      localStorage.setItem("vetlearn-active-reading", JSON.stringify(activeReading));
-    } else {
-      localStorage.removeItem("vetlearn-active-reading");
-    }
+    if (activeReading) localStorage.setItem("vetlearn-active-reading", JSON.stringify(activeReading));
+    else localStorage.removeItem("vetlearn-active-reading");
   }, [activeReading]);
 
   useEffect(() => {
@@ -80,7 +78,7 @@ function App() {
         return;
       }
 
-      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
       setProfile(data || null);
       loadNotifications();
       loadUnreadMessageCount();
@@ -96,15 +94,21 @@ function App() {
     const refreshNotifications = () => loadNotifications();
     const refreshMessages = () => loadUnreadMessageCount();
     const refreshRequests = () => loadPendingRequestCount();
+    const refreshProfile = async () => {
+      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+      setProfile(data || null);
+    };
 
     window.addEventListener("notificationsUpdated", refreshNotifications);
     window.addEventListener("messagesUpdated", refreshMessages);
     window.addEventListener("networkUpdated", refreshRequests);
+    window.addEventListener("profileUpdated", refreshProfile);
 
     return () => {
       window.removeEventListener("notificationsUpdated", refreshNotifications);
       window.removeEventListener("messagesUpdated", refreshMessages);
       window.removeEventListener("networkUpdated", refreshRequests);
+      window.removeEventListener("profileUpdated", refreshProfile);
     };
   }, [session]);
 
@@ -113,23 +117,12 @@ function App() {
 
     const channel = supabase
       .channel(`app-badges-${session.user.id}`)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${session.user.id}`
-      }, (payload) => {
-        if (payload.eventType === "INSERT" && !payload.new.is_read) {
-          toast.success(payload.new.message || "New notification");
-        }
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${session.user.id}` }, (payload) => {
+        if (payload.eventType === "INSERT" && !payload.new.is_read) toast.success(payload.new.message || "New notification");
         loadNotifications();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        loadUnreadMessageCount();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "connections" }, () => {
-        loadPendingRequestCount();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => loadUnreadMessageCount())
+      .on("postgres_changes", { event: "*", schema: "public", table: "connections" }, () => loadPendingRequestCount())
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -148,9 +141,7 @@ function App() {
       .eq("is_read", false)
       .order("created_at", { ascending: false });
 
-    if (!error) {
-      setNotifications(data || []);
-    }
+    if (!error) setNotifications(data || []);
   };
 
   const loadUnreadMessageCount = async () => {
@@ -262,13 +253,26 @@ function App() {
   const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
   const menuBadgeCount = unreadMessageCount + pendingRequestCount;
 
+  const menuLinks = [
+    { to: "/", label: "Dashboard", icon: Home },
+    { to: "/protocols", label: "Clinical Protocols", icon: ClipboardList },
+    { to: "/drugs", label: "Formulary", icon: Syringe },
+    { to: "/cpd", label: "CPD", icon: FileText },
+    { to: "/caselogs", label: "Case Logs", icon: BriefcaseMedical },
+    { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
+    { to: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessageCount },
+    { to: "/notifications", label: "Notifications", icon: Bell, badge: unreadNotificationCount },
+    { to: "/vault", label: "Vault", icon: KeyRound },
+    { to: "/settings", label: "Settings", icon: SettingsIcon }
+  ];
+
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Toaster position="top-center" />
       <div className={shellClass}>
         <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
-          <div className="max-w-md mx-auto px-5 py-3">
+          <div className="max-w-5xl mx-auto px-5 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
@@ -279,21 +283,12 @@ function App() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setNotificationsOpen(true)}
-                  className={`relative h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`}
-                  aria-label="Open notifications"
-                >
+                <button onClick={() => setNotificationsOpen(true)} className={`relative h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open notifications">
                   <Bell size={18} />
-                  {unreadNotificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
-                      {unreadNotificationCount}
-                    </span>
-                  )}
+                  {unreadNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">{unreadNotificationCount}</span>}
                 </button>
-
                 <button onClick={() => setDarkMode(!darkMode)} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Toggle dark mode">
-                  {darkMode ? <Sun size={18} /> : <Moon size={18} />} 
+                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
                 <button onClick={signOut} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Sign out">
                   <LogOut size={18} />
@@ -303,60 +298,43 @@ function App() {
           </div>
         </div>
 
-        <NotificationDrawer 
-          isOpen={notificationsOpen} 
-          onClose={() => setNotificationsOpen(false)} 
-          notifications={notifications} 
-          setNotifications={setNotifications} 
-          darkMode={darkMode} 
-        />
+        <NotificationDrawer isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} setNotifications={setNotifications} darkMode={darkMode} />
 
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
-            <div className={`fixed inset-y-0 right-0 z-[60] w-64 shadow-2xl p-6 flex flex-col gap-4 transform transition-transform duration-300 ${darkMode ? "bg-[#071A24] border-l border-white/10" : "bg-white border-l border-slate-200"}`}>
-              <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-200 dark:border-white/10">
+            <div className={`fixed inset-y-0 right-0 z-[60] w-72 shadow-2xl p-6 flex flex-col gap-4 transform transition-transform duration-300 overflow-y-auto ${darkMode ? "bg-[#071A24] border-l border-white/10" : "bg-white border-l border-slate-200"}`}>
+              <div className="flex justify-between items-center mb-4 border-b pb-4 border-slate-200 dark:border-white/10">
                 <h2 className={`text-2xl font-black ${darkMode ? "text-white" : "text-[#113247]"}`}>Menu</h2>
-                <button onClick={() => setMenuOpen(false)} className={`p-2 rounded-full transition ${darkMode ? "text-slate-300 hover:bg-white/10" : "text-slate-500 hover:bg-slate-100"}`}>
-                  <X size={24} />
-                </button>
+                <button onClick={() => setMenuOpen(false)} className={`p-2 rounded-full transition ${darkMode ? "text-slate-300 hover:bg-white/10" : "text-slate-500 hover:bg-slate-100"}`}><X size={24} /></button>
               </div>
-              
               <div className="flex flex-col gap-2">
-                <Link to="/network" onClick={() => setMenuOpen(false)} className={`flex items-center justify-between gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  <span className="flex items-center gap-3"><Users size={20} /> Network</span>
-                  {pendingRequestCount > 0 && <span className="bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">{pendingRequestCount}</span>}
-                </Link>
-                <Link to="/messages" onClick={() => setMenuOpen(false)} className={`flex items-center justify-between gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  <span className="flex items-center gap-3"><MessageSquare size={20} /> Messages</span>
-                  {unreadMessageCount > 0 && <span className="bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">{unreadMessageCount}</span>}
-                </Link>
-                <Link to="/notifications" onClick={() => setMenuOpen(false)} className={`flex items-center justify-between gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  <span className="flex items-center gap-3"><Bell size={20} /> Notifications</span>
-                  {unreadNotificationCount > 0 && <span className="bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">{unreadNotificationCount}</span>}
-                </Link>
-                <Link to="/protocols" onClick={() => setMenuOpen(false)} className={`flex items-center gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  <ClipboardList size={20} /> Protocols
-                </Link>
-                <Link to="/settings" onClick={() => setMenuOpen(false)} className={`flex items-center gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  <SettingsIcon size={20} /> Settings
-                </Link>
+                {menuLinks.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)} className={`flex items-center justify-between gap-3 p-3 rounded-lg font-bold transition ${darkMode ? "hover:bg-white/10 text-slate-200" : "hover:bg-[#E8F8F5] text-[#0B3760]"}`}>
+                      <span className="flex items-center gap-3"><Icon size={20} /> {item.label}</span>
+                      {item.badge > 0 && <span className="bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">{item.badge}</span>}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </>
         )}
 
-        <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
+        <div className="max-w-5xl mx-auto min-h-screen px-4 pt-5 pb-28">
           <Routes>
-            <Route path="/" element={<Profile user={session.user} darkMode={darkMode} />} />
+            <Route path="/" element={<HomeDashboard user={session.user} profile={profile} darkMode={darkMode} unreadMessageCount={unreadMessageCount} unreadNotificationCount={unreadNotificationCount} />} />
             <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} savingReading={savingReading} />} />
             <Route path="/caselogs" element={<Caselogs user={session.user} darkMode={darkMode} />} />
             <Route path="/drugs" element={<Drugs user={session.user} darkMode={darkMode} />} />
             <Route path="/network" element={<Network user={session.user} darkMode={darkMode} />} />
-            <Route path="/settings" element={<SettingsPage darkMode={darkMode} />} />
+            <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />
             <Route path="/messages" element={<Messages user={session.user} darkMode={darkMode} />} />
             <Route path="/notifications" element={<NotificationsPage user={session.user} darkMode={darkMode} />} />
             <Route path="/protocols" element={<Protocols user={session.user} darkMode={darkMode} />} />
+            <Route path="/vault" element={<Vault user={session.user} darkMode={darkMode} />} />
           </Routes>
         </div>
 
