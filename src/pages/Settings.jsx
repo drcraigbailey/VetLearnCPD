@@ -120,7 +120,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
         await persistAppPreferences(nextPrefs);
         toast.success("Fingerprint unlock enabled on this device");
       } else {
-        disableBiometric(user.id);
+        await disableBiometric(user.id);
         setBiometricEnabled(false);
         const nextPrefs = { ...appPrefs, biometricUnlock: false };
         setAppPrefs(nextPrefs);
