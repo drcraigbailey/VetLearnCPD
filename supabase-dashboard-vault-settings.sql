@@ -75,97 +75,62 @@ alter table public.user_preferences enable row level security;
 
 -- Dashboard favourites policies
 drop policy if exists "Users can read own dashboard favourites" on public.dashboard_favourites;
-create policy "Users can read own dashboard favourites"
-on public.dashboard_favourites for select to authenticated
-using (user_id = auth.uid());
+create policy "Users can read own dashboard favourites" on public.dashboard_favourites for select to authenticated using (user_id = auth.uid());
 
 drop policy if exists "Users can create own dashboard favourites" on public.dashboard_favourites;
-create policy "Users can create own dashboard favourites"
-on public.dashboard_favourites for insert to authenticated
-with check (user_id = auth.uid());
+create policy "Users can create own dashboard favourites" on public.dashboard_favourites for insert to authenticated with check (user_id = auth.uid());
 
 drop policy if exists "Users can update own dashboard favourites" on public.dashboard_favourites;
-create policy "Users can update own dashboard favourites"
-on public.dashboard_favourites for update to authenticated
-using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Users can update own dashboard favourites" on public.dashboard_favourites for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 drop policy if exists "Users can delete own dashboard favourites" on public.dashboard_favourites;
-create policy "Users can delete own dashboard favourites"
-on public.dashboard_favourites for delete to authenticated
-using (user_id = auth.uid());
+create policy "Users can delete own dashboard favourites" on public.dashboard_favourites for delete to authenticated using (user_id = auth.uid());
 
 -- Recently viewed policies
 drop policy if exists "Users can read own recently viewed" on public.recently_viewed;
-create policy "Users can read own recently viewed"
-on public.recently_viewed for select to authenticated
-using (user_id = auth.uid());
+create policy "Users can read own recently viewed" on public.recently_viewed for select to authenticated using (user_id = auth.uid());
 
 drop policy if exists "Users can create own recently viewed" on public.recently_viewed;
-create policy "Users can create own recently viewed"
-on public.recently_viewed for insert to authenticated
-with check (user_id = auth.uid());
+create policy "Users can create own recently viewed" on public.recently_viewed for insert to authenticated with check (user_id = auth.uid());
 
 drop policy if exists "Users can update own recently viewed" on public.recently_viewed;
-create policy "Users can update own recently viewed"
-on public.recently_viewed for update to authenticated
-using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Users can update own recently viewed" on public.recently_viewed for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 drop policy if exists "Users can delete own recently viewed" on public.recently_viewed;
-create policy "Users can delete own recently viewed"
-on public.recently_viewed for delete to authenticated
-using (user_id = auth.uid());
+create policy "Users can delete own recently viewed" on public.recently_viewed for delete to authenticated using (user_id = auth.uid());
 
 -- Vault policies
 drop policy if exists "Users can read own vault entries" on public.vault_entries;
-create policy "Users can read own vault entries"
-on public.vault_entries for select to authenticated
-using (user_id = auth.uid());
+create policy "Users can read own vault entries" on public.vault_entries for select to authenticated using (user_id = auth.uid());
 
 drop policy if exists "Users can create own vault entries" on public.vault_entries;
-create policy "Users can create own vault entries"
-on public.vault_entries for insert to authenticated
-with check (user_id = auth.uid());
+create policy "Users can create own vault entries" on public.vault_entries for insert to authenticated with check (user_id = auth.uid());
 
 drop policy if exists "Users can update own vault entries" on public.vault_entries;
-create policy "Users can update own vault entries"
-on public.vault_entries for update to authenticated
-using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Users can update own vault entries" on public.vault_entries for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 drop policy if exists "Users can delete own vault entries" on public.vault_entries;
-create policy "Users can delete own vault entries"
-on public.vault_entries for delete to authenticated
-using (user_id = auth.uid());
+create policy "Users can delete own vault entries" on public.vault_entries for delete to authenticated using (user_id = auth.uid());
 
 -- User preferences policies
 drop policy if exists "Users can read own preferences" on public.user_preferences;
-create policy "Users can read own preferences"
-on public.user_preferences for select to authenticated
-using (user_id = auth.uid());
+create policy "Users can read own preferences" on public.user_preferences for select to authenticated using (user_id = auth.uid());
 
 drop policy if exists "Users can create own preferences" on public.user_preferences;
-create policy "Users can create own preferences"
-on public.user_preferences for insert to authenticated
-with check (user_id = auth.uid());
+create policy "Users can create own preferences" on public.user_preferences for insert to authenticated with check (user_id = auth.uid());
 
 drop policy if exists "Users can update own preferences" on public.user_preferences;
-create policy "Users can update own preferences"
-on public.user_preferences for update to authenticated
-using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Users can update own preferences" on public.user_preferences for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- Profile policies for profile editing. These are safe to run even if similar policies already exist.
+-- Profile policies. Profiles are readable by signed-in users so Network,
+-- Messages and sharing screens can show colleague names. Only owners can edit.
 alter table public.profiles enable row level security;
 
-drop policy if exists "Users can read own profile" on public.profiles;
-create policy "Users can read own profile"
-on public.profiles for select to authenticated
-using (id = auth.uid());
+drop policy if exists "Authenticated users can read profiles" on public.profiles;
+create policy "Authenticated users can read profiles" on public.profiles for select to authenticated using (true);
 
 drop policy if exists "Users can update own profile" on public.profiles;
-create policy "Users can update own profile"
-on public.profiles for update to authenticated
-using (id = auth.uid()) with check (id = auth.uid());
+create policy "Users can update own profile" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
 drop policy if exists "Users can create own profile" on public.profiles;
-create policy "Users can create own profile"
-on public.profiles for insert to authenticated
-with check (id = auth.uid());
+create policy "Users can create own profile" on public.profiles for insert to authenticated with check (id = auth.uid());
