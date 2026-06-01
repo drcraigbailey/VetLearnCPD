@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
@@ -19,6 +20,7 @@ export default function Messages({ user, darkMode }) {
 
   const messagesEndRef = useRef(null);
   const chatInputRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,6 +76,24 @@ export default function Messages({ user, darkMode }) {
 
     return () => supabase.removeChannel(chatSub);
   }, [activeChat?.id, user?.id]);
+
+  useEffect(() => {
+    const colleagueId = searchParams.get("colleague");
+    if (!colleagueId || loading || !user?.id) return;
+
+    const existingConversation = conversations.find(conversation => String(conversation.colleague?.id) === String(colleagueId));
+    if (existingConversation) {
+      setActiveChat(existingConversation);
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    const colleague = colleagues.find(item => String(item?.id) === String(colleagueId));
+    if (colleague) {
+      handleStartNewChat(colleague);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, loading, user?.id, conversations, colleagues]);
 
   const refreshBadges = () => {
     window.dispatchEvent(new Event("messagesUpdated"));
