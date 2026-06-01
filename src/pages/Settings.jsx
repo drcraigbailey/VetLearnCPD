@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Briefcase, Globe, GraduationCap, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, UserRound } from "lucide-react";
+import { Bell, Briefcase, Globe, GraduationCap, Image as ImageIcon, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -35,6 +35,8 @@ const aiDefaults = {
   learningRecommendations: true
 };
 
+const maxAvatarSize = 2 * 1024 * 1024;
+
 export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("profile");
   const [profileForm, setProfileForm] = useState(profileDefaults);
@@ -42,6 +44,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, theme: darkMode ? "dark" : "light" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -83,6 +86,57 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const updateProfile = (field, value) => setProfileForm(prev => ({ ...prev, [field]: value }));
   const updateAi = (field, value) => setAiPrefs(prev => ({ ...prev, [field]: value }));
   const updateApp = (field, value) => setAppPrefs(prev => ({ ...prev, [field]: value }));
+
+  const uploadAvatar = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+
+    if (file.size > maxAvatarSize) {
+      toast.error("Image must be under 2 MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeExtension = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension) ? extension : "jpg";
+    const filePath = `${user.id}/avatar.${safeExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("profile-images")
+      .upload(filePath, file, { cacheControl: "3600", upsert: true });
+
+    if (uploadError) {
+      setUploadingAvatar(false);
+      toast.error("Could not upload image. Please run the Supabase storage SQL.");
+      return;
+    }
+
+    const { data } = supabase.storage.from("profile-images").getPublicUrl(filePath);
+    const avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: user.id,
+      avatar_url: avatarUrl,
+      email: profileForm.email || user.email,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "id" });
+
+    setUploadingAvatar(false);
+    if (profileError) {
+      toast.error("Image uploaded, but profile could not be updated");
+      return;
+    }
+
+    updateProfile("avatar_url", avatarUrl);
+    window.dispatchEvent(new Event("profileUpdated"));
+    toast.success("Profile image uploaded");
+  };
 
   const saveProfile = async () => {
     setSaving(true);
@@ -141,6 +195,20 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
             <section className={panelClass}>
               <SectionTitle icon={<UserRound size={20} />} title="Profile & Contact Information" subtitle="Shown on your dashboard, CPD records and shared professional areas." darkMode={darkMode} />
               <div className="grid gap-3">
+                <div className={`rounded-lg p-4 flex items-center gap-4 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
+                  <div className="h-20 w-20 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center text-2xl font-black shrink-0 overflow-hidden">
+                    {profileForm.avatar_url ? <img src={profileForm.avatar_url} alt="Profile" className="h-full w-full object-cover" /> : <ImageIcon size={28} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm mb-1">Profile image</p>
+                    <p className="text-xs opacity-60 mb-3">Upload a small JPG, PNG, WebP or GIF under 2 MB.</p>
+                    <label className="inline-flex items-center gap-2 rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black cursor-pointer">
+                      {uploadingAvatar ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                      {uploadingAvatar ? "Uploading..." : "Upload Image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploadingAvatar} />
+                    </label>
+                  </div>
+                </div>
                 <input className={fieldClass} placeholder="Profile picture URL" value={profileForm.avatar_url} onChange={(e) => updateProfile("avatar_url", e.target.value)} />
                 <div className="grid grid-cols-[100px_1fr] gap-3">
                   <input className={fieldClass} placeholder="Title" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} />
