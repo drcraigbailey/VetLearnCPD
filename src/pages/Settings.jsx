@@ -118,17 +118,19 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
         const nextPrefs = { ...appPrefs, biometricUnlock: true };
         setAppPrefs(nextPrefs);
         await persistAppPreferences(nextPrefs);
-        toast.success("Fingerprint unlock enabled on this device");
+        window.dispatchEvent(new Event("biometricSettingsUpdated"));
+        toast.success("Fingerprint login enabled on this device");
       } else {
         await disableBiometric(user.id);
         setBiometricEnabled(false);
         const nextPrefs = { ...appPrefs, biometricUnlock: false };
         setAppPrefs(nextPrefs);
         await persistAppPreferences(nextPrefs);
-        toast.success("Fingerprint unlock disabled");
+        window.dispatchEvent(new Event("biometricSettingsUpdated"));
+        toast.success("Fingerprint login disabled");
       }
     } catch (error) {
-      toast.error(error.message || "Could not update fingerprint unlock");
+      toast.error(error.message || "Could not update fingerprint login");
     } finally {
       setBiometricBusy(false);
     }
@@ -314,12 +316,12 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
               <Toggle
                 checked={biometricEnabled}
                 onChange={toggleBiometricUnlock}
-                label={biometricAvailable ? "Fingerprint / Face unlock on this device" : "Fingerprint / Face unlock unavailable"}
+                label={biometricAvailable ? "Fingerprint / Face login on this device" : "Fingerprint / Face login unavailable"}
                 darkMode={darkMode}
                 disabled={!biometricAvailable || biometricBusy}
               />
               <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
-                Uses this phone or browser's built-in biometric/passkey prompt when available. You may need to enable it again if the app domain changes.
+                Uses this phone or browser's built-in biometric/passkey prompt when available. Turn it on once while signed in, then the login screen will show the fingerprint button on this device.
               </p>
               <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
               <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
