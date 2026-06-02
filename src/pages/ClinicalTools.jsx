@@ -52,6 +52,7 @@ const formatNumber = (value, decimals = 2) => {
 };
 
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
+const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
 
 export default function ClinicalTools({ user, darkMode = false, showBanner = true, protocolContext = null }) {
   const [activeTab, setActiveTab] = useState("drug");
@@ -194,6 +195,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
 
   const speciesRows = useMemo(() => rows.filter((row) => row.species === species), [rows, species]);
   const selected = speciesRows.find((row) => String(row.id) === String(selectedId)) || firstBySpecies(speciesRows, species);
+  const doseMap = doseMapFrom(protocolContext);
 
   const protocolDrugNames = useMemo(() => {
     return [...new Set((protocolContext?.drugs || []).map((drug) => normalise(drug.name)).filter(Boolean))];
@@ -234,7 +236,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
 
   const saveProtocolLog = () => {
     if (!protocolContext?.protocol || weightValue <= 0 || protocolRows.length === 0) return toast.error("Add a weight and check protocol drugs are available");
-    const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue)).join("; ");
+    const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue, doseMap, protocolContext.drugs || [])).join("; ");
     onLog({ calculator_type: "drug", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
     toast.success("Protocol calculation logged");
   };
@@ -247,6 +249,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
           darkMode={darkMode}
           protocol={protocolContext.protocol}
           protocolDrugs={protocolContext.drugs || []}
+          doseMap={doseMap}
           rows={protocolRows}
           weightValue={weightValue}
           species={species}
@@ -272,7 +275,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
   );
 }
 
-function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, rows, weightValue, species, onLog }) {
+function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, doseMap, rows, weightValue, species, onLog }) {
   const unmatched = protocolDrugs.filter((drug) => drug.species === species && !rows.some((row) => normalise(row.drug_name) === normalise(drug.name)));
 
   return (
@@ -287,26 +290,31 @@ function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, rows, weightValue,
       {rows.length === 0 && weightValue > 0 && <p className="text-sm opacity-65">No calculator rows match this protocol for {species}. Check the protocol species or add calculator records for these drugs.</p>}
 
       {rows.map((row) => {
-        const minDose = numberValue(row.min_dose || row.dose_min);
-        const maxDose = numberValue(row.max_dose || row.dose_max, minDose);
+        const doseSetting = getProtocolDoseSetting(row, doseMap, protocolDrugs);
+        const exactDose = numberValue(doseSetting?.dose, NaN);
+        const hasProtocolDose = Number.isFinite(exactDose) && exactDose > 0;
+        const minDose = hasProtocolDose ? exactDose : numberValue(row.min_dose || row.dose_min);
+        const maxDose = hasProtocolDose ? exactDose : numberValue(row.max_dose || row.dose_max, minDose);
         const minTotal = weightValue * minDose;
         const maxTotal = weightValue * maxDose;
         const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
         const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
-        const doseUnit = row.dose_unit?.split("/")[0] || "mg";
+        const doseUnit = doseSetting?.dose_unit || row.dose_unit || "mg/kg";
+        const totalUnit = doseUnit.split("/")[0] || "mg";
         return (
           <div key={row.id} className={`rounded-lg p-3 ${darkMode ? "bg-black/10" : "bg-[#F0F6F5]"}`}>
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
                 <div className="font-black">{row.drug_name}</div>
-                <div className="text-xs opacity-60">{row.route || "General route"} | {row.dose_unit || "mg/kg"}</div>
+                <div className="text-xs opacity-60">{doseSetting?.route || row.route || "General route"} | {doseUnit}</div>
               </div>
-              <span className="text-xs font-black text-[#0F8F83]">{row.species}</span>
+              <span className="text-xs font-black text-[#0F8F83]">{hasProtocolDose ? "Protocol dose" : row.species}</span>
             </div>
             <ResultGrid items={[
-              ["Dose", `${formatDoseRange(minTotal, maxTotal)} ${doseUnit}`],
+              ["Dose", `${formatDoseRange(minTotal, maxTotal)} ${totalUnit}`],
               ["Give", minVolume ? `${formatDoseRange(minVolume, maxVolume)} ml` : "No concentration"]
             ]} />
+            {doseSetting?.notes && <p className="text-sm leading-6 opacity-70"><span className="font-black">Protocol note: </span>{doseSetting.notes}</p>}
             <Notes row={row} />
           </div>
         );
@@ -323,21 +331,31 @@ function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, rows, weightValue,
   );
 }
 
+function getProtocolDoseSetting(row, doseMap, protocolDrugs) {
+  const matchedDrug = protocolDrugs.find((drug) => normalise(drug.name) === normalise(row.drug_name));
+  if (!matchedDrug) return null;
+  return doseMap[String(matchedDrug.id)] || null;
+}
+
 function formatDoseRange(min, max) {
   if (!Number.isFinite(max) || max === min) return formatNumber(min);
   return `${formatNumber(min)} - ${formatNumber(max)}`;
 }
 
-function formatProtocolCalculation(row, weightValue) {
-  const minDose = numberValue(row.min_dose || row.dose_min);
-  const maxDose = numberValue(row.max_dose || row.dose_max, minDose);
+function formatProtocolCalculation(row, weightValue, doseMap, protocolDrugs) {
+  const doseSetting = getProtocolDoseSetting(row, doseMap, protocolDrugs);
+  const exactDose = numberValue(doseSetting?.dose, NaN);
+  const hasProtocolDose = Number.isFinite(exactDose) && exactDose > 0;
+  const minDose = hasProtocolDose ? exactDose : numberValue(row.min_dose || row.dose_min);
+  const maxDose = hasProtocolDose ? exactDose : numberValue(row.max_dose || row.dose_max, minDose);
   const minTotal = weightValue * minDose;
   const maxTotal = weightValue * maxDose;
   const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
   const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
-  const doseUnit = row.dose_unit?.split("/")[0] || "mg";
+  const doseUnit = doseSetting?.dose_unit || row.dose_unit || "mg/kg";
+  const totalUnit = doseUnit.split("/")[0] || "mg";
   const volumeText = minVolume ? `, ${formatDoseRange(minVolume, maxVolume)} ml` : "";
-  return `${row.drug_name}: ${formatDoseRange(minTotal, maxTotal)} ${doseUnit}${volumeText}`;
+  return `${row.drug_name}: ${formatDoseRange(minTotal, maxTotal)} ${totalUnit}${volumeText}`;
 }
 
 function EmergencyCalculator({ rows, darkMode, onLog }) {
