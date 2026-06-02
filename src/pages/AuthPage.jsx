@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { isBiometricLoginEnabled, signInWithBiometric } from "../utils/biometricAuth";
+import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric } from "../utils/biometricAuth";
 
 import {
   Loader2,
@@ -21,11 +21,15 @@ export default function AuthPage(){
   const [password,setPassword]=useState("")
   const [showPassword, setShowPassword]=useState(false)
   const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
+  const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
   const [loading,setLoading]=useState(false)
 
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
 
   const checkFingerprintLogin = async () => {
+    const savedUser = getLastBiometricUser();
+    if (!email && savedUser?.email) setEmail(savedUser.email);
+    setFingerprintRefreshNeeded(needsBiometricRelink());
     const enabled = await isBiometricLoginEnabled();
     setShowFingerprintLogin(enabled);
   };
@@ -34,8 +38,13 @@ export default function AuthPage(){
     let cancelled = false;
 
     const runCheck = async () => {
+      const savedUser = getLastBiometricUser();
+      const needsRelink = needsBiometricRelink();
       const enabled = await isBiometricLoginEnabled();
-      if (!cancelled) setShowFingerprintLogin(enabled);
+      if (cancelled) return;
+      if (savedUser?.email) setEmail(savedUser.email);
+      setFingerprintRefreshNeeded(needsRelink);
+      setShowFingerprintLogin(enabled);
     };
 
     runCheck();
@@ -99,7 +108,12 @@ export default function AuthPage(){
       await signInWithBiometric()
       toast.success("Signed in successfully")
     } catch (error) {
-      toast.error(error.message || "Fingerprint login is not set up on this device.")
+      const message = error.message || "Fingerprint login is not set up on this device.";
+      if (message.includes("needs refreshing")) {
+        toast("Log in once with email and password to refresh fingerprint login.")
+      } else {
+        toast.error(message)
+      }
       await checkFingerprintLogin()
     } finally {
       setLoading(false)
@@ -179,6 +193,12 @@ export default function AuthPage(){
                 />
               </div>
             </>
+          )}
+
+          {mode==="login" && fingerprintRefreshNeeded && (
+            <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
+              Fingerprint login just needs refreshing. Log in once with email and password, then it will be saved again for this phone.
+            </div>
           )}
 
           <div className="mb-3">
