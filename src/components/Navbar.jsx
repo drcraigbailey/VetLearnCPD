@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { LayoutDashboard, FileText, BriefcaseMedical, Syringe, Menu } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const lastBackPressRef = useRef(0);
   const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
   const labelClass = "text-[10px] font-bold leading-none tracking-normal";
@@ -13,23 +16,34 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
 
-    const appPlugin = Capacitor?.Plugins?.App || window.Capacitor?.Plugins?.App;
-    if (!appPlugin?.addListener) return undefined;
-
     let listener;
+    let cancelled = false;
 
     const attachListener = async () => {
-      listener = await appPlugin.addListener("backButton", () => {
+      listener = await CapacitorApp.addListener("backButton", () => {
         if (location.pathname !== "/") {
           if (window.history.length > 1) navigate(-1);
           else navigate("/", { replace: true });
+          return;
         }
+
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
+          CapacitorApp.exitApp();
+          return;
+        }
+
+        lastBackPressRef.current = now;
+        toast("Press back again to exit.");
       });
+
+      if (cancelled) listener?.remove?.();
     };
 
     attachListener();
 
     return () => {
+      cancelled = true;
       listener?.remove?.();
     };
   }, [location.pathname, navigate]);
