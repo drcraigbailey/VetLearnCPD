@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { NativeBiometric } from "capacitor-native-biometric";
 import { supabase } from "../supabaseClient";
 
 const credentialPrefix = "vetlearn-biometric-credential";
@@ -58,28 +59,13 @@ export const getLastBiometricUser = () => {
   }
 };
 
-const loadNativeBiometric = async () => {
+const loadNativeBiometric = () => {
   if (!isNative()) return null;
-
-  const packageNames = [
-    "capacitor-native-biometric",
-    "@capgo/capacitor-native-biometric"
-  ];
-
-  for (const packageName of packageNames) {
-    try {
-      const module = await import(packageName);
-      if (module?.NativeBiometric) return module.NativeBiometric;
-    } catch {
-      // Try the next known package name, then fall back to web passkeys.
-    }
-  }
-
-  return null;
+  return NativeBiometric || null;
 };
 
-const verifyNativeIdentity = async (NativeBiometric) => {
-  await NativeBiometric.verifyIdentity({
+const verifyNativeIdentity = async (biometricPlugin) => {
+  await biometricPlugin.verifyIdentity({
     reason: "Unlock VetLearn",
     title: "Unlock VetLearn",
     subtitle: "Confirm it is you",
@@ -88,8 +74,8 @@ const verifyNativeIdentity = async (NativeBiometric) => {
   return true;
 };
 
-const getNativeCredentials = async (NativeBiometric) => {
-  const credentials = await NativeBiometric.getCredentials({ server: nativeServer });
+const getNativeCredentials = async (biometricPlugin) => {
+  const credentials = await biometricPlugin.getCredentials({ server: nativeServer });
   if (!credentials?.password) throw new Error("Fingerprint login is not set up on this phone.");
 
   try {
@@ -100,10 +86,10 @@ const getNativeCredentials = async (NativeBiometric) => {
 };
 
 export const isBiometricAvailable = async () => {
-  const NativeBiometric = await loadNativeBiometric();
-  if (NativeBiometric) {
+  const biometricPlugin = loadNativeBiometric();
+  if (biometricPlugin) {
     try {
-      const result = await NativeBiometric.isAvailable();
+      const result = await biometricPlugin.isAvailable();
       return Boolean(result?.isAvailable);
     } catch {
       return false;
@@ -130,9 +116,9 @@ export const isBiometricEnabled = (userId) => {
 };
 
 export const registerBiometric = async (user) => {
-  const NativeBiometric = await loadNativeBiometric();
-  if (NativeBiometric) {
-    const result = await NativeBiometric.isAvailable();
+  const biometricPlugin = loadNativeBiometric();
+  if (biometricPlugin) {
+    const result = await biometricPlugin.isAvailable();
     if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
 
     const { data } = await supabase.auth.getSession();
@@ -141,8 +127,8 @@ export const registerBiometric = async (user) => {
       throw new Error("Please sign in again before enabling fingerprint login.");
     }
 
-    await verifyNativeIdentity(NativeBiometric);
-    await NativeBiometric.setCredentials({
+    await verifyNativeIdentity(biometricPlugin);
+    await biometricPlugin.setCredentials({
       username: user.email || user.id,
       password: JSON.stringify({
         user_id: user.id,
@@ -191,12 +177,12 @@ export const registerBiometric = async (user) => {
 };
 
 export const authenticateBiometric = async (user) => {
-  const NativeBiometric = await loadNativeBiometric();
-  if (NativeBiometric) {
-    const result = await NativeBiometric.isAvailable();
+  const biometricPlugin = loadNativeBiometric();
+  if (biometricPlugin) {
+    const result = await biometricPlugin.isAvailable();
     if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
 
-    await verifyNativeIdentity(NativeBiometric);
+    await verifyNativeIdentity(biometricPlugin);
     return true;
   }
 
@@ -218,13 +204,13 @@ export const authenticateBiometric = async (user) => {
 };
 
 export const signInWithBiometric = async () => {
-  const NativeBiometric = await loadNativeBiometric();
-  if (NativeBiometric) {
-    const result = await NativeBiometric.isAvailable();
+  const biometricPlugin = loadNativeBiometric();
+  if (biometricPlugin) {
+    const result = await biometricPlugin.isAvailable();
     if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
 
-    await verifyNativeIdentity(NativeBiometric);
-    const credentials = await getNativeCredentials(NativeBiometric);
+    await verifyNativeIdentity(biometricPlugin);
+    const credentials = await getNativeCredentials(biometricPlugin);
     if (!credentials?.access_token || !credentials?.refresh_token) {
       throw new Error("Please turn fingerprint login off and on again in Settings.");
     }
@@ -250,10 +236,10 @@ export const signInWithBiometric = async () => {
 };
 
 export const disableBiometric = async (userId) => {
-  const NativeBiometric = await loadNativeBiometric();
-  if (NativeBiometric) {
+  const biometricPlugin = loadNativeBiometric();
+  if (biometricPlugin) {
     try {
-      await NativeBiometric.deleteCredentials({ server: nativeServer });
+      await biometricPlugin.deleteCredentials({ server: nativeServer });
     } catch {
       // Local setting still needs clearing if native credentials are already gone.
     }
