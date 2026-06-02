@@ -23,13 +23,12 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
         darkMode={darkMode}
       />
 
-      {/* Updated layout: single line, horizontally scrollable on mobile, centered on larger screens */}
-      <div className="flex overflow-x-auto justify-start sm:justify-center gap-2 mb-6 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="cpd-tab-strip flex overflow-x-auto justify-start sm:justify-center gap-2 mb-6 pb-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${
+            className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition shrink-0 ${
               activeTab === tab.id
                 ? "bg-[#71CFC2] text-[#062F63] shadow-md"
                 : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"
