@@ -5,9 +5,9 @@ import {
   AlertTriangle,
   Beaker,
   Calculator,
+  Clock,
   Droplets,
   HeartPulse,
-  Loader2,
   Search,
   ShieldAlert,
   Syringe
@@ -22,7 +22,8 @@ const tabs = [
   { id: "fluids", label: "Fluid Therapy", icon: Droplets },
   { id: "transfusion", label: "Blood Transfusion", icon: HeartPulse },
   { id: "cri", label: "CRI Calculator", icon: Activity },
-  { id: "toxicology", label: "Toxicology", icon: ShieldAlert }
+  { id: "toxicology", label: "Toxicology", icon: ShieldAlert },
+  { id: "history", label: "History 24h", icon: Clock }
 ];
 
 const speciesOptions = ["Dog", "Cat", "Rabbit", "Horse", "Other"];
@@ -53,6 +54,8 @@ const firstBySpecies = (rows, species) => rows.find((row) => row.species === spe
 export default function ClinicalTools({ user, darkMode = false, showBanner = true }) {
   const [activeTab, setActiveTab] = useState("drug");
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState([]);
   const [data, setData] = useState({
     drugCalculators: [],
     criProtocols: [],
@@ -65,6 +68,10 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   useEffect(() => {
     loadClinicalTools();
   }, []);
+
+  useEffect(() => {
+    loadCalculationHistory();
+  }, [user?.id]);
 
   const loadClinicalTools = async () => {
     setLoading(true);
@@ -91,15 +98,36 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
     setLoading(false);
   };
 
+  const loadCalculationHistory = async () => {
+    if (!user?.id) return;
+    setHistoryLoading(true);
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: logs, error } = await supabase
+      .from("calculator_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false });
+
+    if (error) toast.error("Could not load calculation history");
+    else setHistory(logs || []);
+    setHistoryLoading(false);
+  };
+
   const logCalculation = async ({ calculator_type, drug_name, patient_weight, result }) => {
     if (!user?.id) return;
-    await supabase.from("calculator_logs").insert({
+    const { error } = await supabase.from("calculator_logs").insert({
       user_id: user.id,
       calculator_type,
       drug_name: drug_name || null,
       patient_weight: patient_weight || null,
       result
     });
+    if (error) {
+      toast.error("Could not save calculation history");
+      return;
+    }
+    loadCalculationHistory();
   };
 
   return (
@@ -145,6 +173,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
           {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
+          {activeTab === "history" && <CalculationHistory rows={history} loading={historyLoading} darkMode={darkMode} onRefresh={loadCalculationHistory} />}
         </div>
       )}
     </div>
@@ -434,6 +463,54 @@ function Toxicology({ rows, darkMode }) {
       </div>
     </ToolShell>
   );
+}
+
+function CalculationHistory({ rows, loading, darkMode, onRefresh }) {
+  return (
+    <ToolShell darkMode={darkMode} title="Calculation History" icon={<Clock size={20} />} subtitle="Calculations logged from Clinical Tools in the last 24 hours.">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm opacity-60">{rows.length} calculation{rows.length === 1 ? "" : "s"} in the last 24 hours</p>
+        <button onClick={onRefresh} className="rounded-lg bg-[#E8F8F5] text-[#0B3760] px-3 py-2 text-xs font-black">
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8"><HeartbeatLoader size={48} /></div>
+      ) : rows.length === 0 ? (
+        <div className={`rounded-lg border p-4 text-center text-sm opacity-65 ${darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
+          No calculations logged in the last 24 hours.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div key={row.id} className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <h3 className="font-black text-base truncate">{row.drug_name || readableCalculatorType(row.calculator_type)}</h3>
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-45">{readableCalculatorType(row.calculator_type)}</p>
+                </div>
+                <span className="text-xs font-bold opacity-55 whitespace-nowrap">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+              <p className="text-sm leading-6 font-bold text-[#0F8F83]">{row.result}</p>
+              {row.patient_weight && <p className="text-xs opacity-55 mt-2">Patient weight: {row.patient_weight} kg</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </ToolShell>
+  );
+}
+
+function readableCalculatorType(type) {
+  const labels = {
+    drug: "Drug Calculator",
+    emergency: "Emergency Drugs",
+    fluid: "Fluid Therapy",
+    transfusion: "Blood Transfusion",
+    cri: "CRI Calculator"
+  };
+  return labels[type] || "Calculator";
 }
 
 function ToolShell({ darkMode, title, subtitle, icon, children }) {
