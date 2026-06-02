@@ -8,7 +8,7 @@ import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
-import { authenticateBiometric, isBiometricAvailable, isBiometricEnabled } from "./utils/biometricAuth";
+import { authenticateBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
 
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
@@ -152,11 +152,15 @@ function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) syncBiometricSession(data.session.user, data.session);
       setSession(data.session);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession?.user && (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED")) {
+        syncBiometricSession(nextSession.user, nextSession);
+      }
       setSession(nextSession);
     });
 
@@ -315,6 +319,11 @@ function App() {
 
   const signOut = async () => {
     setBiometricLocked(false);
+    if (session?.user?.id && isBiometricEnabled(session.user.id)) {
+      await supabase.auth.signOut({ scope: "local" });
+      window.dispatchEvent(new Event("biometricSettingsUpdated"));
+      return;
+    }
     await supabase.auth.signOut();
   };
 
