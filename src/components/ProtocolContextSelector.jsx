@@ -21,6 +21,8 @@ const toIdList = (value) => {
   return [];
 };
 
+const toDoseMap = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
 export default function ProtocolContextSelector({ user, darkMode = false, onProtocolChange }) {
   const [protocols, setProtocols] = useState([]);
   const [protocolDrugs, setProtocolDrugs] = useState([]);
@@ -56,6 +58,7 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
   };
 
   const selectedProtocol = useMemo(() => protocols.find((protocol) => String(protocol.id) === String(selectedId)), [protocols, selectedId]);
+  const doseMap = toDoseMap(selectedProtocol?.drug_doses);
 
   useEffect(() => {
     const loadProtocolDrugs = async () => {
@@ -84,7 +87,8 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
 
     onProtocolChange?.({
       protocol: selectedProtocol,
-      drugs: protocolDrugs
+      drugs: protocolDrugs,
+      doseMap
     });
   }, [selectedProtocol, protocolDrugs, onProtocolChange]);
 
@@ -102,7 +106,7 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         </div>
         <div className="min-w-0">
           <h2 className="font-black text-lg leading-tight">Protocol Context</h2>
-          <p className="text-sm opacity-60 leading-6">Select a saved protocol to pre-fill the Drug Calculator with its medicines.</p>
+          <p className="text-sm opacity-60 leading-6">Select a saved protocol to pre-fill the Drug Calculator with its medicines and protocol doses.</p>
         </div>
       </div>
 
@@ -141,11 +145,14 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
           <p className="text-xs font-bold uppercase tracking-widest opacity-45 mt-3">Applied to Drug Calculator</p>
           {protocolDrugs.length > 0 ? (
             <div className="flex flex-wrap gap-2 mt-2">
-              {protocolDrugs.map((drug) => (
-                <span key={drug.id} className="rounded-full bg-[#71CFC2]/20 text-[#0F8F83] px-3 py-1 text-xs font-black">
-                  {drug.name}{drug.route ? ` - ${drug.route}` : ""}
-                </span>
-              ))}
+              {protocolDrugs.map((drug) => {
+                const dose = doseMap[String(drug.id)];
+                return (
+                  <span key={drug.id} className="rounded-full bg-[#71CFC2]/20 text-[#0F8F83] px-3 py-1 text-xs font-black">
+                    {drug.name}{dose?.dose ? ` - ${dose.dose} ${dose.dose_unit || "mg/kg"}` : drug.route ? ` - ${drug.route}` : ""}
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm opacity-55 mt-2">This protocol has no linked drugs yet.</p>
