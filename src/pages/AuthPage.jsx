@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
+import { isBiometricLoginEnabled, signInWithBiometric } from "../utils/biometricAuth";
 
 import {
   Loader2,
@@ -19,10 +20,27 @@ export default function AuthPage(){
   const [email,setEmail]=useState("")
   const [password,setPassword]=useState("")
   const [showPassword, setShowPassword]=useState(false)
+  const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
   const [loading,setLoading]=useState(false)
 
-  // Removed mb-3 from the base class to handle wrapper margins cleanly
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkFingerprintLogin = async () => {
+      const enabled = await isBiometricLoginEnabled();
+      if (!cancelled) setShowFingerprintLogin(enabled);
+    };
+
+    checkFingerprintLogin();
+    window.addEventListener("biometricSettingsUpdated", checkFingerprintLogin);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("biometricSettingsUpdated", checkFingerprintLogin);
+    };
+  }, []);
 
   const submit=async()=>{
     const cleanEmail=email.trim().toLowerCase()
@@ -70,17 +88,18 @@ export default function AuthPage(){
     setLoading(false)
   }
 
-  // Uses WebAuthn / Passkeys native to the mobile device for fingerprint/FaceID
   const handleFingerprintLogin = async () => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPasskey()
-    
-    if (error) {
-      toast.error("Fingerprint not recognized or not set up on this device.")
-    } else {
+    try {
+      await signInWithBiometric()
       toast.success("Signed in successfully")
+    } catch (error) {
+      toast.error(error.message || "Fingerprint login is not set up on this device.")
+      const enabled = await isBiometricLoginEnabled()
+      setShowFingerprintLogin(enabled)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return(
@@ -174,7 +193,7 @@ export default function AuthPage(){
 
           <div className="relative mb-3">
             <input
-              className={`${fieldClass} pr-12`} 
+              className={`${fieldClass} pr-12`}
               placeholder="Password"
               type={showPassword ? "text" : "password"}
               autoComplete={mode==="login"?"current-password":"new-password"}
@@ -213,7 +232,7 @@ export default function AuthPage(){
             )}
           </button>
 
-          {mode==="login" && (
+          {mode==="login" && showFingerprintLogin && (
             <button
               className="w-full bg-transparent border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
               onClick={handleFingerprintLogin}
