@@ -9,6 +9,9 @@
       "backgroundColor": "#062F63",
       "androidScaleType": "CENTER_INSIDE",
       "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }
