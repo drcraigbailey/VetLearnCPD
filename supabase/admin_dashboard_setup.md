@@ -36,6 +36,22 @@ select public.admin_set_user_role('USER_UUID_HERE', 'admin');
 select public.admin_set_user_role('USER_UUID_HERE', 'user');
 ```
 
+## Password reset, logout and delete-user actions
+
+Privileged Supabase Auth actions must run through an Edge Function, not directly in the browser.
+
+Deploy the function:
+
+```bash
+supabase functions deploy admin-user-actions
+```
+
+The function uses the normal Supabase environment variables plus `SUPABASE_SERVICE_ROLE_KEY`. Optionally set a password reset redirect URL:
+
+```bash
+supabase secrets set PASSWORD_RESET_REDIRECT_URL=https://YOUR_APP_URL/settings
+```
+
 ## Recovery if locked out
 
 Run the first Super Admin SQL again from the Supabase SQL Editor with your own email address. This bypasses the app and restores access.
@@ -52,3 +68,4 @@ Run the first Super Admin SQL again from the Supabase SQL Editor with your own e
 - Audit logs
 - System error and backup log tables
 - Dashboard metrics RPC
+- Edge Function foundation for password reset, remote logout and delete-user actions
