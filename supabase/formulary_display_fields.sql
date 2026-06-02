@@ -1,123 +1,117 @@
 -- Fixes formulary monographs showing raw JSON for clinical records.
--- The current UI already displays `title` and `description` nicely, so this
--- adds/fills those fields from the existing Supabase column names.
+-- The current UI already displays `title` and `description` nicely.
+-- This safely adds/fills those fields from whichever source columns exist.
 
--- Drug warnings
-alter table if exists public.drug_warnings
-  add column if not exists title text,
-  add column if not exists description text;
+create or replace function pg_temp.vetlearn_fill_display_fields(
+  p_table text,
+  p_title_candidates text[],
+  p_description_candidates text[],
+  p_fallback_title text
+) returns void
+language plpgsql
+as $$
+declare
+  v_table regclass;
+  v_col text;
+  v_title_expr text := 'coalesce(nullif(title, '''')';
+  v_description_expr text := 'coalesce(nullif(description, '''')';
+begin
+  v_table := to_regclass('public.' || p_table);
+  if v_table is null then
+    return;
+  end if;
 
-update public.drug_warnings
-set
-  title = coalesce(nullif(title, ''), warning_type, species, 'Warning'),
-  description = coalesce(nullif(description, ''), warning_text, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+  execute format('alter table %s add column if not exists title text', v_table);
+  execute format('alter table %s add column if not exists description text', v_table);
 
--- Species warnings
-alter table if exists public.species_warnings
-  add column if not exists title text,
-  add column if not exists description text;
+  foreach v_col in array p_title_candidates loop
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = p_table
+        and column_name = v_col
+    ) then
+      v_title_expr := v_title_expr || format(', nullif(%I::text, '''')', v_col);
+    end if;
+  end loop;
 
-update public.species_warnings
-set
-  title = coalesce(nullif(title, ''), species, warning_type, 'Species warning'),
-  description = coalesce(nullif(description, ''), warning_text, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+  foreach v_col in array p_description_candidates loop
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = p_table
+        and column_name = v_col
+    ) then
+      v_description_expr := v_description_expr || format(', nullif(%I::text, '''')', v_col);
+    end if;
+  end loop;
 
--- Adverse effects
-alter table if exists public.adverse_effects
-  add column if not exists title text,
-  add column if not exists description text;
+  v_title_expr := v_title_expr || ', ' || quote_literal(p_fallback_title) || ')';
+  v_description_expr := v_description_expr || ', '''')';
 
-update public.adverse_effects
-set
-  title = coalesce(nullif(title, ''), effect_type, species, 'Adverse effect'),
-  description = coalesce(nullif(description, ''), effect_text, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+  execute format(
+    'update %s set title = %s, description = %s where title is null or title = '''' or description is null or description = ''''',
+    v_table,
+    v_title_expr,
+    v_description_expr
+  );
+end;
+$$;
 
--- Contraindications
-alter table if exists public.contraindications
-  add column if not exists title text,
-  add column if not exists description text;
+select pg_temp.vetlearn_fill_display_fields(
+  'drug_warnings',
+  array['warning_type', 'species'],
+  array['warning_text', 'notes'],
+  'Warning'
+);
 
-update public.contraindications
-set
-  title = coalesce(nullif(title, ''), condition, contraindication, species, 'Contraindication'),
-  description = coalesce(nullif(description, ''), reason, details, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+select pg_temp.vetlearn_fill_display_fields(
+  'species_warnings',
+  array['species', 'warning_type'],
+  array['warning_text', 'notes'],
+  'Species warning'
+);
 
--- Monitoring recommendations
-alter table if exists public.monitoring_recommendations
-  add column if not exists title text,
-  add column if not exists description text;
+select pg_temp.vetlearn_fill_display_fields(
+  'adverse_effects',
+  array['effect_type', 'species'],
+  array['effect_text', 'adverse_effect', 'notes'],
+  'Adverse effect'
+);
 
-update public.monitoring_recommendations
-set
-  title = coalesce(nullif(title, ''), parameter, monitoring_type, 'Monitoring'),
-  description = coalesce(nullif(description, ''), recommendation, monitoring, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+select pg_temp.vetlearn_fill_display_fields(
+  'contraindications',
+  array['condition', 'contraindication', 'species'],
+  array['reason', 'details', 'notes'],
+  'Contraindication'
+);
 
--- Drug interactions
-alter table if exists public.drug_interactions
-  add column if not exists title text,
-  add column if not exists description text;
+select pg_temp.vetlearn_fill_display_fields(
+  'monitoring_recommendations',
+  array['parameter', 'monitoring_type'],
+  array['recommendation', 'monitoring', 'notes'],
+  'Monitoring'
+);
 
-update public.drug_interactions
-set
-  title = coalesce(nullif(title, ''), interacting_drug, drug_b, 'Interaction'),
-  description = coalesce(nullif(description, ''), interaction, mechanism, recommendation, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+select pg_temp.vetlearn_fill_display_fields(
+  'drug_interactions',
+  array['interacting_drug', 'drug_b'],
+  array['interaction', 'mechanism', 'recommendation', 'notes'],
+  'Interaction'
+);
 
--- Drug information
-alter table if exists public.drug_information
-  add column if not exists title text,
-  add column if not exists description text;
+select pg_temp.vetlearn_fill_display_fields(
+  'drug_information',
+  array['section', 'information_type'],
+  array['content', 'information_text', 'summary', 'notes'],
+  'Information'
+);
 
-update public.drug_information
-set
-  title = coalesce(nullif(title, ''), section, information_type, 'Information'),
-  description = coalesce(nullif(description, ''), content, information_text, summary, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
-
--- Clinical pearls
-alter table if exists public.clinical_pearls
-  add column if not exists title text,
-  add column if not exists description text;
-
-update public.clinical_pearls
-set
-  title = coalesce(nullif(title, ''), category, species, 'Clinical pearl'),
-  description = coalesce(nullif(description, ''), pearl, pearl_text, summary, notes)
-where
-  title is null
-  or title = ''
-  or description is null
-  or description = '';
+select pg_temp.vetlearn_fill_display_fields(
+  'clinical_pearls',
+  array['category', 'species'],
+  array['pearl', 'pearl_text', 'summary', 'notes'],
+  'Clinical pearl'
+);
