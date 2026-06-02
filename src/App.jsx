@@ -8,7 +8,7 @@ import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
-import { authenticateBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
+import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
 
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
@@ -106,7 +106,7 @@ function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotif
   );
 }
 
-function BiometricGate({ darkMode, checking, onUnlock, onSignOut }) {
+function BiometricGate({ darkMode, checking, onUnlock, onPasswordFallback }) {
   return (
     <div className={`fixed inset-0 z-[120] grid place-items-center px-5 ${darkMode ? "bg-[#071A24] text-white" : "bg-[#F9FCFB] text-[#113247]"}`}>
       <div className={`w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl ${darkMode ? "bg-white/10 border border-white/10" : "bg-white border border-[#DCEDEA]"}`}>
@@ -118,7 +118,10 @@ function BiometricGate({ darkMode, checking, onUnlock, onSignOut }) {
         <button onClick={onUnlock} disabled={checking} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-4 font-black disabled:opacity-60">
           {checking ? "Checking..." : "Unlock"}
         </button>
-        <button onClick={onSignOut} className="mt-4 text-sm font-bold opacity-60">Sign out instead</button>
+        <button onClick={onPasswordFallback} disabled={checking} className="mt-4 w-full rounded-lg bg-[#E8F8F5] text-[#0B3760] p-3 text-sm font-black disabled:opacity-60">
+          Use email and password instead
+        </button>
+        <p className="mt-3 text-xs opacity-55 leading-5">This turns fingerprint login off on this device so you can get back in normally.</p>
       </div>
     </div>
   );
@@ -342,6 +345,22 @@ function App() {
     }
   };
 
+  const usePasswordFallback = async () => {
+    if (!session?.user) return;
+    setBiometricChecking(true);
+    try {
+      await disableBiometric(session.user.id);
+      setBiometricLocked(false);
+      await supabase.auth.signOut({ scope: "local" });
+      window.dispatchEvent(new Event("biometricSettingsUpdated"));
+      toast.success("Fingerprint login turned off. Sign in with email and password.");
+    } catch (error) {
+      toast.error(error.message || "Could not switch to email login");
+    } finally {
+      setBiometricChecking(false);
+    }
+  };
+
   const startReadingSession = (reading) => {
     if (!session?.user) {
       toast.error("Please sign in first");
@@ -484,7 +503,7 @@ function App() {
           </Routes>
         </div>
 
-        {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onSignOut={signOut} />}
+        {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onPasswordFallback={usePasswordFallback} />}
         <FloatingReadingTimer session={activeReading} onFinish={() => finishReadingSession()} onCancel={cancelReadingSession} darkMode={darkMode} />
         <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} />
       </div>
