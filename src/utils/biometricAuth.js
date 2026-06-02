@@ -6,6 +6,7 @@ const credentialPrefix = "vetlearn-biometric-credential";
 const enabledPrefix = "vetlearn-biometric-enabled";
 const loginEnabledKey = "vetlearn-biometric-login-enabled";
 const lastUserKey = "vetlearn-biometric-last-user";
+const relinkAfterPasswordKey = "vetlearn-biometric-relink-after-password";
 const nativeServer = "vetlearn-cpd";
 
 const randomChallenge = () => {
@@ -51,6 +52,10 @@ const clearLoginHint = (userId) => {
   }
 };
 
+const requestRelinkAfterPasswordLogin = (userId) => {
+  if (userId) localStorage.setItem(relinkAfterPasswordKey, String(userId));
+};
+
 export const getLastBiometricUser = () => {
   try {
     return JSON.parse(localStorage.getItem(lastUserKey) || "null");
@@ -78,7 +83,8 @@ const buildTokenPayload = (user, session) => ({
   user_id: user.id,
   email: user.email || "",
   access_token: session.access_token,
-  refresh_token: session.refresh_token
+  refresh_token: session.refresh_token,
+  saved_at: new Date().toISOString()
 });
 
 const saveNativeSessionCredentials = async (biometricPlugin, user, session) => {
@@ -100,7 +106,7 @@ const getNativeCredentials = async (biometricPlugin) => {
   }
 };
 
-const clearNativeBiometricCredentials = async (biometricPlugin, userId) => {
+const clearNativeBiometricCredentials = async (biometricPlugin, userId, { relink = false } = {}) => {
   try {
     await biometricPlugin?.deleteCredentials?.({ server: nativeServer });
   } catch {
@@ -110,6 +116,7 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId) => {
   if (userId) {
     localStorage.removeItem(enabledKey(userId));
     clearLoginHint(userId);
+    if (relink) requestRelinkAfterPasswordLogin(userId);
   } else {
     localStorage.removeItem(loginEnabledKey);
     localStorage.removeItem(lastUserKey);
@@ -118,8 +125,8 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId) => {
 
 const restoreSupabaseSession = async (biometricPlugin, credentials) => {
   if (!credentials?.refresh_token) {
-    await clearNativeBiometricCredentials(biometricPlugin, credentials?.user_id);
-    throw new Error("Please log in with email and password first.");
+    await clearNativeBiometricCredentials(biometricPlugin, credentials?.user_id, { relink: true });
+    throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
   }
 
   let restored = null;
@@ -141,8 +148,8 @@ const restoreSupabaseSession = async (biometricPlugin, credentials) => {
   }
 
   if (restoreError || !restored?.user) {
-    await clearNativeBiometricCredentials(biometricPlugin, credentials.user_id);
-    throw new Error("Session expired. Please log in with email and password first.");
+    await clearNativeBiometricCredentials(biometricPlugin, credentials.user_id, { relink: true });
+    throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
   }
 
   await syncBiometricSession(restored.user, restored);
@@ -171,7 +178,20 @@ export const isBiometricAvailable = async () => {
 
 export const isBiometricLoginEnabled = async () => {
   if (localStorage.getItem(loginEnabledKey) !== "true") return false;
-  return isBiometricAvailable();
+  const available = await isBiometricAvailable();
+  if (!available) return false;
+
+  const biometricPlugin = loadNativeBiometric();
+  if (!biometricPlugin) return true;
+
+  try {
+    const credentials = await getNativeCredentials(biometricPlugin);
+    return Boolean(credentials?.refresh_token);
+  } catch {
+    localStorage.removeItem(loginEnabledKey);
+    localStorage.removeItem(lastUserKey);
+    return false;
+  }
 };
 
 export const isBiometricEnabled = (userId) => {
@@ -180,14 +200,20 @@ export const isBiometricEnabled = (userId) => {
 };
 
 export const syncBiometricSession = async (user, session) => {
-  if (!user?.id || !session?.access_token || !session?.refresh_token || !isBiometricEnabled(user.id)) return;
+  if (!user?.id || !session?.access_token || !session?.refresh_token) return;
+
+  const shouldSync = isBiometricEnabled(user.id) || localStorage.getItem(relinkAfterPasswordKey) === String(user.id);
+  if (!shouldSync) return;
 
   const biometricPlugin = loadNativeBiometric();
   if (!biometricPlugin) return;
 
   try {
     await saveNativeSessionCredentials(biometricPlugin, user, session);
+    localStorage.setItem(enabledKey(user.id), "true");
+    localStorage.removeItem(relinkAfterPasswordKey);
     saveLoginHint(user);
+    window.dispatchEvent(new Event("biometricSettingsUpdated"));
   } catch {
     // The app can still run normally; re-enable biometric login in Settings if needed.
   }
@@ -208,6 +234,7 @@ export const registerBiometric = async (user) => {
     await verifyNativeIdentity(biometricPlugin);
     await saveNativeSessionCredentials(biometricPlugin, user, session);
     localStorage.setItem(enabledKey(user.id), "true");
+    localStorage.removeItem(relinkAfterPasswordKey);
     saveLoginHint(user);
     return true;
   }
@@ -303,5 +330,6 @@ export const disableBiometric = async (userId) => {
 
   localStorage.removeItem(credentialKey(userId));
   localStorage.removeItem(enabledKey(userId));
+  localStorage.removeItem(relinkAfterPasswordKey);
   clearLoginHint(userId);
 };
