@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BriefcaseMedical, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
+import { BriefcaseMedical, Calculator, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
@@ -11,6 +11,7 @@ const defaultSections = ["profile", "quickActions", "favourites", "activity", "r
 const quickActions = [
   { title: "Clinical Protocols", path: "/protocols", type: "page", icon: ClipboardList },
   { title: "Formulary", path: "/drugs", type: "page", icon: Syringe },
+  { title: "Clinical Tools", path: "/clinical-tools", type: "page", icon: Calculator },
   { title: "CPD Portfolio", path: "/cpd", type: "page", icon: FileText },
   { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical },
   { title: "Professional Network", path: "/network", type: "page", icon: Network },
