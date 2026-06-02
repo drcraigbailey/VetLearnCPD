@@ -1,3 +1,5 @@
+import bannerWatermark from "../assets/banner.png";
+
 export default function PageBanner({
   title,
   subtitle,
@@ -14,10 +16,12 @@ export default function PageBanner({
       }`}
     >
       <img
-        src="/logo.png"
+        src={bannerWatermark}
         alt=""
         aria-hidden="true"
-        className="absolute -right-8 -bottom-12 w-44 h-44 object-contain opacity-[0.10] pointer-events-none"
+        className={`absolute -right-8 -bottom-12 w-44 h-44 object-contain pointer-events-none select-none ${
+          darkMode ? "opacity-[0.14]" : "opacity-[0.10]"
+        }`}
       />
 
       <div className="relative">
