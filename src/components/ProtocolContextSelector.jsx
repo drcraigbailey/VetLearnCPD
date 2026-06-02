@@ -8,7 +8,20 @@ const fieldClass = (darkMode) =>
     darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"
   }`;
 
-export default function ProtocolContextSelector({ user, darkMode = false }) {
+const toIdList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
+export default function ProtocolContextSelector({ user, darkMode = false, onProtocolChange }) {
   const [protocols, setProtocols] = useState([]);
   const [protocolDrugs, setProtocolDrugs] = useState([]);
   const [selectedId, setSelectedId] = useState("");
@@ -46,7 +59,7 @@ export default function ProtocolContextSelector({ user, darkMode = false }) {
 
   useEffect(() => {
     const loadProtocolDrugs = async () => {
-      const ids = selectedProtocol?.drug_ids || [];
+      const ids = toIdList(selectedProtocol?.drug_ids);
       if (!ids.length) {
         setProtocolDrugs([]);
         return;
@@ -63,6 +76,18 @@ export default function ProtocolContextSelector({ user, darkMode = false }) {
     loadProtocolDrugs();
   }, [selectedProtocol?.id]);
 
+  useEffect(() => {
+    if (!selectedProtocol) {
+      onProtocolChange?.(null);
+      return;
+    }
+
+    onProtocolChange?.({
+      protocol: selectedProtocol,
+      drugs: protocolDrugs
+    });
+  }, [selectedProtocol, protocolDrugs, onProtocolChange]);
+
   const filteredProtocols = protocols.filter((protocol) => {
     const query = search.trim().toLowerCase();
     if (!query) return true;
@@ -77,7 +102,7 @@ export default function ProtocolContextSelector({ user, darkMode = false }) {
         </div>
         <div className="min-w-0">
           <h2 className="font-black text-lg leading-tight">Protocol Context</h2>
-          <p className="text-sm opacity-60 leading-6">Select one of your saved protocols to keep its indication and drugs visible while using the calculators.</p>
+          <p className="text-sm opacity-60 leading-6">Select a saved protocol to pre-fill the Drug Calculator with its medicines.</p>
         </div>
       </div>
 
@@ -113,14 +138,17 @@ export default function ProtocolContextSelector({ user, darkMode = false }) {
         <div className={`mt-4 rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
           <div className="font-black">{selectedProtocol.name}</div>
           {selectedProtocol.indication && <p className="text-sm opacity-65 leading-6 mt-1">{selectedProtocol.indication}</p>}
-          {protocolDrugs.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+          <p className="text-xs font-bold uppercase tracking-widest opacity-45 mt-3">Applied to Drug Calculator</p>
+          {protocolDrugs.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mt-2">
               {protocolDrugs.map((drug) => (
                 <span key={drug.id} className="rounded-full bg-[#71CFC2]/20 text-[#0F8F83] px-3 py-1 text-xs font-black">
                   {drug.name}{drug.route ? ` - ${drug.route}` : ""}
                 </span>
               ))}
             </div>
+          ) : (
+            <p className="text-sm opacity-55 mt-2">This protocol has no linked drugs yet.</p>
           )}
         </div>
       )}
