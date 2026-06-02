@@ -14,7 +14,7 @@ import { setupPushNotifications } from "./utils/pushNotifications";
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
 import Caselogs from "./pages/Caselogs";
-import ClinicalTools from "./pages/ClinicalTools";
+import ClinicalToolsPage from "./pages/ClinicalToolsPage";
 import HomeDashboard from "./pages/HomeDashboard";
 import Formulary from "./pages/Formulary.jsx";
 import SettingsPage from "./pages/Settings";
@@ -566,7 +566,7 @@ function App() {
             <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} onSaveManualReading={saveManualReadingSession} savingReading={savingReading} />} />
             <Route path="/caselogs" element={<Caselogs user={session.user} darkMode={darkMode} />} />
             <Route path="/drugs" element={<Formulary user={session.user} darkMode={darkMode} />} />
-            <Route path="/clinical-tools" element={<ClinicalTools user={session.user} darkMode={darkMode} />} />
+            <Route path="/clinical-tools" element={<ClinicalToolsPage user={session.user} darkMode={darkMode} />} />
             <Route path="/network" element={<Network user={session.user} darkMode={darkMode} />} />
             <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />
             <Route path="/messages" element={<Messages user={session.user} darkMode={darkMode} />} />
