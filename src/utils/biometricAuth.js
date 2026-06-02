@@ -91,13 +91,62 @@ const saveNativeSessionCredentials = async (biometricPlugin, user, session) => {
 
 const getNativeCredentials = async (biometricPlugin) => {
   const credentials = await biometricPlugin.getCredentials({ server: nativeServer });
-  if (!credentials?.password) throw new Error("Fingerprint login is not set up on this phone.");
+  if (!credentials?.password) throw new Error("Please log in with email and password first.");
 
   try {
     return JSON.parse(credentials.password);
   } catch {
     throw new Error("Please turn fingerprint login off and on again in Settings.");
   }
+};
+
+const clearNativeBiometricCredentials = async (biometricPlugin, userId) => {
+  try {
+    await biometricPlugin?.deleteCredentials?.({ server: nativeServer });
+  } catch {
+    // Credentials may already be missing; local flags still need clearing.
+  }
+
+  if (userId) {
+    localStorage.removeItem(enabledKey(userId));
+    clearLoginHint(userId);
+  } else {
+    localStorage.removeItem(loginEnabledKey);
+    localStorage.removeItem(lastUserKey);
+  }
+};
+
+const restoreSupabaseSession = async (biometricPlugin, credentials) => {
+  if (!credentials?.refresh_token) {
+    await clearNativeBiometricCredentials(biometricPlugin, credentials?.user_id);
+    throw new Error("Please log in with email and password first.");
+  }
+
+  let restored = null;
+  let restoreError = null;
+
+  if (credentials.access_token) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: credentials.access_token,
+      refresh_token: credentials.refresh_token
+    });
+    restored = data?.session || null;
+    restoreError = error || null;
+  }
+
+  if (!restored || restoreError) {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: credentials.refresh_token });
+    restored = data?.session || null;
+    restoreError = error || null;
+  }
+
+  if (restoreError || !restored?.user) {
+    await clearNativeBiometricCredentials(biometricPlugin, credentials.user_id);
+    throw new Error("Session expired. Please log in with email and password first.");
+  }
+
+  await syncBiometricSession(restored.user, restored);
+  return restored;
 };
 
 export const isBiometricAvailable = async () => {
@@ -203,6 +252,8 @@ export const authenticateBiometric = async (user) => {
     if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
 
     await verifyNativeIdentity(biometricPlugin);
+    const credentials = await getNativeCredentials(biometricPlugin);
+    await restoreSupabaseSession(biometricPlugin, credentials);
     return true;
   }
 
@@ -231,39 +282,23 @@ export const signInWithBiometric = async () => {
 
     await verifyNativeIdentity(biometricPlugin);
     const credentials = await getNativeCredentials(biometricPlugin);
-    if (!credentials?.access_token || !credentials?.refresh_token) {
-      throw new Error("Please turn fingerprint login off and on again in Settings.");
-    }
-
-    const { data, error } = await supabase.auth.setSession({
-      access_token: credentials.access_token,
-      refresh_token: credentials.refresh_token
-    });
-
-    if (error) throw error;
-    if (data?.session?.user) await syncBiometricSession(data.session.user, data.session);
+    await restoreSupabaseSession(biometricPlugin, credentials);
     return true;
   }
 
   const savedUser = getLastBiometricUser();
   if (!savedUser?.id || !isBiometricEnabled(savedUser.id)) {
-    throw new Error("Fingerprint login is not set up on this device.");
+    throw new Error("Please log in with email and password first.");
   }
 
   await authenticateBiometric(savedUser);
-  const { error } = await supabase.auth.signInWithPasskey();
-  if (error) throw error;
-  return true;
+  throw new Error("Fingerprint login on web needs a fresh email and password login first.");
 };
 
 export const disableBiometric = async (userId) => {
   const biometricPlugin = loadNativeBiometric();
   if (biometricPlugin) {
-    try {
-      await biometricPlugin.deleteCredentials({ server: nativeServer });
-    } catch {
-      // Local setting still needs clearing if native credentials are already gone.
-    }
+    await clearNativeBiometricCredentials(biometricPlugin, userId);
   }
 
   localStorage.removeItem(credentialKey(userId));
