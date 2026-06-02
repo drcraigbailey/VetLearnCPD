@@ -4,6 +4,7 @@ import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send,
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
+import { sendMessagePushNotification } from "../utils/pushNotifications";
 
 export default function Messages({ user, darkMode }) {
   const [conversations, setConversations] = useState([]);
@@ -325,6 +326,14 @@ export default function Messages({ user, darkMode }) {
       is_read: false,
       related_id: String(message.id)
     });
+
+    sendMessagePushNotification({
+      recipientId,
+      title: "New VetLearn message",
+      body: activeChat.colleague?.full_name ? `New message from ${activeChat.colleague.full_name}` : "You have a new VetLearn message.",
+      messageId: message.id,
+      conversationId: activeChat.id
+    });
   };
 
   const handleSend = async (event) => {
@@ -333,7 +342,7 @@ export default function Messages({ user, darkMode }) {
 
     const content = newMessage.trim() || (attachment ? "📎 [Local File Attached]" : "");
     const cachedMessage = newMessage;
-    
+
     setNewMessage("");
     setSending(true);
 
@@ -520,12 +529,12 @@ export default function Messages({ user, darkMode }) {
               {chatItems.map(item => {
                 const isMe = item.sender_id === user.id;
                 const fileObj = localFiles[item.id];
-                
+
                 return (
                   <div key={item.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                     <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMe ? "bg-[#71CFC2] text-[#0B3760] font-medium rounded-br-sm" : darkMode ? "bg-white/10 text-white rounded-bl-sm" : "bg-white border border-slate-100 text-[#113247] rounded-bl-sm"}`}>
                       {item.content && <div className="whitespace-pre-wrap">{item.content}</div>}
-                      
+
                       {fileObj && (
                         <a href={fileObj.data} download={fileObj.name} className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition ${isMe ? "bg-black/10 hover:bg-black/20" : darkMode ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"}`}>
                           <Download size={14} /> Download {fileObj.name}
