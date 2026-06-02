@@ -1,11 +1,36 @@
+import { useEffect } from "react";
 import { LayoutDashboard, FileText, BriefcaseMedical, Syringe, Menu } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
   const labelClass = "text-[10px] font-bold leading-none tracking-normal";
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    let listener;
+
+    const attachListener = async () => {
+      listener = await CapacitorApp.addListener("backButton", () => {
+        if (location.pathname !== "/") {
+          if (window.history.length > 1) navigate(-1);
+          else navigate("/", { replace: true });
+        }
+      });
+    };
+
+    attachListener();
+
+    return () => {
+      listener?.remove?.();
+    };
+  }, [location.pathname, navigate]);
 
   return (
     <div className={`fixed bottom-0 w-full border-t p-4 pb-safe z-30 ${darkMode ? "bg-[#0B242B] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
