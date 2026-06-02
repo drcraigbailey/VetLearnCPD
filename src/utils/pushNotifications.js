@@ -2,7 +2,7 @@ import { supabase } from "../supabaseClient";
 
 let activeRegistrationUserId = null;
 let setupPromise = null;
-let listenersAttached = false;
+let listenerUserId = null;
 
 const logPush = (...parts) => console.log("[VetLearn Push]", ...parts);
 
@@ -48,9 +48,10 @@ const ensureAndroidChannel = async (PushNotifications, platform) => {
 };
 
 const attachPushListeners = async (PushNotifications, user, platform) => {
-  if (listenersAttached) return;
+  if (listenerUserId === user.id) return;
 
   await PushNotifications.removeAllListeners();
+  listenerUserId = user.id;
 
   await PushNotifications.addListener("registration", async (token) => {
     if (!token?.value) {
@@ -87,8 +88,6 @@ const attachPushListeners = async (PushNotifications, user, platform) => {
     if (conversationId) window.location.href = `/messages?conversation=${conversationId}`;
     else window.location.href = "/messages";
   });
-
-  listenersAttached = true;
 };
 
 const runPushSetup = async (user) => {
