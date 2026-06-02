@@ -74,6 +74,21 @@ const verifyNativeIdentity = async (biometricPlugin) => {
   return true;
 };
 
+const buildTokenPayload = (user, session) => ({
+  user_id: user.id,
+  email: user.email || "",
+  access_token: session.access_token,
+  refresh_token: session.refresh_token
+});
+
+const saveNativeSessionCredentials = async (biometricPlugin, user, session) => {
+  await biometricPlugin.setCredentials({
+    username: user.email || user.id,
+    password: JSON.stringify(buildTokenPayload(user, session)),
+    server: nativeServer
+  });
+};
+
 const getNativeCredentials = async (biometricPlugin) => {
   const credentials = await biometricPlugin.getCredentials({ server: nativeServer });
   if (!credentials?.password) throw new Error("Fingerprint login is not set up on this phone.");
@@ -115,6 +130,20 @@ export const isBiometricEnabled = (userId) => {
   return localStorage.getItem(enabledKey(userId)) === "true" && Boolean(localStorage.getItem(credentialKey(userId)));
 };
 
+export const syncBiometricSession = async (user, session) => {
+  if (!user?.id || !session?.access_token || !session?.refresh_token || !isBiometricEnabled(user.id)) return;
+
+  const biometricPlugin = loadNativeBiometric();
+  if (!biometricPlugin) return;
+
+  try {
+    await saveNativeSessionCredentials(biometricPlugin, user, session);
+    saveLoginHint(user);
+  } catch {
+    // The app can still run normally; re-enable biometric login in Settings if needed.
+  }
+};
+
 export const registerBiometric = async (user) => {
   const biometricPlugin = loadNativeBiometric();
   if (biometricPlugin) {
@@ -128,16 +157,7 @@ export const registerBiometric = async (user) => {
     }
 
     await verifyNativeIdentity(biometricPlugin);
-    await biometricPlugin.setCredentials({
-      username: user.email || user.id,
-      password: JSON.stringify({
-        user_id: user.id,
-        email: user.email || "",
-        access_token: session.access_token,
-        refresh_token: session.refresh_token
-      }),
-      server: nativeServer
-    });
+    await saveNativeSessionCredentials(biometricPlugin, user, session);
     localStorage.setItem(enabledKey(user.id), "true");
     saveLoginHint(user);
     return true;
@@ -215,12 +235,13 @@ export const signInWithBiometric = async () => {
       throw new Error("Please turn fingerprint login off and on again in Settings.");
     }
 
-    const { error } = await supabase.auth.setSession({
+    const { data, error } = await supabase.auth.setSession({
       access_token: credentials.access_token,
       refresh_token: credentials.refresh_token
     });
 
     if (error) throw error;
+    if (data?.session?.user) await syncBiometricSession(data.session.user, data.session);
     return true;
   }
 
