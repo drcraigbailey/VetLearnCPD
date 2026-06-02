@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
-html {
+html,
+body,
+* {
   scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
+  html,
+  body,
   * {
     scroll-behavior: auto !important;
   }
