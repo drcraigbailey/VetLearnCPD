@@ -38,6 +38,8 @@ const fieldClass = (darkMode) =>
     darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"
   }`;
 
+const normalise = (value) => String(value || "").toLowerCase().trim();
+
 const numberValue = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -51,7 +53,7 @@ const formatNumber = (value, decimals = 2) => {
 
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
 
-export default function ClinicalTools({ user, darkMode = false, showBanner = true }) {
+export default function ClinicalTools({ user, darkMode = false, showBanner = true, protocolContext = null }) {
   const [activeTab, setActiveTab] = useState("drug");
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -72,6 +74,10 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   useEffect(() => {
     loadCalculationHistory();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (protocolContext?.protocol) setActiveTab("drug");
+  }, [protocolContext?.protocol?.id]);
 
   const loadClinicalTools = async () => {
     setLoading(true);
@@ -167,7 +173,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} />}
+          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} />}
           {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
@@ -180,7 +186,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   );
 }
 
-function DrugCalculator({ rows, darkMode, onLog }) {
+function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
   const [species, setSpecies] = useState("Dog");
   const [weight, setWeight] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -188,6 +194,23 @@ function DrugCalculator({ rows, darkMode, onLog }) {
 
   const speciesRows = useMemo(() => rows.filter((row) => row.species === species), [rows, species]);
   const selected = speciesRows.find((row) => String(row.id) === String(selectedId)) || firstBySpecies(speciesRows, species);
+
+  const protocolDrugNames = useMemo(() => {
+    return [...new Set((protocolContext?.drugs || []).map((drug) => normalise(drug.name)).filter(Boolean))];
+  }, [protocolContext?.drugs]);
+
+  const protocolRows = useMemo(() => {
+    if (!protocolDrugNames.length) return [];
+    return speciesRows.filter((row) => protocolDrugNames.includes(normalise(row.drug_name)));
+  }, [protocolDrugNames, speciesRows]);
+
+  useEffect(() => {
+    const firstProtocolSpecies = protocolContext?.drugs?.[0]?.species;
+    if (firstProtocolSpecies && species !== firstProtocolSpecies) {
+      setSpecies(firstProtocolSpecies);
+      setSelectedId("");
+    }
+  }, [protocolContext?.protocol?.id]);
 
   useEffect(() => {
     if (selected && !selectedId) setSelectedId(String(selected.id));
@@ -209,9 +232,27 @@ function DrugCalculator({ rows, darkMode, onLog }) {
     toast.success("Calculation logged");
   };
 
+  const saveProtocolLog = () => {
+    if (!protocolContext?.protocol || weightValue <= 0 || protocolRows.length === 0) return toast.error("Add a weight and check protocol drugs are available");
+    const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue)).join("; ");
+    onLog({ calculator_type: "drug", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
+    toast.success("Protocol calculation logged");
+  };
+
   return (
     <ToolShell darkMode={darkMode} title="Drug Calculator" icon={<Calculator size={20} />} subtitle="Calculate dose and volume from weight, dose rate and product concentration.">
       <SpeciesWeight species={species} setSpecies={(value) => { setSpecies(value); setSelectedId(""); }} weight={weight} setWeight={setWeight} darkMode={darkMode} />
+      {protocolContext?.protocol && (
+        <ProtocolDoseSet
+          darkMode={darkMode}
+          protocol={protocolContext.protocol}
+          protocolDrugs={protocolContext.drugs || []}
+          rows={protocolRows}
+          weightValue={weightValue}
+          species={species}
+          onLog={saveProtocolLog}
+        />
+      )}
       <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
         {speciesRows.length === 0 && <option value="">No drugs for this species</option>}
         {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
@@ -229,6 +270,74 @@ function DrugCalculator({ rows, darkMode, onLog }) {
       )}
     </ToolShell>
   );
+}
+
+function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, rows, weightValue, species, onLog }) {
+  const unmatched = protocolDrugs.filter((drug) => drug.species === species && !rows.some((row) => normalise(row.drug_name) === normalise(drug.name)));
+
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest opacity-45">Protocol dose set</p>
+        <h3 className="font-black text-base leading-tight">{protocol.name}</h3>
+        {protocol.indication && <p className="text-sm opacity-60 leading-6">{protocol.indication}</p>}
+      </div>
+
+      {weightValue <= 0 && <p className="text-sm opacity-65">Enter a patient weight above to calculate every matching protocol drug.</p>}
+      {rows.length === 0 && weightValue > 0 && <p className="text-sm opacity-65">No calculator rows match this protocol for {species}. Check the protocol species or add calculator records for these drugs.</p>}
+
+      {rows.map((row) => {
+        const minDose = numberValue(row.min_dose || row.dose_min);
+        const maxDose = numberValue(row.max_dose || row.dose_max, minDose);
+        const minTotal = weightValue * minDose;
+        const maxTotal = weightValue * maxDose;
+        const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
+        const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
+        const doseUnit = row.dose_unit?.split("/")[0] || "mg";
+        return (
+          <div key={row.id} className={`rounded-lg p-3 ${darkMode ? "bg-black/10" : "bg-[#F0F6F5]"}`}>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <div className="font-black">{row.drug_name}</div>
+                <div className="text-xs opacity-60">{row.route || "General route"} | {row.dose_unit || "mg/kg"}</div>
+              </div>
+              <span className="text-xs font-black text-[#0F8F83]">{row.species}</span>
+            </div>
+            <ResultGrid items={[
+              ["Dose", `${formatDoseRange(minTotal, maxTotal)} ${doseUnit}`],
+              ["Give", minVolume ? `${formatDoseRange(minVolume, maxVolume)} ml` : "No concentration"]
+            ]} />
+            <Notes row={row} />
+          </div>
+        );
+      })}
+
+      {unmatched.length > 0 && (
+        <p className="text-xs opacity-55 leading-5">
+          No calculator data for: {unmatched.map((drug) => drug.name).join(", ")}.
+        </p>
+      )}
+
+      {rows.length > 0 && <LogButton onClick={onLog} />}
+    </div>
+  );
+}
+
+function formatDoseRange(min, max) {
+  if (!Number.isFinite(max) || max === min) return formatNumber(min);
+  return `${formatNumber(min)} - ${formatNumber(max)}`;
+}
+
+function formatProtocolCalculation(row, weightValue) {
+  const minDose = numberValue(row.min_dose || row.dose_min);
+  const maxDose = numberValue(row.max_dose || row.dose_max, minDose);
+  const minTotal = weightValue * minDose;
+  const maxTotal = weightValue * maxDose;
+  const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
+  const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
+  const doseUnit = row.dose_unit?.split("/")[0] || "mg";
+  const volumeText = minVolume ? `, ${formatDoseRange(minVolume, maxVolume)} ml` : "";
+  return `${row.drug_name}: ${formatDoseRange(minTotal, maxTotal)} ${doseUnit}${volumeText}`;
 }
 
 function EmergencyCalculator({ rows, darkMode, onLog }) {
