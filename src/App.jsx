@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Bell, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
+import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -13,6 +13,7 @@ import { authenticateBiometric, isBiometricAvailable, isBiometricEnabled, syncBi
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
 import Caselogs from "./pages/Caselogs";
+import ClinicalTools from "./pages/ClinicalTools";
 import HomeDashboard from "./pages/HomeDashboard";
 import Formulary from "./pages/Formulary.jsx";
 import SettingsPage from "./pages/Settings";
@@ -33,6 +34,7 @@ const routeLabels = {
   "/cpd": { title: "CPD Portfolio", item_type: "cpd" },
   "/caselogs": { title: "Case Logs", item_type: "case" },
   "/drugs": { title: "Formulary", item_type: "drug" },
+  "/clinical-tools": { title: "Clinical Tools", item_type: "page" },
   "/network": { title: "Professional Network", item_type: "page" },
   "/messages": { title: "Messages", item_type: "page" },
   "/protocols": { title: "Clinical Protocols", item_type: "protocol" },
@@ -420,6 +422,7 @@ function App() {
 
   const menuLinks = [
     { to: "/protocols", label: "Clinical Protocols", icon: ClipboardList },
+    { to: "/clinical-tools", label: "Clinical Tools", icon: Calculator },
     { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessageCount },
     { to: "/vault", label: "Vault", icon: KeyRound },
@@ -472,6 +475,7 @@ function App() {
             <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} savingReading={savingReading} />} />
             <Route path="/caselogs" element={<Caselogs user={session.user} darkMode={darkMode} />} />
             <Route path="/drugs" element={<Formulary user={session.user} darkMode={darkMode} />} />
+            <Route path="/clinical-tools" element={<ClinicalTools user={session.user} darkMode={darkMode} />} />
             <Route path="/network" element={<Network user={session.user} darkMode={darkMode} />} />
             <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />
             <Route path="/messages" element={<Messages user={session.user} darkMode={darkMode} />} />
