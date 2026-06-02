@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, Sun, Users, X } from "lucide-react";
+import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldCheck, Sun, Users, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -11,6 +11,7 @@ import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
 import { setupPushNotifications } from "./utils/pushNotifications";
 
+import AdminDashboard from "./pages/AdminDashboard";
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
 import Caselogs from "./pages/Caselogs";
@@ -40,7 +41,8 @@ const routeLabels = {
   "/messages": { title: "Messages", item_type: "page" },
   "/protocols": { title: "Clinical Protocols", item_type: "protocol" },
   "/vault": { title: "Vault", item_type: "page" },
-  "/settings": { title: "Settings", item_type: "page" }
+  "/settings": { title: "Settings", item_type: "page" },
+  "/admin": { title: "Admin Dashboard", item_type: "page" }
 };
 
 function RecentRouteTracker({ user }) {
@@ -131,6 +133,7 @@ function BiometricGate({ darkMode, checking, onUnlock, onPasswordFallback }) {
 function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [adminAccess, setAdminAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -201,6 +204,7 @@ function App() {
     const loadProfile = async () => {
       if (!session?.user) {
         setProfile(null);
+        setAdminAccess(false);
         setNotifications([]);
         setUnreadNotificationCount(0);
         setUnreadMessageCount(0);
@@ -208,8 +212,12 @@ function App() {
         return;
       }
 
-      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
-      setProfile(data || null);
+      const [profileRes, adminRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle(),
+        supabase.from("admin_user_roles").select("role, is_active").eq("user_id", session.user.id).eq("is_active", true).maybeSingle()
+      ]);
+      setProfile(profileRes.data || null);
+      setAdminAccess(["admin", "super_admin"].includes(adminRes.data?.role));
       loadNotifications();
       loadUnreadMessageCount();
       loadPendingRequestCount();
@@ -512,6 +520,7 @@ function App() {
   const menuBadgeCount = unreadMessageCount + pendingRequestCount;
 
   const menuLinks = [
+    ...(adminAccess ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
     { to: "/protocols", label: "Clinical Protocols", icon: ClipboardList },
     { to: "/clinical-tools", label: "Clinical Tools", icon: Calculator },
     { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
@@ -572,6 +581,7 @@ function App() {
             <Route path="/messages" element={<Messages user={session.user} darkMode={darkMode} />} />
             <Route path="/protocols" element={<Protocols user={session.user} darkMode={darkMode} />} />
             <Route path="/vault" element={<Vault user={session.user} darkMode={darkMode} />} />
+            <Route path="/admin" element={<AdminDashboard user={session.user} profile={profile} darkMode={darkMode} />} />
           </Routes>
         </div>
 
