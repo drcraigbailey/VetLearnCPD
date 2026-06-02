@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
 .relative.overflow-hidden.bg-gradient-to-br.border.rounded-lg.p-6.mb-6.shadow-sm::after {
   content: "";
   position: absolute;
