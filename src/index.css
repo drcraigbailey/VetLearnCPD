@@ -54,6 +54,21 @@ body,
   scroll-padding-inline: 1rem;
 }
 
+.text-\[\#113247\] form.bg-white.dark\:bg-\[\#0B242B\] {
+  background: #ffffff !important;
+}
+
+.text-\[\#113247\] form label.dark\:bg-\[\#071A24\] {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.text-\[\#113247\] form textarea.dark\:bg-\[\#071A24\] {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #113247 !important;
+}
+
 @media (min-width: 640px) {
   .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
     justify-content: center !important;
