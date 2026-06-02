@@ -12,32 +12,39 @@ export default defineConfig({
 
     VitePWA({
 
-      registerType:'autoUpdate',
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallbackDenylist: [/^\/api\//]
+      },
 
-      manifest:{
+      manifest: {
 
-        name:'Vet CPD Tracker',
+        name: 'Vet CPD Tracker',
 
-        short_name:'VetCPD',
+        short_name: 'VetCPD',
 
-        theme_color:'#2563eb',
+        theme_color: '#2563eb',
 
-        background_color:'#f8fafc',
+        background_color: '#f8fafc',
 
-        display:'standalone',
+        display: 'standalone',
 
-        icons:[
+        icons: [
 
           {
-            src:'icon-192.png',
-            sizes:'192x192',
-            type:'image/png'
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
           },
 
           {
-            src:'icon-512.png',
-            sizes:'512x512',
-            type:'image/png'
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png'
           }
 
         ]
