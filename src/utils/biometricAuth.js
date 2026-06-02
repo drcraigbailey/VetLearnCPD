@@ -64,6 +64,8 @@ export const getLastBiometricUser = () => {
   }
 };
 
+export const needsBiometricRelink = () => Boolean(localStorage.getItem(relinkAfterPasswordKey));
+
 const loadNativeBiometric = () => {
   if (!isNative()) return null;
   return NativeBiometric || null;
@@ -115,8 +117,12 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId, { relink
 
   if (userId) {
     localStorage.removeItem(enabledKey(userId));
-    clearLoginHint(userId);
-    if (relink) requestRelinkAfterPasswordLogin(userId);
+    if (relink) {
+      localStorage.removeItem(loginEnabledKey);
+      requestRelinkAfterPasswordLogin(userId);
+    } else {
+      clearLoginHint(userId);
+    }
   } else {
     localStorage.removeItem(loginEnabledKey);
     localStorage.removeItem(lastUserKey);
@@ -189,7 +195,6 @@ export const isBiometricLoginEnabled = async () => {
     return Boolean(credentials?.refresh_token);
   } catch {
     localStorage.removeItem(loginEnabledKey);
-    localStorage.removeItem(lastUserKey);
     return false;
   }
 };
