@@ -3,7 +3,7 @@ import { registerSW } from "virtual:pwa-register";
 export function registerPwaUpdates() {
   if (import.meta.env.DEV) return;
 
-  registerSW({
+  const updateServiceWorker = registerSW({
     immediate: true,
     onNeedRefresh() {
       updateServiceWorker(true);
@@ -23,5 +23,3 @@ export function registerPwaUpdates() {
     }
   });
 }
-
-const updateServiceWorker = registerSW({ immediate: true });
