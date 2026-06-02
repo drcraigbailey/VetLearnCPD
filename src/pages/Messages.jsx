@@ -562,7 +562,6 @@ export default function Messages({ user, darkMode }) {
                   ref={chatInputRef}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   placeholder="Type a message..."
                   className={`flex-1 rounded-xl px-5 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-[#71CFC2]/50 resize-none max-h-12 overflow-hidden shadow-sm ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-slate-200 text-[#113247]"}`}
                   rows={1}
