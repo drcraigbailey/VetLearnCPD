@@ -25,20 +25,25 @@ export default function AuthPage(){
 
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
 
+  const checkFingerprintLogin = async () => {
+    const enabled = await isBiometricLoginEnabled();
+    setShowFingerprintLogin(enabled);
+  };
+
   useEffect(() => {
     let cancelled = false;
 
-    const checkFingerprintLogin = async () => {
+    const runCheck = async () => {
       const enabled = await isBiometricLoginEnabled();
       if (!cancelled) setShowFingerprintLogin(enabled);
     };
 
-    checkFingerprintLogin();
-    window.addEventListener("biometricSettingsUpdated", checkFingerprintLogin);
+    runCheck();
+    window.addEventListener("biometricSettingsUpdated", runCheck);
 
     return () => {
       cancelled = true;
-      window.removeEventListener("biometricSettingsUpdated", checkFingerprintLogin);
+      window.removeEventListener("biometricSettingsUpdated", runCheck);
     };
   }, []);
 
@@ -95,8 +100,7 @@ export default function AuthPage(){
       toast.success("Signed in successfully")
     } catch (error) {
       toast.error(error.message || "Fingerprint login is not set up on this device.")
-      const enabled = await isBiometricLoginEnabled()
-      setShowFingerprintLogin(enabled)
+      await checkFingerprintLogin()
     } finally {
       setLoading(false)
     }
