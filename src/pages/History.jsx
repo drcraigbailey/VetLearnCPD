@@ -13,7 +13,6 @@ export default function History({user,darkMode=false}){
   const [loadingId,setLoadingId]=useState(null)
   const [aiEnabled, setAiEnabled] = useState(false)
 
-  // Network Sharing State
   const [sharingItem, setSharingItem] = useState(null);
   const [friendsList, setFriendsList] = useState([]);
   const [isSharingLoading, setIsSharingLoading] = useState(false);
@@ -70,17 +69,18 @@ export default function History({user,darkMode=false}){
     setHistory(history.map(item=>item.id===id ? {...item,user_reflection:value} : item))
   }
 
-  // --- Network Sharing Functions ---
   const openShareMenu = async (item) => {
     setSharingItem(item);
     setIsSharingLoading(true);
     try {
-      const { data } = await supabase
-        .from('connections')
-        .select(`id, requester_id, receiver_id, requester:profiles!connections_requester_id_fkey(id, full_name, title), receiver:profiles!connections_receiver_id_fkey(id, full_name, title)`)
-        .eq('status', 'accepted')
+      const { data, error } = await supabase
+        .from("connections")
+        .select(`id, requester_id, receiver_id, requester:profiles!connections_requester_id_fkey(id, avatar_url, full_name, title), receiver:profiles!connections_receiver_id_fkey(id, avatar_url, full_name, title)`)
+        .eq("status", "accepted")
         .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
-        
+
+      if (error) throw error;
+
       const friends = (data || []).map(conn => ({
         connection_id: conn.id,
         colleague: conn.requester_id === user.id ? conn.receiver : conn.requester
@@ -93,17 +93,75 @@ export default function History({user,darkMode=false}){
     }
   };
 
+  const getOrCreateConversation = async (friendId) => {
+    const { data: conversations, error: loadError } = await supabase
+      .from("conversations")
+      .select("id, user1_id, user2_id")
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+    if (loadError) throw loadError;
+
+    const existing = (conversations || []).find(conversation =>
+      (String(conversation.user1_id) === String(user.id) && String(conversation.user2_id) === String(friendId)) ||
+      (String(conversation.user2_id) === String(user.id) && String(conversation.user1_id) === String(friendId))
+    );
+
+    if (existing) return existing;
+
+    const { data: created, error: createError } = await supabase
+      .from("conversations")
+      .insert({ user1_id: user.id, user2_id: friendId })
+      .select("id, user1_id, user2_id")
+      .single();
+
+    if (createError) throw createError;
+    return created;
+  };
+
+  const buildSharedCpdMessage = (item) => {
+    const parts = [
+      "Shared CPD record",
+      item.title,
+      item.category ? `Category: ${item.category}` : null,
+      item.duration_minutes ? `Duration: ${item.duration_minutes} minutes` : null,
+      item.article_url ? `URL: ${item.article_url}` : null,
+      item.user_reflection || item.reflection ? `Reflection: ${item.user_reflection || item.reflection}` : null
+    ];
+
+    return parts.filter(Boolean).join("\n");
+  };
+
   const confirmShare = async (friendId, item) => {
     setShareBusyId(friendId);
     try {
-      const { error } = await supabase.from('shared_records').insert({
-        sender_id: user.id, receiver_id: friendId, record_type: 'cpd_read', record_id: String(item.id), record_title: item.title
+      const conversation = await getOrCreateConversation(friendId);
+      const { data: message, error: messageError } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversation.id,
+          sender_id: user.id,
+          content: buildSharedCpdMessage(item),
+          is_read: false
+        })
+        .select("id")
+        .single();
+
+      if (messageError) throw messageError;
+
+      await supabase.from("notifications").insert({
+        user_id: friendId,
+        type: "message",
+        title: "Shared CPD record",
+        message: `${user.email || "A colleague"} shared a CPD record with you.`,
+        is_read: false,
+        related_id: String(message.id)
       });
-      if (error) throw error;
-      toast.success(`CPD shared successfully!`);
+
+      toast.success("CPD shared by message");
       setSharingItem(null);
+      window.dispatchEvent(new Event("messagesUpdated"));
     } catch (err) {
-      toast.error("Failed to share CPD.");
+      toast.error(err?.message || "Failed to share CPD.");
     } finally {
       setShareBusyId(null);
     }
@@ -113,7 +171,6 @@ export default function History({user,darkMode=false}){
 
   return(
     <div>
-      {/* Network Share Modal */}
       {sharingItem && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex flex-col items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl flex flex-col relative ${darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]"}`}>
@@ -130,12 +187,18 @@ export default function History({user,darkMode=false}){
             ) : (
               <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                 {friendsList.map(friend => (
-                  <div key={friend.connection_id} className={`flex justify-between items-center p-3 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"}`}>
-                    <div className="font-bold text-[15px]">{friend.colleague?.title} {friend.colleague?.full_name}</div>
+                  <div key={friend.connection_id} className={`flex justify-between items-center gap-3 p-3 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ColleagueAvatar colleague={friend.colleague} />
+                      <div className="min-w-0">
+                        <div className="font-bold text-[15px] truncate">{friend.colleague?.title} {friend.colleague?.full_name}</div>
+                        <div className="text-xs opacity-60 truncate">VetLearn colleague</div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => confirmShare(friend.colleague.id, sharingItem)}
                       disabled={shareBusyId === friend.colleague.id}
-                      className="bg-[#71CFC2] text-[#062F63] px-3 py-2 rounded-lg font-bold text-sm flex gap-2 items-center hover:opacity-90 transition"
+                      className="bg-[#71CFC2] text-[#062F63] px-3 py-2 rounded-lg font-bold text-sm flex gap-2 items-center hover:opacity-90 transition shrink-0"
                     >
                       {shareBusyId === friend.colleague.id ? <Loader2 size={16} className="animate-spin"/> : "Send"}
                     </button>
@@ -178,7 +241,6 @@ export default function History({user,darkMode=false}){
 
             {filtered.map(item=>(
               <div key={item.id} className={`${darkMode?"bg-white/10 border-white/10":"bg-white/90 border-[#DCEDEA]"} border rounded-lg p-5 shadow-[0_10px_24px_rgba(11,55,96,0.06)]`}>
-                
                 <div className="flex justify-between gap-3">
                   <div>
                     <div className={`font-black ${darkMode?"text-white":"text-[#113247]"}`}>{item.title}</div>
@@ -210,7 +272,6 @@ export default function History({user,darkMode=false}){
                     </button>
                   )}
 
-                  {/* Share Button Injected Here */}
                   <button className={`${darkMode?"bg-white/10 text-[#71CFC2] hover:bg-white/20":"bg-[#E8F8F5] text-[#0B3760] hover:bg-[#d4f1ec]"} rounded-lg p-3 transition`} onClick={()=>openShareMenu(item)} title="Share CPD">
                     <Share2 size={18} />
                   </button>
@@ -230,4 +291,18 @@ export default function History({user,darkMode=false}){
       </div>
     </div>
   )
+}
+
+function ColleagueAvatar({ colleague }) {
+  const initial = colleague?.full_name?.trim()?.charAt(0)?.toUpperCase() || "V";
+
+  return (
+    <div className="h-11 w-11 rounded-full bg-[#E8F8F5] text-[#0F8F83] grid place-items-center shrink-0 overflow-hidden font-black border border-[#DCEDEA]">
+      {colleague?.avatar_url ? (
+        <img src={colleague.avatar_url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initial
+      )}
+    </div>
+  );
 }
