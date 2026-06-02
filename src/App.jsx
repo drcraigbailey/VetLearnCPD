@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
+import { setupPushNotifications } from "./utils/pushNotifications";
 
 import AuthPage from "./pages/AuthPage";
 import CPD from "./pages/CPD";
@@ -171,6 +172,13 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    setupPushNotifications(session.user).then((result) => {
+      if (result?.error) console.warn("Push notification setup skipped:", result.error);
+    });
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const prepareBiometricLock = async () => {
@@ -361,6 +369,18 @@ function App() {
     }
   };
 
+  const insertCpdReading = async (payload) => {
+    const result = await supabase.from("cpd_reading").insert(payload);
+    if (!result.error) return result;
+
+    const message = result.error.message || "";
+    const canFallback = message.includes("entry_source") || message.includes("manual_minutes") || message.includes("column");
+    if (!canFallback) return result;
+
+    const { entry_source, manual_minutes, ...legacyPayload } = payload;
+    return supabase.from("cpd_reading").insert(legacyPayload);
+  };
+
   const startReadingSession = (reading) => {
     if (!session?.user) {
       toast.error("Please sign in first");
@@ -396,8 +416,8 @@ function App() {
       notes: extra.notes?.trim() || activeReading.notes || "",
       reflection: extra.reflection?.trim() || activeReading.reflection || ""
     };
-    
-    const { error } = await supabase.from("cpd_reading").insert({
+
+    const { error } = await insertCpdReading({
       user_id: session.user.id,
       title: finalReading.title,
       article_url: finalReading.url || null,
@@ -408,7 +428,9 @@ function App() {
       ai_reflection: finalReading.reflection,
       started_at: activeReading.started_at,
       finished_at: finishedAt.toISOString(),
-      duration_minutes: duration
+      duration_minutes: duration,
+      entry_source: "timer",
+      manual_minutes: null
     });
 
     if (error) {
@@ -421,6 +443,56 @@ function App() {
     setSavingReading(false);
     window.dispatchEvent(new Event("cpdUpdated"));
     toast.success("Reading saved");
+    return true;
+  };
+
+  const saveManualReadingSession = async (reading = {}) => {
+    if (!session?.user || savingReading) return false;
+    if (!reading.title?.trim()) {
+      toast.error("Add an article title first");
+      return false;
+    }
+
+    const minutes = Number(reading.duration_minutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      toast.error("Enter reading time in minutes");
+      return false;
+    }
+    if (minutes > 720) {
+      toast.error("Please split readings longer than 12 hours into separate CPD entries");
+      return false;
+    }
+
+    setSavingReading(true);
+    const finishedAt = new Date();
+    const startedAt = new Date(finishedAt.getTime() - Math.round(minutes) * 60 * 1000);
+    const reflection = reading.reflection?.trim() || "";
+
+    const { error } = await insertCpdReading({
+      user_id: session.user.id,
+      title: reading.title.trim(),
+      article_url: reading.url?.trim() || null,
+      category: reading.category || "Medicine",
+      notes: reading.notes?.trim() || null,
+      reflection,
+      user_reflection: reflection,
+      ai_reflection: reflection,
+      started_at: startedAt.toISOString(),
+      finished_at: finishedAt.toISOString(),
+      duration_minutes: Math.round(minutes),
+      entry_source: "manual",
+      manual_minutes: Math.round(minutes)
+    });
+
+    if (error) {
+      toast.error(error.message);
+      setSavingReading(false);
+      return false;
+    }
+
+    setSavingReading(false);
+    window.dispatchEvent(new Event("cpdUpdated"));
+    toast.success("Manual reading saved");
     return true;
   };
 
@@ -491,7 +563,7 @@ function App() {
         <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
           <Routes>
             <Route path="/" element={<HomeDashboard user={session.user} profile={profile} darkMode={darkMode} unreadMessageCount={unreadMessageCount} unreadNotificationCount={unreadNotificationCount} />} />
-            <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} savingReading={savingReading} />} />
+            <Route path="/cpd" element={<CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} onSaveManualReading={saveManualReadingSession} savingReading={savingReading} />} />
             <Route path="/caselogs" element={<Caselogs user={session.user} darkMode={darkMode} />} />
             <Route path="/drugs" element={<Formulary user={session.user} darkMode={darkMode} />} />
             <Route path="/clinical-tools" element={<ClinicalTools user={session.user} darkMode={darkMode} />} />
