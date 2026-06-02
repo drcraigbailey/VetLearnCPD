@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { LayoutDashboard, FileText, BriefcaseMedical, Syringe, Menu } from "lucide-react";
-import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -14,10 +13,13 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
 
+    const appPlugin = Capacitor?.Plugins?.App || window.Capacitor?.Plugins?.App;
+    if (!appPlugin?.addListener) return undefined;
+
     let listener;
 
     const attachListener = async () => {
-      listener = await CapacitorApp.addListener("backButton", () => {
+      listener = await appPlugin.addListener("backButton", () => {
         if (location.pathname !== "/") {
           if (window.history.length > 1) navigate(-1);
           else navigate("/", { replace: true });
