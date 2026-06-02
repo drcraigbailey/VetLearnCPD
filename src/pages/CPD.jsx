@@ -5,7 +5,7 @@ import History from "./History";
 import Analytics from "./Analytics";
 import PageBanner from "../components/PageBanner";
 
-export default function CPD({ user, profile, darkMode, activeReading, onStartReading, onFinishReading, savingReading }) {
+export default function CPD({ user, profile, darkMode, activeReading, onStartReading, onFinishReading, onSaveManualReading, savingReading }) {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const tabs = [
@@ -41,7 +41,7 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
 
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === "dashboard" && (
-          <Dashboard user={user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={onStartReading} onFinishReading={onFinishReading} savingReading={savingReading} />
+          <Dashboard user={user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={onStartReading} onFinishReading={onFinishReading} onSaveManualReading={onSaveManualReading} savingReading={savingReading} />
         )}
         {activeTab === "future" && <FutureReading user={user} darkMode={darkMode} />}
         {activeTab === "history" && <History user={user} darkMode={darkMode} />}
