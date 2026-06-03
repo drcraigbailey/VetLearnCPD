@@ -99,7 +99,14 @@ const saveNativeSessionCredentials = async (biometricPlugin, user, session) => {
 
 const getNativeCredentials = async (biometricPlugin) => {
   const credentials = await biometricPlugin.getCredentials({ server: nativeServer });
-  if (!credentials?.password) throw new Error("Please log in with email and password first.");
+  if (!credentials?.password) {
+    const savedUser = getLastBiometricUser();
+    if (savedUser?.id || localStorage.getItem(loginEnabledKey) === "true") {
+      requestRelinkAfterPasswordLogin(savedUser?.id);
+      throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
+    }
+    throw new Error("Please log in with email and password first to set up fingerprint login.");
+  }
 
   try {
     return JSON.parse(credentials.password);
@@ -194,8 +201,7 @@ export const isBiometricLoginEnabled = async () => {
     const credentials = await getNativeCredentials(biometricPlugin);
     return Boolean(credentials?.refresh_token);
   } catch {
-    localStorage.removeItem(loginEnabledKey);
-    return false;
+    return true;
   }
 };
 

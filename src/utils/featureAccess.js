@@ -2,10 +2,12 @@ import { supabase } from "../supabaseClient";
 
 export const featureKeys = {
   clinicalTools: "clinical_tools",
+  drugCalculator: "drug_calculator",
   clinicalProtocols: "clinical_protocols",
   drugDatabase: "drug_database",
   library: "library",
   caseLogs: "case_logs",
+  network: "network",
   messaging: "messaging",
   cpdTracker: "cpd_tracker",
   vault: "vault",
@@ -13,7 +15,7 @@ export const featureKeys = {
 };
 
 export const defaultFeatureAccess = Object.values(featureKeys).reduce((acc, key) => {
-  acc[key] = true;
+  acc[key] = false;
   return acc;
 }, {});
 
@@ -21,7 +23,7 @@ export const loadFeatureAccess = async () => {
   const entries = await Promise.all(
     Object.values(featureKeys).map(async (featureKey) => {
       const { data, error } = await supabase.rpc("has_feature", { feature: featureKey });
-      if (error) return [featureKey, true];
+      if (error) return [featureKey, false];
       return [featureKey, Boolean(data)];
     })
   );
@@ -29,7 +31,8 @@ export const loadFeatureAccess = async () => {
   return Object.fromEntries(entries);
 };
 
-export const canUseFeature = (featureAccess, featureKey) => {
+export const canUseFeature = (featureAccess, featureKey, isAdmin = false) => {
+  if (isAdmin) return true;
   if (!featureKey) return true;
   if (!featureAccess) return true;
   return featureAccess[featureKey] !== false;
@@ -40,6 +43,7 @@ export const featureForPath = (path) => {
   if (path === "/caselogs") return featureKeys.caseLogs;
   if (path === "/drugs") return featureKeys.drugDatabase;
   if (path === "/clinical-tools") return featureKeys.clinicalTools;
+  if (path === "/network") return featureKeys.network;
   if (path === "/messages") return featureKeys.messaging;
   if (path === "/protocols") return featureKeys.clinicalProtocols;
   if (path === "/vault") return featureKeys.vault;

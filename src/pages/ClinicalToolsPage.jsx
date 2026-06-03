@@ -4,7 +4,7 @@ import PageBanner from "../components/PageBanner";
 import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import ClinicalTools from "./ClinicalTools";
 
-export default function ClinicalToolsPage({ user, darkMode = false }) {
+export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const [protocolContext, setProtocolContext] = useState(null);
   const handleProtocolChange = useCallback((nextProtocol) => setProtocolContext(nextProtocol), []);
 
@@ -17,7 +17,7 @@ export default function ClinicalToolsPage({ user, darkMode = false }) {
         badges={[{ label: "Clinical calculators", icon: <Calculator size={14} />, accent: true }]}
       />
       <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
-      <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} />
+      <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
     </div>
   );
 }

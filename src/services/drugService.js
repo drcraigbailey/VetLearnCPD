@@ -1,11 +1,96 @@
 import { supabase } from '../supabaseClient';
 
 export const drugService = {
-  // Feature 3 & 7: Search drugs by name or alias (with performance)
-  async searchDrugs(searchTerm) {
+  async searchDrugs(searchTerm, userId = null) {
     if (!searchTerm) return [];
-    
-    // Using an OR query to match either the primary name or an alias
+
+    const term = String(searchTerm).trim();
+    if (term.length < 2) return [];
+
+    const ownOrShared = userId ? `user_id.is.null,user_id.eq.${userId}` : "user_id.is.null";
+    const [drugRes, aliasRes] = await Promise.all([
+      supabase
+        .from('drugs')
+        .select('*')
+        .or(ownOrShared)
+        .eq('active', true)
+        .ilike('name', `%${term}%`)
+        .order('name')
+        .limit(20),
+      supabase
+        .from('drug_aliases')
+        .select('drug_id, drug_name, alias, name, type, is_trade_name')
+        .or(`alias.ilike.%${term}%,name.ilike.%${term}%,drug_name.ilike.%${term}%`)
+        .limit(20)
+    ]);
+
+    if (drugRes.error) throw drugRes.error;
+    if (aliasRes.error) throw aliasRes.error;
+
+    const aliasDrugIds = [...new Set((aliasRes.data || []).map((item) => item.drug_id).filter(Boolean))];
+    let aliasDrugs = [];
+
+    if (aliasDrugIds.length > 0) {
+      const { data, error } = await supabase
+        .from('drugs')
+        .select('*')
+        .or(ownOrShared)
+        .eq('active', true)
+        .in('id', aliasDrugIds);
+      if (error) throw error;
+      aliasDrugs = data || [];
+    }
+
+    const byId = new Map();
+    [...(drugRes.data || []), ...aliasDrugs].forEach((drug) => {
+      byId.set(String(drug.id), {
+        ...drug,
+        drug_aliases: (aliasRes.data || [])
+          .filter((alias) => String(alias.drug_id) === String(drug.id) || String(alias.drug_name || '').toLowerCase() === String(drug.name || '').toLowerCase())
+          .map((alias) => ({ alias: alias.alias || alias.name, type: alias.type, is_trade_name: alias.is_trade_name }))
+          .filter((alias) => alias.alias)
+      });
+    });
+
+    return Array.from(byId.values()).slice(0, 20);
+  },
+
+  async searchCalculatorDrugs(searchTerm, userId = null) {
+    const drugs = await this.searchDrugs(searchTerm, userId);
+    return drugs;
+  },
+
+  async getDrugClinicalDetails(drug) {
+    if (!drug?.id && !drug?.name) return null;
+
+    const names = [drug.name].filter(Boolean);
+    const ids = [drug.id].filter(Boolean);
+
+    const [aliases, warnings, contraindications, interactions, monitoring, speciesWarnings, drugInfo] = await Promise.all([
+      ids.length ? supabase.from('drug_aliases').select('*').in('drug_id', ids) : { data: [] },
+      names.length ? supabase.from('drug_warnings').select('*').in('drug_name', names) : { data: [] },
+      names.length ? supabase.from('contraindications').select('*').in('drug_name', names) : { data: [] },
+      names.length ? supabase.from('drug_interactions').select('*').in('drug_name', names) : { data: [] },
+      names.length ? supabase.from('monitoring_recommendations').select('*').in('drug_name', names) : { data: [] },
+      names.length ? supabase.from('species_warnings').select('*').in('drug_name', names) : { data: [] },
+      names.length ? supabase.from('drug_information').select('*').in('drug_name', names) : { data: [] }
+    ]);
+
+    return {
+      aliases: aliases.data || [],
+      warnings: warnings.data || [],
+      contraindications: contraindications.data || [],
+      interactions: interactions.data || [],
+      monitoring: monitoring.data || [],
+      speciesWarnings: speciesWarnings.data || [],
+      drugInformation: drugInfo.data || []
+    };
+  },
+
+  // Legacy comprehensive profile lookup used by older pages.
+  async searchRelatedDrugs(searchTerm) {
+    if (!searchTerm) return [];
+
     const { data, error } = await supabase
       .from('drugs')
       .select(`

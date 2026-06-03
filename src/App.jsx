@@ -527,15 +527,16 @@ function App() {
   if (!session) return <><Toaster position="top-center" /><AuthPage /></>;
 
   const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
-  const menuBadgeCount = (canUseFeature(featureAccess, featureKeys.messaging) ? unreadMessageCount : 0) + pendingRequestCount;
-  const featureEnabled = (featureKey) => canUseFeature(featureAccess, featureKey);
+  const menuBadgeCount = (canUseFeature(featureAccess, featureKeys.messaging, adminAccess) ? unreadMessageCount : 0)
+    + (canUseFeature(featureAccess, featureKeys.network, adminAccess) ? pendingRequestCount : 0);
+  const featureEnabled = (featureKey) => canUseFeature(featureAccess, featureKey, adminAccess);
   const featureRoute = (featureKey, title, element) => featureEnabled(featureKey) ? element : <FeatureUnavailable darkMode={darkMode} title={title} />;
 
   const menuLinks = [
     ...(adminAccess ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
     ...(featureEnabled(featureKeys.clinicalProtocols) ? [{ to: "/protocols", label: "Clinical Protocols", icon: ClipboardList }] : []),
     ...(featureEnabled(featureKeys.clinicalTools) ? [{ to: "/clinical-tools", label: "Clinical Tools", icon: Calculator }] : []),
-    { to: "/network", label: "Network", icon: Users, badge: pendingRequestCount },
+    ...(featureEnabled(featureKeys.network) ? [{ to: "/network", label: "Network", icon: Users, badge: pendingRequestCount }] : []),
     ...(featureEnabled(featureKeys.messaging) ? [{ to: "/messages", label: "Messages", icon: MessageSquare, badge: unreadMessageCount }] : []),
     ...(featureEnabled(featureKeys.vault) ? [{ to: "/vault", label: "Vault", icon: KeyRound }] : []),
     { to: "/settings", label: "Settings", icon: SettingsIcon }
@@ -583,12 +584,12 @@ function App() {
 
         <div className="max-w-md mx-auto min-h-screen px-4 pt-5 pb-28">
           <Routes>
-            <Route path="/" element={<HomeDashboard user={session.user} profile={profile} darkMode={darkMode} unreadMessageCount={unreadMessageCount} unreadNotificationCount={unreadNotificationCount} featureAccess={featureAccess} />} />
+            <Route path="/" element={<HomeDashboard user={session.user} profile={profile} darkMode={darkMode} unreadMessageCount={unreadMessageCount} unreadNotificationCount={unreadNotificationCount} featureAccess={featureAccess} adminAccess={adminAccess} />} />
             <Route path="/cpd" element={featureRoute(featureKeys.cpdTracker, "CPD", <CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} onSaveManualReading={saveManualReadingSession} savingReading={savingReading} />)} />
             <Route path="/caselogs" element={featureRoute(featureKeys.caseLogs, "Case Logs", <Caselogs user={session.user} darkMode={darkMode} />)} />
-            <Route path="/drugs" element={featureRoute(featureKeys.drugDatabase, "Formulary", <Formulary user={session.user} darkMode={darkMode} />)} />
-            <Route path="/clinical-tools" element={featureRoute(featureKeys.clinicalTools, "Clinical Tools", <ClinicalToolsPage user={session.user} darkMode={darkMode} />)} />
-            <Route path="/network" element={<Network user={session.user} darkMode={darkMode} />} />
+            <Route path="/drugs" element={featureRoute(featureKeys.drugDatabase, "Formulary", <Formulary user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />)} />
+            <Route path="/clinical-tools" element={featureRoute(featureKeys.clinicalTools, "Clinical Tools", <ClinicalToolsPage user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />)} />
+            <Route path="/network" element={featureRoute(featureKeys.network, "Network", <Network user={session.user} darkMode={darkMode} />)} />
             <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />
             <Route path="/messages" element={featureRoute(featureKeys.messaging, "Messages", <Messages user={session.user} darkMode={darkMode} />)} />
             <Route path="/protocols" element={featureRoute(featureKeys.clinicalProtocols, "Clinical Protocols", <Protocols user={session.user} darkMode={darkMode} />)} />
@@ -599,7 +600,7 @@ function App() {
 
         {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onPasswordFallback={usePasswordFallback} />}
         <FloatingReadingTimer session={activeReading} onFinish={() => finishReadingSession()} onCancel={cancelReadingSession} darkMode={darkMode} />
-        <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} featureAccess={featureAccess} />
+        <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} featureAccess={featureAccess} adminAccess={adminAccess} />
       </div>
     </BrowserRouter>
   );

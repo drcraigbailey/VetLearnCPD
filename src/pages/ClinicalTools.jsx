@@ -15,6 +15,8 @@ import {
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
+import { drugService } from "../services/drugService";
+import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const tabs = [
   { id: "drug", label: "Drug Calculator", icon: Calculator },
@@ -54,7 +56,7 @@ const formatNumber = (value, decimals = 2) => {
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
 const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
 
-export default function ClinicalTools({ user, darkMode = false, showBanner = true, protocolContext = null }) {
+export default function ClinicalTools({ user, darkMode = false, showBanner = true, protocolContext = null, featureAccess, adminAccess = false }) {
   const [activeTab, setActiveTab] = useState("drug");
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -79,6 +81,14 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   useEffect(() => {
     if (protocolContext?.protocol) setActiveTab("drug");
   }, [protocolContext?.protocol?.id]);
+
+  const visibleTabs = useMemo(() => {
+    return tabs.filter((tab) => tab.id !== "drug" || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
+  }, [featureAccess, adminAccess]);
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) setActiveTab(visibleTabs[0]?.id || "history");
+  }, [activeTab, visibleTabs]);
 
   const loadClinicalTools = async () => {
     setLoading(true);
@@ -149,7 +159,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
       )}
 
       <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
-        {tabs.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
@@ -174,7 +184,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} />}
+          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} user={user} />}
           {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
@@ -187,14 +197,24 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   );
 }
 
-function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
+function DrugCalculator({ rows, darkMode, onLog, protocolContext, user }) {
   const [species, setSpecies] = useState("Dog");
   const [weight, setWeight] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [dose, setDose] = useState("");
+  const [drugSearch, setDrugSearch] = useState("");
+  const [drugSearchResults, setDrugSearchResults] = useState([]);
+  const [drugSearchLoading, setDrugSearchLoading] = useState(false);
+  const [selectedDatabaseDrug, setSelectedDatabaseDrug] = useState(null);
+  const [selectedDrugDetails, setSelectedDrugDetails] = useState(null);
 
   const speciesRows = useMemo(() => rows.filter((row) => row.species === species), [rows, species]);
-  const selected = speciesRows.find((row) => String(row.id) === String(selectedId)) || firstBySpecies(speciesRows, species);
+  const selected = useMemo(() => {
+    const row = speciesRows.find((item) => String(item.id) === String(selectedId));
+    if (row) return row;
+    if (selectedDatabaseDrug) return buildCalculatorRowFromDrug(selectedDatabaseDrug, species, rows);
+    return firstBySpecies(speciesRows, species);
+  }, [rows, selectedDatabaseDrug, selectedId, species, speciesRows]);
   const doseMap = doseMapFrom(protocolContext);
 
   const protocolDrugNames = useMemo(() => {
@@ -222,6 +242,60 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
     if (selected) setDose(selected.min_dose || selected.max_dose || "");
   }, [selected?.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const query = drugSearch.trim();
+
+    if (query.length < 2) {
+      setDrugSearchResults([]);
+      setDrugSearchLoading(false);
+      return undefined;
+    }
+
+    setDrugSearchLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await drugService.searchCalculatorDrugs(query, user?.id);
+        if (!cancelled) setDrugSearchResults(results);
+      } catch {
+        if (!cancelled) toast.error("Could not search drug database");
+      } finally {
+        if (!cancelled) setDrugSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [drugSearch, user?.id]);
+
+  const selectDatabaseDrug = async (drug) => {
+    const nextSpecies = drug.species || species;
+    setSpecies(nextSpecies);
+    setSelectedDatabaseDrug(drug);
+    setDrugSearch(drug.name || "");
+    setDrugSearchResults([]);
+
+    const calculatorRow = findCalculatorRowForDrug(rows, drug, nextSpecies);
+    setSelectedId(calculatorRow ? String(calculatorRow.id) : "");
+    setDose(calculatorRow?.min_dose || calculatorRow?.max_dose || drug.dose_min || drug.min_dose || "");
+
+    try {
+      setSelectedDrugDetails(await drugService.getDrugClinicalDetails(drug));
+    } catch {
+      setSelectedDrugDetails(null);
+    }
+  };
+
+  const handleCalculatorSelect = (value) => {
+    setSelectedId(value);
+    setSelectedDatabaseDrug(null);
+    setSelectedDrugDetails(null);
+    setDrugSearch("");
+    setDrugSearchResults([]);
+  };
+
   const doseValue = numberValue(dose || selected?.min_dose);
   const weightValue = numberValue(weight);
   const totalDose = weightValue * doseValue;
@@ -244,6 +318,28 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
   return (
     <ToolShell darkMode={darkMode} title="Drug Calculator" icon={<Calculator size={20} />} subtitle="Calculate dose and volume from weight, dose rate and product concentration.">
       <SpeciesWeight species={species} setSpecies={(value) => { setSpecies(value); setSelectedId(""); }} weight={weight} setWeight={setWeight} darkMode={darkMode} />
+      <div className="relative">
+        <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+        <input
+          className={`${fieldClass(darkMode)} pl-10`}
+          placeholder="Search drug database by generic or brand name..."
+          value={drugSearch}
+          onChange={(event) => setDrugSearch(event.target.value)}
+        />
+        {(drugSearchLoading || drugSearchResults.length > 0) && (
+          <div className={`absolute z-20 mt-2 w-full rounded-lg border overflow-hidden shadow-xl ${darkMode ? "bg-[#071A24] border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+            {drugSearchLoading && <div className="p-3 text-sm opacity-60">Searching...</div>}
+            {!drugSearchLoading && drugSearchResults.map((drug) => (
+              <button key={drug.id} type="button" onClick={() => selectDatabaseDrug(drug)} className={`w-full text-left p-3 border-b last:border-b-0 ${darkMode ? "border-white/10 hover:bg-white/10" : "border-[#DCEDEA] hover:bg-[#F0F6F5]"}`}>
+                <div className="font-black text-sm">{drug.name}</div>
+                <div className="text-xs opacity-60">
+                  {[drug.species, drug.route, drug.category, ...(drug.drug_aliases || []).map((alias) => alias.alias)].filter(Boolean).join(" | ")}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       {protocolContext?.protocol && (
         <ProtocolDoseSet
           darkMode={darkMode}
@@ -256,12 +352,18 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
           onLog={saveProtocolLog}
         />
       )}
-      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => handleCalculatorSelect(event.target.value)}>
         {speciesRows.length === 0 && <option value="">No drugs for this species</option>}
+        {selectedDatabaseDrug && !speciesRows.some((row) => String(row.id) === String(selectedId)) && (
+          <option value={selectedId || `drug-${selectedDatabaseDrug.id}`}>{selectedDatabaseDrug.name} (database record)</option>
+        )}
         {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
       </select>
       {selected && (
         <>
+          {selectedDatabaseDrug && (
+            <SelectedDrugSummary drug={selectedDatabaseDrug} details={selectedDrugDetails} darkMode={darkMode} />
+          )}
           <DoseRange row={selected} dose={dose} setDose={setDose} darkMode={darkMode} />
           <ResultGrid items={[
             ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}`],
@@ -272,6 +374,65 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext }) {
         </>
       )}
     </ToolShell>
+  );
+}
+
+function findCalculatorRowForDrug(rows, drug, species) {
+  const names = [drug.name, ...(drug.drug_aliases || []).map((alias) => alias.alias)].map(normalise).filter(Boolean);
+  return rows.find((row) => row.species === species && names.includes(normalise(row.drug_name)))
+    || rows.find((row) => names.includes(normalise(row.drug_name)))
+    || null;
+}
+
+function buildCalculatorRowFromDrug(drug, species, rows) {
+  const row = findCalculatorRowForDrug(rows, drug, species);
+  if (row) return row;
+  return {
+    id: `drug-${drug.id}`,
+    drug_name: drug.name,
+    species: drug.species || species,
+    min_dose: drug.dose_min || drug.min_dose || "",
+    max_dose: drug.dose_max || drug.max_dose || drug.dose_min || drug.min_dose || "",
+    dose_unit: drug.dose_unit || "mg/kg",
+    route: drug.route || "",
+    concentration: drug.concentration || "",
+    concentration_unit: drug.concentration_unit || "mg/ml",
+    notes: drug.notes || drug.summary || drug.clinical_summary || ""
+  };
+}
+
+function SelectedDrugSummary({ drug, details, darkMode }) {
+  const warnings = [
+    ...(details?.warnings || []),
+    ...(details?.contraindications || []),
+    ...(details?.interactions || []),
+    ...(details?.monitoring || []),
+    ...(details?.speciesWarnings || [])
+  ];
+  const aliases = [...(drug.drug_aliases || []), ...(details?.aliases || [])].map((item) => item.alias || item.name).filter(Boolean);
+
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest opacity-45">Selected from formulary</p>
+        <h3 className="font-black text-base leading-tight">{drug.name}</h3>
+        {aliases.length > 0 && <p className="text-xs opacity-60 mt-1">Also known as {aliases.slice(0, 5).join(", ")}</p>}
+      </div>
+      <InfoLine label="Class" value={drug.category || drug.drug_class} />
+      <InfoLine label="Route" value={drug.route} />
+      <InfoLine label="Dose data" value={(drug.dose_min || drug.dose_max) ? `${drug.dose_min || drug.dose_max}${drug.dose_max && drug.dose_max !== drug.dose_min ? ` - ${drug.dose_max}` : ""} ${drug.dose_unit || "mg/kg"}` : ""} />
+      {warnings.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest opacity-45">Clinical cautions</p>
+          {warnings.slice(0, 5).map((item, index) => (
+            <p key={index} className="text-sm leading-6 opacity-75">
+              <span className="font-black">{item.title || item.warning_type || item.severity || item.species || "Note"}: </span>
+              {item.description || item.warning_text || item.warning || item.contraindication || item.interaction || item.recommendation || item.notes || item.mechanism}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

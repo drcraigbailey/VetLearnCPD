@@ -25,6 +25,7 @@ import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
 import { exportDrugHistory } from "../utils/drugsPdfExport";
+import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const pageSize = 25;
@@ -50,7 +51,7 @@ const inputClass = (darkMode) =>
     darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"
   }`;
 
-export default function Drugs({ user, darkMode = false }) {
+export default function Drugs({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const [activeTab, setActiveTab] = useState("library");
   const [drugs, setDrugs] = useState([]);
   const [allAliases, setAllAliases] = useState([]);
@@ -446,6 +447,17 @@ export default function Drugs({ user, darkMode = false }) {
   }, [activeDrugDoses]);
 
   const availableCalcDrugs = drugs.filter((drug) => drug.species === calcPatient.species);
+  const canUseCalculator = canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess);
+  const canUseLibrary = canUseFeature(featureAccess, featureKeys.library, adminAccess);
+  const formularyTabs = useMemo(() => [
+    ...(canUseLibrary ? [{ id: "library", label: "Library" }] : []),
+    ...(canUseCalculator ? [{ id: "calculator", label: "Calculator" }] : []),
+    { id: "history", label: "History" }
+  ], [canUseCalculator, canUseLibrary]);
+
+  useEffect(() => {
+    if (!formularyTabs.some((tab) => tab.id === activeTab)) setActiveTab(formularyTabs[0]?.id || "history");
+  }, [activeTab, formularyTabs]);
 
   const copyDrugSummary = () => {
     navigator.clipboard.writeText(`VetLearn Formulary: ${activeDrugName}\nClass: ${activeDrugRecord?.category || "Uncategorised"}`);
@@ -496,11 +508,7 @@ export default function Drugs({ user, darkMode = false }) {
       />
 
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
-        {[
-          { id: "library", label: "Library" },
-          { id: "calculator", label: "Calculator" },
-          { id: "history", label: "History" }
-        ].map((tab) => (
+        {formularyTabs.map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
             {tab.label}
           </button>
@@ -514,7 +522,7 @@ export default function Drugs({ user, darkMode = false }) {
         </div>
       ) : (
         <div className="animate-in fade-in">
-          {activeTab === "library" && (
+          {canUseLibrary && activeTab === "library" && (
             <LibraryTab
               darkMode={darkMode}
               panelClass={panelClass}
@@ -547,7 +555,7 @@ export default function Drugs({ user, darkMode = false }) {
             />
           )}
 
-          {activeTab === "calculator" && (
+          {canUseCalculator && activeTab === "calculator" && (
             <CalculatorTab
               darkMode={darkMode}
               panelClass={panelClass}
@@ -954,6 +962,21 @@ function WarningGroup({ title, items, darkMode }) {
 }
 
 function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcPatient, availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs, handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph }) {
+  const [calculatorSearch, setCalculatorSearch] = useState("");
+  const filteredCalcDrugs = useMemo(() => {
+    const q = normalise(calculatorSearch);
+    if (!q) return [];
+    return availableCalcDrugs
+      .filter((drug) => [drug.name, drug.route, drug.category, drug.indication, drug.notes].some((value) => normalise(value).includes(q)))
+      .slice(0, 12);
+  }, [availableCalcDrugs, calculatorSearch]);
+
+  const addSearchDrug = (drug) => {
+    if (selectedCalcDrugs.some((item) => String(item.id) === String(drug.id))) return;
+    setSelectedCalcDrugs((prev) => [...prev, { ...drug, selectedDose: parseSafeNumber(drug.dose_min, 0) }]);
+    setCalculatorSearch("");
+  };
+
   return (
     <div className="space-y-4">
       <div className={panelClass}>
@@ -969,6 +992,34 @@ function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcP
 
       <div className={panelClass}>
         <h2 className="font-black mb-4 flex items-center gap-2"><Plus size={18} /> Add to Calculator</h2>
+        <div className="relative mb-3">
+          <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+          <input
+            className={`${fieldClass} pl-10`}
+            placeholder="Search drugs by name..."
+            value={calculatorSearch}
+            onChange={(event) => setCalculatorSearch(event.target.value)}
+          />
+        </div>
+        {calculatorSearch.trim().length > 0 && (
+          <div className="space-y-2 mb-3">
+            {filteredCalcDrugs.length === 0 ? (
+              <p className="text-sm opacity-55">No matching drugs for {calcPatient.species}.</p>
+            ) : filteredCalcDrugs.map((drug) => (
+              <button
+                key={drug.id}
+                type="button"
+                onClick={() => addSearchDrug(drug)}
+                className={`w-full text-left rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-[#DCEDEA] bg-[#F9FCFB] hover:bg-[#F0F6F5]"}`}
+              >
+                <div className="font-black text-sm">{drug.name}</div>
+                <div className="text-xs opacity-60">
+                  {[drug.route || "General route", drug.dose_min || drug.dose_max ? `${drug.dose_min || drug.dose_max}${drug.dose_max && drug.dose_max !== drug.dose_min ? ` - ${drug.dose_max}` : ""} mg/kg` : "", drug.concentration ? `${drug.concentration} mg/ml` : ""].filter(Boolean).join(" | ")}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
         <select className={fieldClass} onChange={handleAddDrugToCalc} defaultValue="">
           <option value="" disabled>Add single drug...</option>
           {availableCalcDrugs.map((drug) => <option key={drug.id} value={drug.id}>{drug.name} ({drug.route || "General"})</option>)}

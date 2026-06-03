@@ -39,10 +39,12 @@ const adminTabs = [
 
 const featureLabels = {
   clinical_tools: "Clinical Tools",
+  drug_calculator: "Drug Calculator",
   clinical_protocols: "Clinical Protocols",
   drug_database: "Drug Database",
   library: "Library",
   case_logs: "Case Logs",
+  network: "Network",
   messaging: "Messaging",
   cpd_tracker: "CPD Tracker",
   vault: "Vault",

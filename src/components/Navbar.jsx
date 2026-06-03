@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
-export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featureAccess }) {
+export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featureAccess, adminAccess = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const lastBackPressRef = useRef(0);
@@ -15,9 +15,9 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featu
   const labelClass = "text-[10px] font-bold leading-none tracking-normal";
   const navItems = [
     { to: "/", label: "Home", icon: LayoutDashboard, enabled: true },
-    { to: "/cpd", label: "CPD", icon: FileText, enabled: canUseFeature(featureAccess, featureKeys.cpdTracker) },
-    { to: "/caselogs", label: "Cases", icon: BriefcaseMedical, enabled: canUseFeature(featureAccess, featureKeys.caseLogs) },
-    { to: "/drugs", label: "Formulary", icon: Syringe, enabled: canUseFeature(featureAccess, featureKeys.drugDatabase) }
+    { to: "/cpd", label: "CPD", icon: FileText, enabled: canUseFeature(featureAccess, featureKeys.cpdTracker, adminAccess) },
+    { to: "/caselogs", label: "Cases", icon: BriefcaseMedical, enabled: canUseFeature(featureAccess, featureKeys.caseLogs, adminAccess) },
+    { to: "/drugs", label: "Formulary", icon: Syringe, enabled: canUseFeature(featureAccess, featureKeys.drugDatabase, adminAccess) }
   ].filter(item => item.enabled);
 
   useEffect(() => {
