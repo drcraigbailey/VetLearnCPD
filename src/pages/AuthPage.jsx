@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric } from "../utils/biometricAuth";
+import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, registerBiometric, signInWithBiometric } from "../utils/biometricAuth";
 
 import {
   Loader2,
@@ -56,6 +56,20 @@ export default function AuthPage(){
     };
   }, []);
 
+  const refreshFingerprintAfterPasswordLogin = async (signedInUser) => {
+    if (!needsBiometricRelink() || !signedInUser) return;
+
+    try {
+      await registerBiometric(signedInUser);
+      setFingerprintRefreshNeeded(false);
+      setShowFingerprintLogin(true);
+      toast.success("Fingerprint login refreshed for this phone");
+    } catch (error) {
+      setFingerprintRefreshNeeded(true);
+      toast.error(error.message || "Could not refresh fingerprint login. You can turn it off and on again in Settings.");
+    }
+  };
+
   const submit=async()=>{
     const cleanEmail=email.trim().toLowerCase()
 
@@ -67,7 +81,7 @@ export default function AuthPage(){
     setLoading(true)
 
     if(mode==="login"){
-      const {error}=await supabase.auth.signInWithPassword({
+      const { data, error }=await supabase.auth.signInWithPassword({
         email:cleanEmail,
         password
       })
@@ -77,6 +91,8 @@ export default function AuthPage(){
         setLoading(false)
         return
       }
+
+      await refreshFingerprintAfterPasswordLogin(data?.user)
     }else{
       const {error}=await supabase.auth.signUp({
         email:cleanEmail,
@@ -197,7 +213,7 @@ export default function AuthPage(){
 
           {mode==="login" && fingerprintRefreshNeeded && (
             <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
-              Fingerprint login just needs refreshing. Log in once with email and password, then it will be saved again for this phone.
+              Fingerprint login needs refreshing. Please log in once with your email and password, then fingerprint login will be saved again on this phone.
             </div>
           )}
 
