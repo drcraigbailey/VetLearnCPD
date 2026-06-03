@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BriefcaseMedical, Calculator, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Network, Settings, Star, Syringe } from "lucide-react";
+import { BriefcaseMedical, Calculator, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Settings, Star, Syringe, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
@@ -15,7 +15,7 @@ const quickActions = [
   { title: "Clinical Tools", path: "/clinical-tools", type: "page", icon: Calculator, feature: featureKeys.clinicalTools },
   { title: "CPD Portfolio", path: "/cpd", type: "page", icon: FileText, feature: featureKeys.cpdTracker },
   { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical, feature: featureKeys.caseLogs },
-  { title: "Professional Network", path: "/network", type: "page", icon: Network, feature: featureKeys.network },
+  { title: "Professional Network", path: "/network", type: "page", icon: Users, feature: featureKeys.network },
   { title: "Messages", path: "/messages", type: "page", icon: MessageSquare, feature: featureKeys.messaging },
   { title: "Vault", path: "/vault", type: "page", icon: KeyRound, feature: featureKeys.vault },
   { title: "Settings", path: "/settings", type: "page", icon: Settings }
@@ -238,51 +238,59 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         </div>
         {layoutOpen && (
           <div className="space-y-2">
-            {sectionOrder.map(section => {
-              const isHidden = hiddenSections.includes(section);
-              return (
-                <div key={section} className={`rounded-lg px-3 py-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className={`text-sm font-black truncate ${isHidden ? "opacity-45" : ""}`}>{sectionLabels[section]}</div>
-                      <div className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${isHidden ? "text-slate-400" : "text-[#0F8F83]"}`}>
-                        {isHidden ? "Hidden" : "Visible"}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => toggleSection(section)}
-                        className={`h-9 px-3 rounded-lg text-xs font-black flex items-center gap-1 ${isHidden ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-200" : "bg-white text-[#0B3760]"}`}
-                        aria-label={`${isHidden ? "Show" : "Hide"} ${sectionLabels[section]}`}
-                      >
-                        {isHidden ? <Eye size={15} /> : <EyeOff size={15} />}
-                        {isHidden ? "Show" : "Hide"}
-                      </button>
-                      <button onClick={() => moveSection(section, -1)} className="h-9 w-9 grid place-items-center opacity-70" aria-label={`Move ${sectionLabels[section]} up`}><ChevronUp size={16} /></button>
-                      <button onClick={() => moveSection(section, 1)} className="h-9 w-9 grid place-items-center opacity-70" aria-label={`Move ${sectionLabels[section]} down`}><ChevronDown size={16} /></button>
-                    </div>
-                  </div>
+            {defaultSections.map(section => (
+              <div key={section} className={`flex items-center justify-between gap-2 rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <button onClick={() => toggleSection(section)} className="flex items-center gap-2 text-sm font-bold">
+                  {hiddenSections.includes(section) ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {sectionLabel(section)}
+                </button>
+                <div className="flex gap-1">
+                  <button onClick={() => moveSection(section, -1)} className="p-1 opacity-60"><ChevronUp size={16} /></button>
+                  <button onClick={() => moveSection(section, 1)} className="p-1 opacity-60"><ChevronDown size={16} /></button>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </section>
 
-      {loading ? <section className={panelClass}><LoadingState label="Loading dashboard..." darkMode={darkMode} /></section> : orderedVisibleSections.map(renderSection)}
+      {loading ? <LoadingState label="Loading dashboard..." darkMode={darkMode} /> : orderedVisibleSections.map(renderSection)}
     </div>
   );
 }
 
-const sectionLabels = {
-  profile: "Profile summary",
-  quickActions: "Quick actions",
-  favourites: "Favourites",
-  activity: "Activity summary",
-  recent: "Recently viewed"
-};
+function Summary({ label, value, darkMode }) {
+  return (
+    <div className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+      <div className="text-xl font-black text-[#0F8F83]">{value}</div>
+      <div className="text-xs font-bold opacity-65">{label}</div>
+    </div>
+  );
+}
 
-function featureForFavourite(path) {
+function ActivityList({ title, items }) {
+  return (
+    <div className="mb-4 last:mb-0">
+      <h3 className="text-xs font-black uppercase tracking-widest opacity-50 mb-2">{title}</h3>
+      {items.length === 0 ? <p className="text-sm opacity-55">No recent items.</p> : (
+        <div className="space-y-1">{items.map((item, index) => <div key={`${title}-${index}`} className="text-sm font-bold opacity-80 truncate">{item}</div>)}</div>
+      )}
+    </div>
+  );
+}
+
+function sectionLabel(section) {
+  const labels = {
+    profile: "Profile",
+    quickActions: "Quick actions",
+    favourites: "Favourites",
+    activity: "Activity",
+    recent: "Recently viewed"
+  };
+  return labels[section] || section;
+}
+
+function featureForFavourite(path = "") {
   if (path === "/cpd") return featureKeys.cpdTracker;
   if (path === "/caselogs") return featureKeys.caseLogs;
   if (path === "/drugs") return featureKeys.drugDatabase;
@@ -292,22 +300,4 @@ function featureForFavourite(path) {
   if (path === "/protocols") return featureKeys.clinicalProtocols;
   if (path === "/vault") return featureKeys.vault;
   return null;
-}
-
-function Summary({ label, value, darkMode }) {
-  return (
-    <div className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-      <div className="text-2xl font-black text-[#0F8F83]">{value}</div>
-      <div className="text-xs font-bold opacity-65">{label}</div>
-    </div>
-  );
-}
-
-function ActivityList({ title, items }) {
-  return (
-    <div className="mt-3">
-      <h3 className="text-xs font-black uppercase tracking-widest opacity-50 mb-2">{title}</h3>
-      {items.length === 0 ? <p className="text-sm opacity-50">None yet</p> : items.map(item => <p key={item} className="text-sm font-bold truncate">{item}</p>)}
-    </div>
-  );
 }
