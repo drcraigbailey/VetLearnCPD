@@ -63,9 +63,11 @@ serve(async (req) => {
     if (action === "delete_user") {
       if (role.role !== "super_admin") return json({ error: "Only Super Admins can delete users" }, 403);
       if (!targetUserId) return json({ error: "Missing targetUserId" }, 400);
+      if (targetUserId === authData.user.id) return json({ error: "You cannot delete your own account from the admin dashboard" }, 400);
+      await deleteUserData(adminClient, targetUserId);
       const { error } = await adminClient.auth.admin.deleteUser(targetUserId);
       if (error) throw error;
-      await audit(adminClient, authData.user.id, action, targetUserId, {});
+      await audit(adminClient, authData.user.id, action, null, { deleted_user_id: targetUserId });
       return json({ ok: true });
     }
 
@@ -92,6 +94,69 @@ async function audit(client, adminUserId, action, targetUserId, details) {
     target_user_id: targetUserId || null,
     details: details || {}
   });
+}
+
+async function deleteUserData(client, targetUserId) {
+  const deleteByUserId = [
+    "calculator_logs",
+    "caselogs",
+    "cpd_reading",
+    "dashboard_favourites",
+    "device_push_tokens",
+    "drugs",
+    "notifications",
+    "protocol_saves",
+    "protocols",
+    "recently_viewed",
+    "user_feature_overrides",
+    "user_preferences",
+    "user_private_settings",
+    "user_subscriptions",
+    "vault_entries"
+  ];
+
+  for (const table of deleteByUserId) {
+    await maybeDelete(client.from(table).delete().eq("user_id", targetUserId));
+  }
+
+  await maybeDelete(client.from("messages").delete().or(`sender_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`));
+  await maybeDelete(client.from("conversations").delete().or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`));
+  await maybeDelete(client.from("connections").delete().or(`requester_id.eq.${targetUserId},receiver_id.eq.${targetUserId}`));
+  await maybeDelete(client.from("shared_records").delete().or(`sender_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`));
+
+  await maybeUpdate(client.from("admin_audit_logs").update({ target_user_id: null }).eq("target_user_id", targetUserId));
+  await maybeUpdate(client.from("admin_audit_logs").update({ admin_user_id: null }).eq("admin_user_id", targetUserId));
+  await maybeUpdate(client.from("admin_announcements").update({ created_by: null }).eq("created_by", targetUserId));
+  await maybeUpdate(client.from("system_backups").update({ created_by: null }).eq("created_by", targetUserId));
+  await maybeUpdate(client.from("system_error_logs").update({ user_id: null }).eq("user_id", targetUserId));
+  await maybeUpdate(client.from("subscription_feature_access").update({ updated_by: null }).eq("updated_by", targetUserId));
+  await maybeUpdate(client.from("user_account_status").update({ updated_by: null }).eq("updated_by", targetUserId));
+  await maybeUpdate(client.from("user_subscriptions").update({ updated_by: null }).eq("updated_by", targetUserId));
+  await maybeUpdate(client.from("profiles").update({ suspended_by: null }).eq("suspended_by", targetUserId));
+
+  await maybeDelete(client.from("admin_user_roles").delete().eq("user_id", targetUserId));
+  await maybeDelete(client.from("user_account_status").delete().eq("user_id", targetUserId));
+  await maybeDelete(client.from("profiles").delete().eq("id", targetUserId));
+}
+
+async function maybeDelete(query) {
+  const { error } = await query;
+  if (isMissingTableError(error)) return;
+  if (error) throw error;
+}
+
+async function maybeUpdate(query) {
+  const { error } = await query;
+  if (isMissingTableError(error) || isMissingColumnError(error)) return;
+  if (error) throw error;
+}
+
+function isMissingTableError(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205";
+}
+
+function isMissingColumnError(error) {
+  return error?.code === "42703";
 }
 
 function json(body, status = 200) {
