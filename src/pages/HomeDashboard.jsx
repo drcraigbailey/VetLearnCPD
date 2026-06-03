@@ -5,22 +5,23 @@ import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
+import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const defaultSections = ["profile", "quickActions", "favourites", "activity", "recent"];
 
 const quickActions = [
-  { title: "Clinical Protocols", path: "/protocols", type: "page", icon: ClipboardList },
-  { title: "Formulary", path: "/drugs", type: "page", icon: Syringe },
-  { title: "Clinical Tools", path: "/clinical-tools", type: "page", icon: Calculator },
-  { title: "CPD Portfolio", path: "/cpd", type: "page", icon: FileText },
-  { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical },
+  { title: "Clinical Protocols", path: "/protocols", type: "page", icon: ClipboardList, feature: featureKeys.clinicalProtocols },
+  { title: "Formulary", path: "/drugs", type: "page", icon: Syringe, feature: featureKeys.drugDatabase },
+  { title: "Clinical Tools", path: "/clinical-tools", type: "page", icon: Calculator, feature: featureKeys.clinicalTools },
+  { title: "CPD Portfolio", path: "/cpd", type: "page", icon: FileText, feature: featureKeys.cpdTracker },
+  { title: "Case Logs", path: "/caselogs", type: "page", icon: BriefcaseMedical, feature: featureKeys.caseLogs },
   { title: "Professional Network", path: "/network", type: "page", icon: Network },
-  { title: "Messages", path: "/messages", type: "page", icon: MessageSquare },
-  { title: "Vault", path: "/vault", type: "page", icon: KeyRound },
+  { title: "Messages", path: "/messages", type: "page", icon: MessageSquare, feature: featureKeys.messaging },
+  { title: "Vault", path: "/vault", type: "page", icon: KeyRound, feature: featureKeys.vault },
   { title: "Settings", path: "/settings", type: "page", icon: Settings }
 ];
 
-export default function HomeDashboard({ user, profile, darkMode, unreadMessageCount = 0, unreadNotificationCount = 0 }) {
+export default function HomeDashboard({ user, profile, darkMode, unreadMessageCount = 0, unreadNotificationCount = 0, featureAccess }) {
   const [favourites, setFavourites] = useState([]);
   const [recentItems, setRecentItems] = useState([]);
   const [activity, setActivity] = useState({ protocols: [], cpd: [], cases: [] });
@@ -117,6 +118,10 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
 
   const profileInitial = (profile?.full_name || user?.email || "V").charAt(0).toUpperCase();
   const orderedVisibleSections = useMemo(() => sectionOrder.filter(section => !hiddenSections.includes(section)), [hiddenSections, sectionOrder]);
+  const visibleQuickActions = useMemo(
+    () => quickActions.filter(action => canUseFeature(featureAccess, action.feature)),
+    [featureAccess]
+  );
 
   const renderSection = (section) => {
     if (section === "profile") {
@@ -144,7 +149,7 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         <section className={panelClass} key={section}>
           <h2 className="text-lg font-black mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
-            {quickActions.map(action => {
+            {visibleQuickActions.map(action => {
               const Icon = action.icon;
               return (
                 <div key={action.path} className={`rounded-lg border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-[#DCEDEA] bg-white"}`}>
@@ -164,12 +169,13 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
     }
 
     if (section === "favourites") {
+      const visibleFavourites = favourites.filter(item => canUseFeature(featureAccess, featureForFavourite(item.url)));
       return (
         <section className={panelClass} key={section}>
           <h2 className="text-lg font-black mb-4">Favourites</h2>
-          {favourites.length === 0 ? <p className="text-sm opacity-60">Pin pages, drugs, protocols and resources for quick access.</p> : (
+          {visibleFavourites.length === 0 ? <p className="text-sm opacity-60">Pin pages, drugs, protocols and resources for quick access.</p> : (
             <div className="space-y-2">
-              {favourites.map(item => (
+              {visibleFavourites.map(item => (
                 <Link key={item.id} to={item.url || "/"} className={`flex items-center justify-between rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
                   <span className="font-bold text-sm">{item.title}</span>
                   <Heart size={15} className="text-[#0F8F83]" />
@@ -186,23 +192,24 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         <section className={panelClass} key={section}>
           <h2 className="text-lg font-black mb-4">Activity Summary</h2>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <Summary label="Unread messages" value={unreadMessageCount} darkMode={darkMode} />
+            {canUseFeature(featureAccess, featureKeys.messaging) && <Summary label="Unread messages" value={unreadMessageCount} darkMode={darkMode} />}
             <Summary label="Notifications" value={unreadNotificationCount} darkMode={darkMode} />
           </div>
-          <ActivityList title="Recent protocols" items={activity.protocols.map(item => item.name)} />
-          <ActivityList title="Recent CPD" items={activity.cpd.map(item => item.title)} />
-          <ActivityList title="Recent cases" items={activity.cases.map(item => item.title)} />
+          {canUseFeature(featureAccess, featureKeys.clinicalProtocols) && <ActivityList title="Recent protocols" items={activity.protocols.map(item => item.name)} />}
+          {canUseFeature(featureAccess, featureKeys.cpdTracker) && <ActivityList title="Recent CPD" items={activity.cpd.map(item => item.title)} />}
+          {canUseFeature(featureAccess, featureKeys.caseLogs) && <ActivityList title="Recent cases" items={activity.cases.map(item => item.title)} />}
         </section>
       );
     }
 
     if (section === "recent") {
+      const visibleRecentItems = recentItems.filter(item => canUseFeature(featureAccess, featureForFavourite(item.url)));
       return (
         <section className={panelClass} key={section}>
           <h2 className="text-lg font-black mb-4">Recently Viewed</h2>
-          {recentItems.length === 0 ? <p className="text-sm opacity-60">Recently opened drugs, protocols, cases and CPD records will appear here.</p> : (
+          {visibleRecentItems.length === 0 ? <p className="text-sm opacity-60">Recently opened drugs, protocols, cases and CPD records will appear here.</p> : (
             <div className="space-y-2">
-              {recentItems.map(item => <div key={item.id} className="text-sm font-bold opacity-80">{item.title}</div>)}
+              {visibleRecentItems.map(item => <div key={item.id} className="text-sm font-bold opacity-80">{item.title}</div>)}
             </div>
           )}
         </section>
@@ -274,6 +281,17 @@ const sectionLabels = {
   activity: "Activity summary",
   recent: "Recently viewed"
 };
+
+function featureForFavourite(path) {
+  if (path === "/cpd") return featureKeys.cpdTracker;
+  if (path === "/caselogs") return featureKeys.caseLogs;
+  if (path === "/drugs") return featureKeys.drugDatabase;
+  if (path === "/clinical-tools") return featureKeys.clinicalTools;
+  if (path === "/messages") return featureKeys.messaging;
+  if (path === "/protocols") return featureKeys.clinicalProtocols;
+  if (path === "/vault") return featureKeys.vault;
+  return null;
+}
 
 function Summary({ label, value, darkMode }) {
   return (
