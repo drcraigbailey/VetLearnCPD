@@ -4,14 +4,21 @@ import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
-export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
+export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featureAccess }) {
   const location = useLocation();
   const navigate = useNavigate();
   const lastBackPressRef = useRef(0);
   const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
   const labelClass = "text-[10px] font-bold leading-none tracking-normal";
+  const navItems = [
+    { to: "/", label: "Home", icon: LayoutDashboard, enabled: true },
+    { to: "/cpd", label: "CPD", icon: FileText, enabled: canUseFeature(featureAccess, featureKeys.cpdTracker) },
+    { to: "/caselogs", label: "Cases", icon: BriefcaseMedical, enabled: canUseFeature(featureAccess, featureKeys.caseLogs) },
+    { to: "/drugs", label: "Formulary", icon: Syringe, enabled: canUseFeature(featureAccess, featureKeys.drugDatabase) }
+  ].filter(item => item.enabled);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
@@ -51,22 +58,15 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0 }) {
   return (
     <div className={`fixed bottom-0 w-full border-t p-4 pb-safe z-30 ${darkMode ? "bg-[#0B242B] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
       <div className="max-w-md mx-auto flex justify-between items-center px-2">
-        <Link to="/" className={`flex flex-col items-center gap-1 ${isActive("/")}`} aria-label="Dashboard">
-          <LayoutDashboard size={24} />
-          <span className={labelClass}>Home</span>
-        </Link>
-        <Link to="/cpd" className={`flex flex-col items-center gap-1 ${isActive("/cpd")}`} aria-label="CPD">
-          <FileText size={24} />
-          <span className={labelClass}>CPD</span>
-        </Link>
-        <Link to="/caselogs" className={`flex flex-col items-center gap-1 ${isActive("/caselogs")}`} aria-label="Case Logs">
-          <BriefcaseMedical size={24} />
-          <span className={labelClass}>Cases</span>
-        </Link>
-        <Link to="/drugs" className={`flex flex-col items-center gap-1 ${isActive("/drugs")}`} aria-label="Formulary">
-          <Syringe size={24} />
-          <span className={labelClass}>Formulary</span>
-        </Link>
+        {navItems.map(item => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.to} to={item.to} className={`flex flex-col items-center gap-1 ${isActive(item.to)}`} aria-label={item.label}>
+              <Icon size={24} />
+              <span className={labelClass}>{item.label}</span>
+            </Link>
+          );
+        })}
         <button
           onClick={onOpenMenu}
           className="relative flex flex-col items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
