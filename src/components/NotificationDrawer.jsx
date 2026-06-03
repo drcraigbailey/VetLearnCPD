@@ -73,6 +73,22 @@ export default function NotificationDrawer({
     }
   };
 
+  const deleteVisibleNotifications = async () => {
+    if (visibleNotifications.length === 0) return;
+
+    const ids = visibleNotifications.map(notification => notification.id);
+    const { error } = await supabase.from("notifications").delete().in("id", ids);
+
+    if (!error) {
+      setNotifications(prev => prev.filter(notification => !ids.includes(notification.id)));
+      setReadNotifications(prev => prev.filter(notification => !ids.includes(notification.id)));
+      window.dispatchEvent(new Event("notificationsUpdated"));
+      toast.success(activeTab === "unread" ? "Unread notifications deleted" : "Read notifications deleted");
+    } else {
+      toast.error("Could not delete notifications");
+    }
+  };
+
   const handleNotificationClick = async (notification) => {
     if (!notification.is_read) {
       await markAsRead(notification);
@@ -125,6 +141,9 @@ export default function NotificationDrawer({
           <div className="flex gap-2">
             {activeTab === "unread" && unreadNotifications.length > 0 && (
               <button onClick={markAllRead} className="text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Read All</button>
+            )}
+            {visibleNotifications.length > 0 && (
+              <button onClick={deleteVisibleNotifications} className="text-xs font-bold text-red-500 opacity-80 hover:opacity-100 transition-opacity">Delete All</button>
             )}
             <button onClick={onClose} className="opacity-70 hover:opacity-100 transition-opacity"><X size={24} /></button>
           </div>
