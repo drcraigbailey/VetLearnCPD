@@ -8,37 +8,69 @@ export const drugService = {
     if (term.length < 2) return [];
 
     const ownOrShared = userId ? `user_id.is.null,user_id.eq.${userId}` : "user_id.is.null";
-    const [drugRes, aliasRes] = await Promise.all([
-      supabase
+    const searchDrugRows = (includeOwnershipFilter = true) => {
+      let query = supabase
         .from('drugs')
         .select('*')
-        .or(ownOrShared)
         .eq('active', true)
         .ilike('name', `%${term}%`)
         .order('name')
-        .limit(20),
-      supabase
+        .limit(20);
+
+      if (includeOwnershipFilter) query = query.or(ownOrShared);
+      return query;
+    };
+
+    const searchAliasRows = async () => {
+      const fullAliasRes = await supabase
         .from('drug_aliases')
         .select('drug_id, drug_name, alias, name, type, is_trade_name')
         .or(`alias.ilike.%${term}%,name.ilike.%${term}%,drug_name.ilike.%${term}%`)
-        .limit(20)
+        .limit(20);
+
+      if (!fullAliasRes.error) return fullAliasRes;
+
+      const simpleAliasRes = await supabase
+        .from('drug_aliases')
+        .select('drug_id, drug_name, alias, type, is_trade_name')
+        .or(`alias.ilike.%${term}%,drug_name.ilike.%${term}%`)
+        .limit(20);
+
+      return simpleAliasRes.error ? { data: [] } : simpleAliasRes;
+    };
+
+    let [drugRes, aliasRes] = await Promise.all([
+      searchDrugRows(Boolean(userId)),
+      searchAliasRows()
     ]);
 
+    if (drugRes.error && userId) {
+      drugRes = await searchDrugRows(false);
+    }
+
     if (drugRes.error) throw drugRes.error;
-    if (aliasRes.error) throw aliasRes.error;
 
     const aliasDrugIds = [...new Set((aliasRes.data || []).map((item) => item.drug_id).filter(Boolean))];
     let aliasDrugs = [];
 
     if (aliasDrugIds.length > 0) {
-      const { data, error } = await supabase
+      let aliasDrugRes = await supabase
         .from('drugs')
         .select('*')
         .or(ownOrShared)
         .eq('active', true)
         .in('id', aliasDrugIds);
-      if (error) throw error;
-      aliasDrugs = data || [];
+
+      if (aliasDrugRes.error && userId) {
+        aliasDrugRes = await supabase
+          .from('drugs')
+          .select('*')
+          .eq('active', true)
+          .in('id', aliasDrugIds);
+      }
+
+      if (aliasDrugRes.error) throw aliasDrugRes.error;
+      aliasDrugs = aliasDrugRes.data || [];
     }
 
     const byId = new Map();
