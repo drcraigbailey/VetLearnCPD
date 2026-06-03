@@ -59,7 +59,7 @@ export default function History({ user, darkMode = false }) {
 
   const generateAIReflection = async (item) => {
     setLoadingId(item.id);
-    const ai = await generateReflection(item.title, item.category);
+    const ai = await generateReflection(item.title, item.category, "", item.user_reflection || item.reflection || "", user?.id);
     const updated = history.map(h => h.id === item.id ? { ...h, user_reflection: ai } : h);
     setHistory(updated);
     setLoadingId(null);
