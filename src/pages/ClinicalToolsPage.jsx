@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Calculator } from "lucide-react";
+import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import PageBanner from "../components/PageBanner";
 import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import ClinicalTools from "./ClinicalTools";
@@ -38,6 +39,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       />
       <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
       <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
+      <AdditionalClinicalCalculators darkMode={darkMode} />
     </div>
   );
 }
