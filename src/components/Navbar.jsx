@@ -1,15 +1,32 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LayoutDashboard, FileText, BriefcaseMedical, Syringe, Menu } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { supabase } from "../supabaseClient";
+import { logSiteActivity } from "../utils/activityTracking";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
+
+const routeAnalytics = {
+  "/": { title: "Dashboard", section: "Dashboard" },
+  "/cpd": { title: "CPD Portfolio", section: "CPD Tracker" },
+  "/caselogs": { title: "Case Logs", section: "Case Logs" },
+  "/drugs": { title: "Formulary", section: "Formulary" },
+  "/clinical-tools": { title: "Clinical Tools", section: "Clinical Tools" },
+  "/network": { title: "Professional Network", section: "Network" },
+  "/messages": { title: "Messages", section: "Messages" },
+  "/protocols": { title: "Clinical Protocols", section: "Clinical Protocols" },
+  "/vault": { title: "Vault", section: "Vault" },
+  "/settings": { title: "Settings", section: "Settings" },
+  "/admin": { title: "Admin Dashboard", section: "Admin" }
+};
 
 export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featureAccess, adminAccess = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const lastBackPressRef = useRef(0);
+  const [currentUserId, setCurrentUserId] = useState("");
   const isActive = (path) => location.pathname === path ? "text-[#71CFC2] opacity-100" : "opacity-50 hover:opacity-100 transition-opacity";
 
   const labelClass = "text-[10px] font-bold leading-none tracking-normal";
@@ -19,6 +36,37 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featu
     { to: "/caselogs", label: "Cases", icon: BriefcaseMedical, enabled: canUseFeature(featureAccess, featureKeys.caseLogs, adminAccess) },
     { to: "/drugs", label: "Formulary", icon: Syringe, enabled: canUseFeature(featureAccess, featureKeys.drugDatabase, adminAccess) }
   ].filter(item => item.enabled);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setCurrentUserId(data.user?.id || "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const route = routeAnalytics[location.pathname];
+    if (!currentUserId || !route) return undefined;
+
+    const startedAt = new Date();
+    return () => {
+      const endedAt = new Date();
+      const durationSeconds = Math.round((endedAt.getTime() - startedAt.getTime()) / 1000);
+      if (durationSeconds < 2) return;
+      logSiteActivity({
+        userId: currentUserId,
+        path: location.pathname,
+        title: route.title,
+        section: route.section,
+        startedAt: startedAt.toISOString(),
+        endedAt: endedAt.toISOString(),
+        durationSeconds
+      });
+    };
+  }, [currentUserId, location.pathname]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
