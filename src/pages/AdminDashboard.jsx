@@ -17,6 +17,7 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   UserCog,
   Users
 } from "lucide-react";
@@ -134,14 +135,44 @@ export default function AdminDashboard({ user, profile, darkMode }) {
 
   const updateUserStatus = async (targetUser, status) => {
     setWorking(true);
-    const { error } = await supabase
-      .from("user_account_status")
-      .upsert({ user_id: targetUser.user_id, status, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    let { error } = await supabase.rpc("admin_set_user_status", {
+      target_user_id: targetUser.user_id,
+      new_status: status,
+      reason: status === "suspended" ? "Suspended from admin dashboard" : "Reactivated from admin dashboard"
+    });
+
+    if (isMissingRpcError(error)) {
+      const fallback = await supabase
+        .from("user_account_status")
+        .upsert({ user_id: targetUser.user_id, status, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      error = fallback.error;
+      if (!error) await audit(`user_${status}`, targetUser.user_id, { email: targetUser.email });
+    }
 
     if (error) toast.error("Could not update user status");
     else {
-      await audit(`user_${status}`, targetUser.user_id, { email: targetUser.email });
       toast.success(status === "active" ? "User reactivated" : "User suspended");
+      loadAdminData();
+    }
+    setWorking(false);
+  };
+
+  const deleteUser = async (targetUser) => {
+    if (!isSuperAdmin) return toast.error("Only Super Admins can delete users");
+    if (targetUser.user_id === user.id) return toast.error("You cannot delete your own account here");
+
+    setWorking(true);
+    const { error } = await supabase.functions.invoke("admin-user-actions", {
+      body: {
+        action: "delete_user",
+        targetUserId: targetUser.user_id,
+        email: targetUser.email
+      }
+    });
+
+    if (error) toast.error(error.message || "Could not delete user");
+    else {
+      toast.success("User and associated data deleted");
       loadAdminData();
     }
     setWorking(false);
@@ -258,7 +289,9 @@ export default function AdminDashboard({ user, profile, darkMode }) {
           query={query}
           setQuery={setQuery}
           onStatus={updateUserStatus}
+          onDelete={deleteUser}
           onRole={changeRole}
+          currentUserId={user.id}
           isSuperAdmin={isSuperAdmin}
           working={working}
         />
@@ -326,7 +359,22 @@ function Overview({ stats = {}, panelClass, darkMode, onRefresh }) {
   );
 }
 
-function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onRole, isSuperAdmin, working }) {
+function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onRole, currentUserId, isSuperAdmin, working }) {
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const canConfirmDelete = deleteConfirm.trim().toUpperCase() === "DELETE";
+
+  const closeDeleteWarning = () => {
+    setDeleteCandidate(null);
+    setDeleteConfirm("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate || !canConfirmDelete) return;
+    await onDelete(deleteCandidate);
+    closeDeleteWarning();
+  };
+
   return (
     <section className={panelClass}>
       <div className="flex items-start gap-3 mb-4">
@@ -359,10 +407,62 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
                 {item.account_status === "suspended" ? "Reactivate" : "Suspend"}
               </button>
             </div>
+            <button
+              disabled={working || !isSuperAdmin || item.user_id === currentUserId}
+              onClick={() => { setDeleteCandidate(item); setDeleteConfirm(""); }}
+              className={`mt-2 w-full rounded-lg px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${
+                darkMode ? "bg-red-500/15 text-red-200 disabled:bg-white/5 disabled:text-slate-500" : "bg-red-50 text-red-600 disabled:bg-slate-100 disabled:text-slate-400"
+              }`}
+            >
+              <Trash2 size={16} />
+              Delete user and data
+            </button>
           </div>
         ))}
         {users.length === 0 && <p className="text-sm opacity-60">No users found.</p>}
       </div>
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
+          <div className={`w-full max-w-md rounded-lg border p-5 shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-red-100 bg-white text-[#0B3760]"}`}>
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-lg bg-red-100 text-red-600 grid place-items-center shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black">Delete this user?</h3>
+                <p className="mt-1 text-sm opacity-70 leading-6">
+                  This permanently deletes the user account and all app data linked to it. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className={`mt-4 rounded-lg p-3 text-sm ${darkMode ? "bg-white/10" : "bg-red-50"}`}>
+              <p className="font-black truncate">{deleteCandidate.full_name || "Unnamed user"}</p>
+              <p className="text-xs opacity-65 truncate">{deleteCandidate.email}</p>
+            </div>
+            <label className="mt-4 block">
+              <span className="text-xs font-black opacity-65">Type DELETE to confirm</span>
+              <input
+                value={deleteConfirm}
+                onChange={(event) => setDeleteConfirm(event.target.value)}
+                className={`mt-2 w-full rounded-lg p-3 outline-none text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}
+                autoFocus
+              />
+            </label>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={closeDeleteWarning} disabled={working} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={working || !canConfirmDelete}
+                className="rounded-lg bg-red-600 p-3 text-sm font-black text-white disabled:bg-slate-300 disabled:text-slate-500"
+              >
+                Delete permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -613,6 +713,10 @@ function formatDateTime(value) {
 function shortId(value) {
   if (!value) return "";
   return String(value).slice(0, 8);
+}
+
+function isMissingRpcError(error) {
+  return error?.code === "42883" || error?.code === "PGRST202" || /function .* does not exist/i.test(error?.message || "");
 }
 
 function formatDate(value) {
