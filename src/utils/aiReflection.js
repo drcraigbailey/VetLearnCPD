@@ -1,13 +1,15 @@
 import OpenAI from "openai"
+import { getUserAiApiKey } from "./aiApiKeyStorage"
 
 export async function generateReflection(
   title,
   category,
   notes = "",
-  draft = ""
+  draft = "",
+  userId = null
 ) {
   const isEnabled = localStorage.getItem("vetlearn-ai-enabled") === "true"
-  const apiKey = localStorage.getItem("vetlearn-openai-key")
+  const apiKey = userId ? await getUserAiApiKey(userId) : localStorage.getItem("vetlearn-openai-key")
 
   if (!isEnabled || !apiKey) {
     return draft || `Reviewed ${title} and identified learning points relevant to first opinion practice.`
