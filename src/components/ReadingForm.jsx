@@ -13,7 +13,7 @@ import {
   PencilLine
 } from "lucide-react";
 
-export default function ReadingForm({ darkMode = false, activeReading, onStartReading, onFinishReading, onSaveManualReading, savingReading = false }) {
+export default function ReadingForm({ user, darkMode = false, activeReading, onStartReading, onFinishReading, onSaveManualReading, savingReading = false }) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("Medicine");
@@ -152,7 +152,7 @@ export default function ReadingForm({ darkMode = false, activeReading, onStartRe
     }
     setGenerating(true);
     toast.loading("Generating reflection...", { id: "ai" });
-    const result = await generateReflection(title, category, notes, reflection);
+    const result = await generateReflection(title, category, notes, reflection, user?.id);
     setReflection(result);
     setGenerating(false);
     toast.success("Reflection generated", { id: "ai" });
