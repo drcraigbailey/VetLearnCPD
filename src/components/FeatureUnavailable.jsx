@@ -14,7 +14,7 @@ export default function FeatureUnavailable({ darkMode, title = "Feature unavaila
           <Lock size={24} />
         </div>
         <h2 className="text-xl font-black mb-2">Access currently disabled</h2>
-        <p className="text-sm opacity-70 leading-6">An administrator can enable this again from Admin > Features.</p>
+        <p className="text-sm opacity-70 leading-6">An administrator can enable this again from Admin &gt; Features.</p>
       </section>
     </div>
   );
