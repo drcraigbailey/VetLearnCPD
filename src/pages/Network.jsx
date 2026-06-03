@@ -11,6 +11,7 @@ export default function Network({ user, darkMode = false }) {
   const [connections, setConnections] = useState([]);
   const [requests, setRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
+  const [sentRequestDetails, setSentRequestDetails] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -65,10 +66,14 @@ export default function Network({ user, darkMode = false }) {
 
       const { data: sentReqData } = await supabase
         .from("connections")
-        .select("receiver_id")
+        .select(`
+          id, receiver_id, created_at,
+          receiver:profiles!connections_receiver_id_fkey(id, full_name, title, qualifications, practice_name, location)
+        `)
         .eq("requester_id", user.id)
         .eq("status", "pending");
       setSentRequests((sentReqData || []).map(request => request.receiver_id));
+      setSentRequestDetails(sentReqData || []);
     } catch (error) {
       toast.error("Failed to load network data");
     } finally {
@@ -267,6 +272,39 @@ export default function Network({ user, darkMode = false }) {
 
       {activeTab === "search" && (
         <div className="space-y-4">
+          {(requests.length > 0 || sentRequestDetails.length > 0) && (
+            <section className="space-y-3">
+              <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><UserPlus size={16}/> Pending Requests</h3>
+              {requests.map(request => (
+                <div key={request.id} className={`${panelClass} flex justify-between items-center border-l-4 border-[#0F8F83]`}>
+                  <div className="min-w-0">
+                    <div className="font-bold text-lg truncate">{request.requester?.title} {request.requester?.full_name}</div>
+                    <div className="text-xs opacity-70 truncate">{request.requester?.qualifications || "Veterinary Professional"}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-[#0F8F83] mt-1">Waiting for your response</div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => handleRespond(request.id, "accepted")} className="bg-[#71CFC2] text-[#062F63] p-2 rounded-lg font-bold flex items-center gap-1">
+                      {busyId === request.id ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16}/> Accept</>}
+                    </button>
+                    <button onClick={() => handleRespond(request.id, "rejected")} className="bg-slate-100 text-slate-500 p-2 rounded-lg">
+                      <X size={16}/>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {sentRequestDetails.map(request => (
+                <div key={request.id} className={`${panelClass} flex justify-between items-center`}>
+                  <div className="min-w-0">
+                    <div className="font-bold text-lg truncate">{request.receiver?.title} {request.receiver?.full_name}</div>
+                    <div className="text-xs opacity-70 truncate">{request.receiver?.qualifications || request.receiver?.practice_name || "Veterinary Professional"}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-50 mt-1">Request sent</div>
+                  </div>
+                  <span className="px-3 py-2 rounded-lg text-xs font-black opacity-60 border shrink-0">Pending</span>
+                </div>
+              ))}
+            </section>
+          )}
+
           <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
             {searching ? <Loader2 size={18} className="animate-spin text-[#71CFC2]"/> : <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"}/>}            
             <input
