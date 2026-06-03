@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Eye, Lock, Search } from "lucide-react";
+import { Clock, Eye, FileUp, Lock, Network, Search } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const chartColors = ["#0F8F83", "#71CFC2", "#0B3760", "#F59E0B", "#8B5CF6", "#EF4444", "#64748B", "#14B8A6"];
@@ -33,7 +33,7 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
     });
 
     if (rpcError) {
-      setError("Run the admin activity analytics SQL to unlock full usage charts.");
+      setError("Run the updated admin activity analytics SQL to unlock full usage charts.");
       setAnalytics(buildFallbackAnalytics(initialLogs, selectedUserId));
       setLoading(false);
       return;
@@ -43,19 +43,22 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
     setLoading(false);
   };
 
+  const facts = analytics?.facts || {};
   const sectionUsage = analytics?.section_usage || [];
   const calculatorUsage = analytics?.calculator_usage || [];
   const auditCategoryUsage = analytics?.audit_category_usage || [];
   const auditLogs = analytics?.audit_logs || [];
-  const totalSectionUse = sectionUsage.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const pageVisits = analytics?.page_visits || [];
+  const timeBySection = analytics?.time_by_section || [];
+  const fileUploadsByContext = analytics?.file_uploads_by_context || [];
 
   return (
     <div className="space-y-5">
       <section className={panelClass}>
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <h2 className="text-xl font-black">User Activity Explorer</h2>
-            <p className="text-sm opacity-60">View usage and audit activity for everyone, or drill into one user.</p>
+            <h2 className="text-xl font-black">Site Analytics</h2>
+            <p className="text-sm opacity-60">View pages, time spent, uploads, networks and audit activity.</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-black ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>
             {selectedUser ? "Individual" : "All users"}
@@ -85,17 +88,35 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
           ))}
         </select>
 
+        {selectedUser && (
+          <div className={`mt-3 rounded-lg p-3 text-sm ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+            <p className="font-black">{selectedUser.full_name || "Unnamed user"}</p>
+            <p className="opacity-60 truncate">{selectedUser.email}</p>
+          </div>
+        )}
+
         {error && <p className="mt-3 text-xs font-bold text-orange-500">{error}</p>}
-        {loading && <p className="mt-3 text-sm opacity-60">Loading activity...</p>}
+        {loading && <p className="mt-3 text-sm opacity-60">Loading analytics...</p>}
+      </section>
+
+      <section className={panelClass}>
+        <h2 className="text-xl font-black mb-4">Site Facts</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <FactCard darkMode={darkMode} icon={<Eye size={18} />} label="Pages visited" value={facts.page_visits || 0} />
+          <FactCard darkMode={darkMode} icon={<Clock size={18} />} label="Time spent" value={formatDuration(facts.total_time_seconds || 0)} />
+          <FactCard darkMode={darkMode} icon={<FileUp size={18} />} label="Files uploaded" value={facts.file_uploads || 0} subValue={formatBytes(facts.uploaded_bytes || 0)} />
+          <FactCard darkMode={darkMode} icon={<Network size={18} />} label="Network links" value={facts.network_connections || 0} />
+          <FactCard darkMode={darkMode} label="Messages" value={facts.messages || 0} />
+          <FactCard darkMode={darkMode} label="Audit events" value={facts.audit_events || auditLogs.length} />
+        </div>
       </section>
 
       <section className={panelClass}>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-xl font-black">Section Usage</h2>
+            <h2 className="text-xl font-black">Section Use</h2>
             <p className="text-sm opacity-60">{selectedUser ? selectedUser.full_name || selectedUser.email : "Whole application"}</p>
           </div>
-          <span className="text-2xl font-black text-[#0F8F83]">{totalSectionUse}</span>
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -111,19 +132,23 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
       </section>
 
       <section className={panelClass}>
+        <h2 className="text-xl font-black mb-4">Pages Visited</h2>
+        <BarPanel data={pageVisits} darkMode={darkMode} empty="No page visits recorded yet." />
+      </section>
+
+      <section className={panelClass}>
+        <h2 className="text-xl font-black mb-4">Time By Section</h2>
+        <BarPanel data={timeBySection} darkMode={darkMode} empty="Time tracking will appear after the updated activity SQL and tracker are active." formatter={formatDuration} />
+      </section>
+
+      <section className={panelClass}>
         <h2 className="text-xl font-black mb-4">Clinical Tools Use</h2>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={calculatorUsage}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#0F8F83" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        {calculatorUsage.length === 0 && <p className="text-sm opacity-60">No calculator use recorded yet.</p>}
+        <BarPanel data={calculatorUsage} darkMode={darkMode} empty="No calculator use recorded yet." />
+      </section>
+
+      <section className={panelClass}>
+        <h2 className="text-xl font-black mb-4">File Uploads</h2>
+        <BarPanel data={fileUploadsByContext} darkMode={darkMode} empty="No file uploads recorded yet." />
       </section>
 
       <section className={panelClass}>
@@ -142,6 +167,37 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
       </section>
 
       <AuditTrail panelClass={panelClass} logs={auditLogs} darkMode={darkMode} selectedUser={selectedUser} />
+    </div>
+  );
+}
+
+function FactCard({ darkMode, icon, label, value, subValue }) {
+  return (
+    <div className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+      <div className="flex items-center gap-2 text-[#0F8F83] mb-2">
+        {icon}
+        <span className="text-xs font-black uppercase tracking-wide opacity-75">{label}</span>
+      </div>
+      <p className="text-xl font-black truncate">{value}</p>
+      {subValue && <p className="text-xs opacity-60 mt-1">{subValue}</p>}
+    </div>
+  );
+}
+
+function BarPanel({ data, empty, formatter }) {
+  if (!data.length) return <p className="text-sm opacity-60">{empty}</p>;
+
+  return (
+    <div className="h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+          <Tooltip formatter={(value) => formatter ? formatter(value) : value} />
+          <Bar dataKey="value" fill="#0F8F83" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -232,11 +288,22 @@ function buildFallbackAnalytics(logs, selectedUserId) {
     : logs;
 
   return {
+    facts: {
+      page_visits: 0,
+      total_time_seconds: 0,
+      file_uploads: 0,
+      uploaded_bytes: 0,
+      network_connections: 0,
+      audit_events: scopedLogs.length
+    },
     section_usage: [
       { name: "Audit events", value: scopedLogs.length }
     ],
     calculator_usage: [],
     audit_category_usage: groupCounts(scopedLogs.map(log => actionCategory(log.action))),
+    page_visits: [],
+    time_by_section: [],
+    file_uploads_by_context: [],
     audit_logs: scopedLogs
   };
 }
@@ -299,4 +366,21 @@ function formatDateTime(value) {
 function shortId(value) {
   if (!value) return "";
   return String(value).slice(0, 8);
+}
+
+function formatDuration(seconds) {
+  const value = Number(seconds || 0);
+  if (value < 60) return `${value}s`;
+  const minutes = Math.round(value / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (!value) return "0 KB";
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
