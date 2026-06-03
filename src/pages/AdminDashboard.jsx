@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import AdminActivityExplorer from "../components/AdminActivityExplorer";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -300,7 +301,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleTierFeature} working={working} />}
       {activeTab === "subscriptions" && <SubscriptionsPanel panelClass={panelClass} darkMode={darkMode} subscriptions={subscriptions} />}
       {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} />}
-      {activeTab === "audit" && <AuditPanel panelClass={panelClass} logs={auditLogs} darkMode={darkMode} />}
+      {activeTab === "audit" && <AdminActivityExplorer panelClass={panelClass} darkMode={darkMode} users={users} initialLogs={auditLogs} />}
       {activeTab === "settings" && <AdminSettings panelClass={panelClass} darkMode={darkMode} profile={profile} />}
     </div>
   );
@@ -395,7 +396,7 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
               <div className="min-w-0">
                 <h3 className="font-black truncate">{item.full_name || "Unnamed user"}</h3>
                 <p className="text-sm opacity-65 truncate">{item.email}</p>
-                <p className="text-xs opacity-50 mt-1">Joined {formatDate(item.created_at)} · Last login {formatDate(item.last_sign_in_at)}</p>
+                <p className="text-xs opacity-50 mt-1">Joined {formatDate(item.created_at)} - Last login {formatDate(item.last_sign_in_at)}</p>
               </div>
               <span className={`rounded-full px-2 py-1 text-[10px] font-black ${item.account_status === "suspended" ? "bg-red-100 text-red-700" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>{item.account_status || "active"}</span>
             </div>
@@ -566,71 +567,6 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
   );
 }
 
-function AuditPanel({ panelClass, logs, darkMode }) {
-  const detailClass = darkMode ? "bg-white/10 text-slate-200" : "bg-white text-[#0B3760]";
-
-  return (
-    <section className={panelClass}>
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-xl font-black">Audit Trail</h2>
-          <p className="text-sm opacity-60">Recent admin actions, changes and announcements.</p>
-        </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-black ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>
-          {logs.length} events
-        </span>
-      </div>
-      <div className={`rounded-lg border overflow-hidden ${darkMode ? "border-white/10 bg-black/10" : "border-[#DCEDEA] bg-white"}`}>
-        {logs.map(log => (
-          <div key={log.id} className={`p-4 ${darkMode ? "border-b border-white/10 last:border-b-0" : "border-b border-[#DCEDEA] last:border-b-0"}`}>
-            <div className="flex items-start gap-3">
-              <div className={`mt-1 h-9 w-9 rounded-lg grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>
-                <Eye size={17} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-black">{formatAction(log.action)}</h3>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-black ${actionBadgeClass(log.action, darkMode)}`}>
-                    {actionCategory(log.action)}
-                  </span>
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-60">
-                  <span>{formatDateTime(log.created_at)}</span>
-                  {log.target_user_id && <span>Target {shortId(log.target_user_id)}</span>}
-                  {log.admin_user_id && <span>Admin {shortId(log.admin_user_id)}</span>}
-                </div>
-                <AuditDetails details={log.details} detailClass={detailClass} />
-              </div>
-            </div>
-          </div>
-        ))}
-        {logs.length === 0 && (
-          <div className="p-6 text-center">
-            <Lock className="mx-auto mb-3 opacity-40" size={24} />
-            <p className="text-sm opacity-60">No audit activity has been recorded yet.</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function AuditDetails({ details, detailClass }) {
-  const entries = Object.entries(details || {}).filter(([, value]) => value !== null && value !== undefined && value !== "");
-
-  if (entries.length === 0) return null;
-
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {entries.map(([key, value]) => (
-        <span key={key} className={`rounded-lg px-3 py-2 text-xs font-bold ${detailClass}`}>
-          <span className="opacity-55">{formatDetailLabel(key)}:</span> {formatDetailValue(value)}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function AdminSettings({ panelClass }) {
   return (
     <section className={panelClass}>
@@ -663,56 +599,6 @@ function roleDescription(role) {
   if (role === "admin") return "Can manage users, content, announcements, features and audit logs.";
   if (role === "clinician") return "Standard user plus clinical tools and clinician-only features.";
   return "Standard VetLearn user account.";
-}
-
-function formatAction(action = "") {
-  return action
-    .split("_")
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ") || "Audit event";
-}
-
-function actionCategory(action = "") {
-  if (action.includes("role")) return "Role";
-  if (action.includes("feature")) return "Feature";
-  if (action.includes("announcement")) return "Message";
-  if (action.includes("suspended") || action.includes("active")) return "Account";
-  return "System";
-}
-
-function actionBadgeClass(action, darkMode) {
-  const category = actionCategory(action);
-  if (category === "Role") return darkMode ? "bg-purple-400/20 text-purple-100" : "bg-purple-100 text-purple-700";
-  if (category === "Feature") return darkMode ? "bg-cyan-400/20 text-cyan-100" : "bg-cyan-100 text-cyan-700";
-  if (category === "Message") return darkMode ? "bg-amber-400/20 text-amber-100" : "bg-amber-100 text-amber-700";
-  if (category === "Account") return darkMode ? "bg-rose-400/20 text-rose-100" : "bg-rose-100 text-rose-700";
-  return darkMode ? "bg-white/10 text-slate-200" : "bg-slate-100 text-slate-600";
-}
-
-function formatDetailLabel(key) {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/_/g, " ")
-    .trim()
-    .replace(/\b\w/g, char => char.toUpperCase());
-}
-
-function formatDetailValue(value) {
-  if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-  if (Array.isArray(value)) return value.join(", ");
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-function formatDateTime(value) {
-  if (!value) return "Never";
-  return new Date(value).toLocaleString();
-}
-
-function shortId(value) {
-  if (!value) return "";
-  return String(value).slice(0, 8);
 }
 
 function isMissingRpcError(error) {
