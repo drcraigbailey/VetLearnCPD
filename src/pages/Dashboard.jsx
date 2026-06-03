@@ -21,6 +21,7 @@ export default function Dashboard({ user, profile, darkMode = false, activeReadi
       <DashboardCards user={user} darkMode={darkMode} />
 
       <ReadingForm
+        user={user}
         darkMode={darkMode}
         activeReading={activeReading}
         onStartReading={onStartReading}
