@@ -365,7 +365,6 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
                     </label>
                   </div>
                 </div>
-                <input className={fieldClass} placeholder="Profile picture URL" value={profileForm.avatar_url} onChange={(e) => updateProfile("avatar_url", e.target.value)} />
                 <div className="grid grid-cols-[100px_1fr] gap-3">
                   <input className={fieldClass} placeholder="Title" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} />
                   <input className={fieldClass} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} />
