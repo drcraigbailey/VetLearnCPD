@@ -23,6 +23,9 @@ declare
   message_count integer := 0;
   vault_count integer := 0;
   network_count integer := 0;
+  has_requester boolean := false;
+  has_user1 boolean := false;
+  has_user2 boolean := false;
 begin
   if not public.is_admin() then
     raise exception 'Admin access required';
@@ -88,7 +91,26 @@ begin
     if selected_user is null then
       execute 'select count(*) from public.connections' into network_count;
     else
-      execute 'select count(*) from public.connections where requester_id = $1 or receiver_id = $1' into network_count using selected_user;
+      select exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'connections' and column_name = 'requester_id'
+      ) into has_requester;
+      select exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'connections' and column_name = 'user1_id'
+      ) into has_user1;
+      select exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'connections' and column_name = 'user2_id'
+      ) into has_user2;
+
+      if has_requester then
+        execute 'select count(*) from public.connections where requester_id = $1 or receiver_id = $1' into network_count using selected_user;
+      elsif has_user1 and has_user2 then
+        execute 'select count(*) from public.connections where user1_id = $1 or user2_id = $1' into network_count using selected_user;
+      else
+        execute 'select count(*) from public.connections where receiver_id = $1' into network_count using selected_user;
+      end if;
     end if;
   end if;
 
