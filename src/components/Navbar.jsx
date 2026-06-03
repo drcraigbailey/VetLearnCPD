@@ -5,7 +5,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../supabaseClient";
-import { logSiteActivity } from "../utils/activityTracking";
+import { logFileUpload, logSiteActivity } from "../utils/activityTracking";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const routeAnalytics = {
@@ -66,6 +66,22 @@ export default function Navbar({ darkMode, onOpenMenu, menuBadgeCount = 0, featu
         durationSeconds
       });
     };
+  }, [currentUserId, location.pathname]);
+
+  useEffect(() => {
+    if (!currentUserId) return undefined;
+
+    const handleFileSelection = (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.type !== "file" || !input.files?.length) return;
+      const context = input.name || input.id || input.getAttribute("aria-label") || routeAnalytics[location.pathname]?.section || "App upload";
+      Array.from(input.files).forEach(file => {
+        logFileUpload({ userId: currentUserId, file, context });
+      });
+    };
+
+    document.addEventListener("change", handleFileSelection, true);
+    return () => document.removeEventListener("change", handleFileSelection, true);
   }, [currentUserId, location.pathname]);
 
   useEffect(() => {
