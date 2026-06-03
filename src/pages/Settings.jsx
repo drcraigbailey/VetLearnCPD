@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Bell, Briefcase, Globe, GraduationCap, Image as ImageIcon, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Upload, UserRound } from "lucide-react";
+import { Bell, Briefcase, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Trash2, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
+import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
 import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
 
 const profileDefaults = {
@@ -49,6 +50,10 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricBusy, setBiometricBusy] = useState(false);
+  const [aiApiKeyInput, setAiApiKeyInput] = useState("");
+  const [aiApiKeySaved, setAiApiKeySaved] = useState(false);
+  const [aiApiKeyBusy, setAiApiKeyBusy] = useState(false);
+  const [aiApiPromptOpen, setAiApiPromptOpen] = useState(false);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -81,8 +86,14 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
       setProfileForm(prev => ({ ...prev, email: user.email || "" }));
     }
 
+    const savedAiKey = await getUserAiApiKey(user.id);
+    setAiApiKeySaved(Boolean(savedAiKey));
+
     if (!prefsRes.error && prefsRes.data) {
-      setAiPrefs({ ...aiDefaults, ...(prefsRes.data.ai_preferences || {}) });
+      const nextAiPrefs = { ...aiDefaults, ...(prefsRes.data.ai_preferences || {}) };
+      nextAiPrefs.enabled = nextAiPrefs.enabled && Boolean(savedAiKey);
+      setAiPrefs(nextAiPrefs);
+      localStorage.setItem("vetlearn-ai-enabled", String(nextAiPrefs.enabled));
       setAppPrefs({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", ...(prefsRes.data.app_preferences || {}) });
     }
 
@@ -95,13 +106,73 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const updateAi = (field, value) => setAiPrefs(prev => ({ ...prev, [field]: value }));
   const updateApp = (field, value) => setAppPrefs(prev => ({ ...prev, [field]: value }));
 
-  const persistAppPreferences = async (nextAppPrefs) => {
-    await supabase.from("user_preferences").upsert({
+  const persistPreferences = async (nextAiPrefs = aiPrefs, nextAppPrefs = appPrefs) => {
+    const { error } = await supabase.from("user_preferences").upsert({
       user_id: user.id,
-      ai_preferences: aiPrefs,
+      ai_preferences: nextAiPrefs,
       app_preferences: nextAppPrefs,
       updated_at: new Date().toISOString()
     }, { onConflict: "user_id" });
+
+    if (!error) {
+      localStorage.setItem("vetlearn-ai-enabled", String(nextAiPrefs.enabled));
+      window.dispatchEvent(new Event("settingsUpdated"));
+    }
+
+    return { error };
+  };
+
+  const persistAppPreferences = async (nextAppPrefs) => {
+    await persistPreferences(aiPrefs, nextAppPrefs);
+  };
+
+  const updateAiEnabled = async (enabled) => {
+    if (enabled && !aiApiKeySaved) {
+      setAiApiPromptOpen(true);
+      return;
+    }
+
+    const nextPrefs = { ...aiPrefs, enabled };
+    setAiPrefs(nextPrefs);
+    const { error } = await persistPreferences(nextPrefs, appPrefs);
+    if (error) return toast.error("Could not update AI settings");
+    toast.success(enabled ? "AI features enabled" : "AI features disabled");
+  };
+
+  const saveAiApiKey = async ({ enableAfterSave = false } = {}) => {
+    setAiApiKeyBusy(true);
+    try {
+      const result = await saveUserAiApiKey(user.id, aiApiKeyInput);
+      setAiApiKeySaved(true);
+      setAiApiKeyInput("");
+      setAiApiPromptOpen(false);
+
+      if (enableAfterSave) {
+        const nextPrefs = { ...aiPrefs, enabled: true };
+        setAiPrefs(nextPrefs);
+        const { error } = await persistPreferences(nextPrefs, appPrefs);
+        if (error) throw error;
+      }
+
+      toast.success(result.secure ? "AI API key saved securely" : "AI API key saved on this device");
+    } catch (error) {
+      toast.error(error.message || "Could not save AI API key");
+    } finally {
+      setAiApiKeyBusy(false);
+    }
+  };
+
+  const removeAiApiKey = async () => {
+    setAiApiKeyBusy(true);
+    await removeUserAiApiKey(user.id);
+    setAiApiKeySaved(false);
+    setAiApiKeyInput("");
+    const nextPrefs = { ...aiPrefs, enabled: false };
+    setAiPrefs(nextPrefs);
+    const { error } = await persistPreferences(nextPrefs, appPrefs);
+    setAiApiKeyBusy(false);
+    if (error) return toast.error("Could not update AI settings");
+    toast.success("AI API key removed");
   };
 
   const toggleBiometricUnlock = async (enabled) => {
@@ -204,12 +275,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
   const savePreferences = async () => {
     setSaving(true);
-    const { error } = await supabase.from("user_preferences").upsert({
-      user_id: user.id,
-      ai_preferences: aiPrefs,
-      app_preferences: appPrefs,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "user_id" });
+    const { error } = await persistPreferences(aiPrefs, appPrefs);
 
     setSaving(false);
     if (error) return toast.error("Could not save preferences. Please run the latest Supabase SQL update.");
@@ -226,6 +292,47 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   return (
     <div className="pb-8">
       <PageBanner title="Settings" subtitle="Manage your profile, professional details, AI preferences and account settings." darkMode={darkMode} />
+
+      {aiApiPromptOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
+          <div className={`w-full max-w-md rounded-lg border p-5 shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-[#DCEDEA] bg-white text-[#0B3760]"}`}>
+            <div className="flex items-start gap-3">
+              <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} h-10 w-10 rounded-lg grid place-items-center shrink-0`}>
+                <KeyRound size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black">Add your OpenAI API key</h3>
+                <p className="mt-1 text-sm opacity-70 leading-6">
+                  AI features use your own API key. It is saved for your account on this device, then AI can be enabled.
+                </p>
+              </div>
+            </div>
+            <input
+              className={fieldClass}
+              type="password"
+              placeholder="OpenAI API key"
+              value={aiApiKeyInput}
+              onChange={(event) => setAiApiKeyInput(event.target.value)}
+              autoFocus
+            />
+            <p className="text-xs opacity-60 leading-5 -mt-1">
+              {isAiApiKeyStoredSecurely() ? "This device supports secure credential storage." : "In this browser, the key is stored locally on this device."}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => { setAiApiPromptOpen(false); setAiApiKeyInput(""); }} disabled={aiApiKeyBusy} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
+                Cancel
+              </button>
+              <button
+                onClick={() => saveAiApiKey({ enableAfterSave: true })}
+                disabled={aiApiKeyBusy || !aiApiKeyInput.trim()}
+                className="rounded-lg bg-[#71CFC2] p-3 text-sm font-black text-[#062F63] disabled:bg-slate-300 disabled:text-slate-500"
+              >
+                {aiApiKeyBusy ? "Saving..." : "Save and enable"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
         {tabs.map(tab => {
@@ -297,7 +404,47 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
           {activeTab === "ai" && (
             <section className={panelClass}>
               <SectionTitle icon={<Sparkles size={20} />} title="AI Preferences" subtitle="Control how VetLearn assists with learning, CPD and clinical support." darkMode={darkMode} />
-              <Toggle checked={aiPrefs.enabled} onChange={(value) => updateAi("enabled", value)} label="Enable AI features" darkMode={darkMode} />
+              <Toggle checked={aiPrefs.enabled} onChange={updateAiEnabled} label="Enable AI features" darkMode={darkMode} />
+              <div className={`mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-sm">OpenAI API key</p>
+                    <p className="text-xs opacity-60 mt-1 leading-5">
+                      {aiApiKeySaved ? "An API key is saved for AI features." : "Add your own API key before turning AI on."}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-black ${aiApiKeySaved ? "bg-[#E8F8F5] text-[#0F8F83]" : "bg-orange-100 text-orange-700"}`}>
+                    {aiApiKeySaved ? "Saved" : "Required"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input
+                    className={fieldClass}
+                    type="password"
+                    placeholder={aiApiKeySaved ? "Enter a new key to replace it" : "OpenAI API key"}
+                    value={aiApiKeyInput}
+                    onChange={(e) => setAiApiKeyInput(e.target.value)}
+                  />
+                  <button
+                    onClick={() => saveAiApiKey()}
+                    disabled={aiApiKeyBusy || !aiApiKeyInput.trim()}
+                    className="rounded-lg bg-[#71CFC2] text-[#062F63] px-4 py-3 text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {aiApiKeyBusy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                    Save key
+                  </button>
+                </div>
+                {aiApiKeySaved && (
+                  <button
+                    onClick={removeAiApiKey}
+                    disabled={aiApiKeyBusy}
+                    className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`}
+                  >
+                    <Trash2 size={14} />
+                    Remove key and disable AI
+                  </button>
+                )}
+              </div>
               <input className={fieldClass} placeholder="AI response style" value={aiPrefs.responseStyle} onChange={(e) => updateAi("responseStyle", e.target.value)} />
               <input className={fieldClass} placeholder="Assistant preferences" value={aiPrefs.assistantPreference} onChange={(e) => updateAi("assistantPreference", e.target.value)} />
               <textarea className={fieldClass} rows="3" placeholder="Default AI tools" value={aiPrefs.defaultTools} onChange={(e) => updateAi("defaultTools", e.target.value)} />
