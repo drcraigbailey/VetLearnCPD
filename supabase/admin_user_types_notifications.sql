@@ -217,11 +217,11 @@ begin
   end if;
 
   if new_user_type in ('admin', 'super_admin') then
-    insert into public.admin_user_roles (user_id, role, assigned_by, is_active)
+    insert into public.admin_user_roles (user_id, role, created_by, is_active)
     values (target_user_id, new_user_type::public.admin_role, auth.uid(), true)
     on conflict (user_id) do update
       set role = excluded.role,
-          assigned_by = excluded.assigned_by,
+          created_by = excluded.created_by,
           is_active = true,
           updated_at = now();
 
@@ -239,11 +239,11 @@ begin
           status = 'active',
           updated_at = now();
 
-    insert into public.admin_user_roles (user_id, role, assigned_by, is_active)
+    insert into public.admin_user_roles (user_id, role, created_by, is_active)
     values (target_user_id, normal_role, auth.uid(), true)
     on conflict (user_id) do update
       set role = excluded.role,
-          assigned_by = excluded.assigned_by,
+          created_by = excluded.created_by,
           is_active = true,
           updated_at = now();
   end if;
