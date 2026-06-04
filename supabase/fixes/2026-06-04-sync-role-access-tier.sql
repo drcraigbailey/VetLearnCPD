@@ -1,10 +1,17 @@
 -- Fix admin role changes so user access changes at the same time.
 -- Run this in Supabase SQL Editor, then changing a user between `user` and
 -- `clinician` in the Admin Dashboard will also update their feature tier.
+--
+-- This also removes the accidental text overload. Supabase/PostgREST cannot
+-- choose between admin_set_user_role(uuid, text) and
+-- admin_set_user_role(uuid, public.admin_role), so only the enum version should
+-- remain.
+
+drop function if exists public.admin_set_user_role(uuid, text);
 
 create or replace function public.admin_set_user_role(
   target_user_id uuid,
-  new_role text
+  new_role public.admin_role
 )
 returns void
 language plpgsql
@@ -14,40 +21,37 @@ as $$
 declare
   current_admin_role text;
   target_current_role text;
+  next_role text := new_role::text;
   remaining_super_admins integer;
 begin
-  select aur.role
+  select aur.role::text
     into current_admin_role
   from public.admin_user_roles aur
   where aur.user_id = auth.uid()
     and aur.is_active = true
-    and aur.role in ('admin', 'super_admin')
-  order by case aur.role when 'super_admin' then 0 else 1 end
+    and aur.role in ('admin'::public.admin_role, 'super_admin'::public.admin_role)
+  order by case aur.role::text when 'super_admin' then 0 else 1 end
   limit 1;
 
   if current_admin_role is distinct from 'super_admin' then
     raise exception 'Only Super Admins can change user roles';
   end if;
 
-  if new_role not in ('user', 'clinician', 'admin', 'super_admin') then
-    raise exception 'Invalid role: %', new_role;
-  end if;
-
-  select aur.role
+  select aur.role::text
     into target_current_role
   from public.admin_user_roles aur
   where aur.user_id = target_user_id
     and aur.is_active = true
-  order by case aur.role when 'super_admin' then 0 when 'admin' then 1 when 'clinician' then 2 else 3 end
+  order by case aur.role::text when 'super_admin' then 0 when 'admin' then 1 when 'clinician' then 2 else 3 end
   limit 1;
 
   if target_user_id = auth.uid()
      and target_current_role = 'super_admin'
-     and new_role <> 'super_admin' then
+     and next_role <> 'super_admin' then
     select count(*)
       into remaining_super_admins
     from public.admin_user_roles aur
-    where aur.role = 'super_admin'
+    where aur.role = 'super_admin'::public.admin_role
       and aur.is_active = true
       and aur.user_id <> target_user_id;
 
@@ -69,17 +73,17 @@ begin
   -- Feature access is driven by the user's subscription/access tier. Without
   -- this, the dropdown can say `clinician` while has_feature() still evaluates
   -- the account as `free`.
-  if new_role = 'clinician' then
+  if next_role = 'clinician' then
     update public.profiles
     set subscription_tier = 'clinician',
         updated_at = now()
     where id = target_user_id;
-  elsif new_role = 'user' then
+  elsif next_role = 'user' then
     update public.profiles
     set subscription_tier = 'free',
         updated_at = now()
     where id = target_user_id;
-  elsif new_role in ('admin', 'super_admin') then
+  elsif next_role in ('admin', 'super_admin') then
     update public.profiles
     set subscription_tier = coalesce(nullif(subscription_tier, 'free'), 'clinician'),
         updated_at = now()
@@ -88,4 +92,4 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_set_user_role(uuid, text) to authenticated;
+grant execute on function public.admin_set_user_role(uuid, public.admin_role) to authenticated;
