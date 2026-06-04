@@ -253,13 +253,31 @@ export default function Network({ user, darkMode = false }) {
                     <div className="flex gap-2 shrink-0">
                       <Link
                         to={`/messages?colleague=${connection.colleague?.id}`}
-                        className="p-2 rounded-lg text-[#0F8F83] bg-[#E8F8F5]"
+                        className={`h-11 w-11 rounded-full grid place-items-center transition ${
+                          darkMode
+                            ? "bg-white/10 text-[#71CFC2] hover:bg-white/15"
+                            : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#D7F2EE]"
+                        }`}
                         aria-label={`Message ${connection.colleague?.full_name || "colleague"}`}
                       >
                         <MessageSquare size={18} />
                       </Link>
-                      <button onClick={() => handleRemoveConnection(connection.connection_id)} className="p-2 rounded-lg text-red-500 bg-red-50" aria-label={`Remove ${connection.colleague?.full_name || "colleague"}`}>
-                        {busyId === connection.connection_id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={18} />}
+
+                      <button
+                        onClick={() => handleRemoveConnection(connection.connection_id)}
+                        className={`h-11 w-11 rounded-full grid place-items-center transition ${
+                          darkMode
+                            ? "bg-red-500/15 text-red-200 hover:bg-red-500/25"
+                            : "bg-red-50 text-red-600 hover:bg-red-100"
+                        }`}
+                        aria-label={`Remove ${connection.colleague?.full_name || "colleague"}`}
+                        disabled={busyId === connection.connection_id}
+                      >
+                        {busyId === connection.connection_id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
                       </button>
                     </div>
                   </div>
