@@ -31,8 +31,7 @@ export const loadFeatureAccess = async () => {
   return Object.fromEntries(entries);
 };
 
-export const canUseFeature = (featureAccess, featureKey, isAdmin = false) => {
-  if (isAdmin) return true;
+export const canUseFeature = (featureAccess, featureKey) => {
   if (!featureKey) return true;
   if (!featureAccess) return true;
   return featureAccess[featureKey] !== false;
