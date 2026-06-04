@@ -23,7 +23,9 @@ serve(async (req) => {
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } }
   });
-  const adminClient = createClient(supabaseUrl, serviceKey);
+  const adminClient = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
 
   const { data: authData, error: authError } = await userClient.auth.getUser();
   if (authError || !authData.user) return json({ error: "Not signed in" }, 401);
@@ -39,7 +41,14 @@ serve(async (req) => {
     return json({ error: "Admin access required" }, 403);
   }
 
-  const { action, targetUserId, email } = await req.json();
+  let payload;
+  try {
+    payload = await req.json();
+  } catch (_error) {
+    return json({ error: "Invalid request body" }, 400);
+  }
+
+  const { action, targetUserId, email } = payload;
   if (!action) return json({ error: "Missing action" }, 400);
 
   try {
@@ -64,10 +73,13 @@ serve(async (req) => {
       if (role.role !== "super_admin") return json({ error: "Only Super Admins can delete users" }, 403);
       if (!targetUserId) return json({ error: "Missing targetUserId" }, 400);
       if (targetUserId === authData.user.id) return json({ error: "You cannot delete your own account from the admin dashboard" }, 400);
+
       await deleteUserData(adminClient, targetUserId);
+
       const { error } = await adminClient.auth.admin.deleteUser(targetUserId);
       if (error) throw error;
-      await audit(adminClient, authData.user.id, action, null, { deleted_user_id: targetUserId });
+
+      await audit(adminClient, authData.user.id, action, null, { deleted_user_id: targetUserId, email: email || null });
       return json({ ok: true });
     }
 
@@ -83,7 +95,7 @@ serve(async (req) => {
 
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
-    return json({ error: error.message || "Admin action failed" }, 500);
+    return json({ error: error?.message || "Admin action failed" }, 500);
   }
 });
 
@@ -93,21 +105,24 @@ async function audit(client, adminUserId, action, targetUserId, details) {
     action,
     target_user_id: targetUserId || null,
     details: details || {}
-  });
+  }).then(() => null);
 }
 
 async function deleteUserData(client, targetUserId) {
   const deleteByUserId = [
     "calculator_logs",
     "caselogs",
+    "case_logs",
+    "cpd_entries",
     "cpd_reading",
     "dashboard_favourites",
     "device_push_tokens",
-    "drugs",
+    "file_upload_events",
     "notifications",
     "protocol_saves",
     "protocols",
     "recently_viewed",
+    "site_activity_events",
     "user_feature_overrides",
     "user_preferences",
     "user_private_settings",
@@ -119,13 +134,19 @@ async function deleteUserData(client, targetUserId) {
     await maybeDelete(client.from(table).delete().eq("user_id", targetUserId));
   }
 
-  await maybeDelete(client.from("messages").delete().or(`sender_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`));
-  await maybeDelete(client.from("conversations").delete().or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`));
-  await maybeDelete(client.from("connections").delete().or(`requester_id.eq.${targetUserId},receiver_id.eq.${targetUserId}`));
-  await maybeDelete(client.from("shared_records").delete().or(`sender_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`));
+  await maybeDelete(client.from("drugs").delete().eq("user_id", targetUserId));
+  await maybeDelete(client.from("messages").delete().eq("sender_id", targetUserId));
+  await maybeDelete(client.from("messages").delete().eq("recipient_id", targetUserId));
+  await maybeDelete(client.from("conversations").delete().eq("user1_id", targetUserId));
+  await maybeDelete(client.from("conversations").delete().eq("user2_id", targetUserId));
+  await maybeDelete(client.from("connections").delete().eq("requester_id", targetUserId));
+  await maybeDelete(client.from("connections").delete().eq("receiver_id", targetUserId));
+  await maybeDelete(client.from("connections").delete().eq("user1_id", targetUserId));
+  await maybeDelete(client.from("connections").delete().eq("user2_id", targetUserId));
+  await maybeDelete(client.from("shared_records").delete().eq("sender_id", targetUserId));
+  await maybeDelete(client.from("shared_records").delete().eq("recipient_id", targetUserId));
 
   await maybeUpdate(client.from("admin_audit_logs").update({ target_user_id: null }).eq("target_user_id", targetUserId));
-  await maybeUpdate(client.from("admin_audit_logs").update({ admin_user_id: null }).eq("admin_user_id", targetUserId));
   await maybeUpdate(client.from("admin_announcements").update({ created_by: null }).eq("created_by", targetUserId));
   await maybeUpdate(client.from("system_backups").update({ created_by: null }).eq("created_by", targetUserId));
   await maybeUpdate(client.from("system_error_logs").update({ user_id: null }).eq("user_id", targetUserId));
@@ -141,22 +162,33 @@ async function deleteUserData(client, targetUserId) {
 
 async function maybeDelete(query) {
   const { error } = await query;
-  if (isMissingTableError(error)) return;
+  if (isSafeToIgnoreSchemaError(error)) return;
   if (error) throw error;
 }
 
 async function maybeUpdate(query) {
   const { error } = await query;
-  if (isMissingTableError(error) || isMissingColumnError(error)) return;
+  if (isSafeToIgnoreSchemaError(error) || isNotNullConstraintError(error)) return;
   if (error) throw error;
 }
 
-function isMissingTableError(error) {
-  return error?.code === "42P01" || error?.code === "PGRST205";
+function isSafeToIgnoreSchemaError(error) {
+  if (!error) return false;
+  const message = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+  return (
+    error.code === "42P01" ||
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    error.code === "PGRST205" ||
+    message.includes("relation") ||
+    message.includes("does not exist") ||
+    message.includes("column") ||
+    message.includes("schema cache")
+  );
 }
 
-function isMissingColumnError(error) {
-  return error?.code === "42703";
+function isNotNullConstraintError(error) {
+  return error?.code === "23502";
 }
 
 function json(body, status = 200) {
