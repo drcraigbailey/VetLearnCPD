@@ -57,15 +57,14 @@ begin
   end if;
 
   update public.admin_user_roles
-  set is_active = false,
-      updated_at = now()
+  set is_active = false
   where user_id = target_user_id
     and is_active = true;
 
   -- Keep an active role row for the admin dashboard overview, but access for
   -- normal users is controlled through profiles.subscription_tier below.
-  insert into public.admin_user_roles (user_id, role, is_active, created_by, created_at, updated_at)
-  values (target_user_id, new_role, true, auth.uid(), now(), now());
+  insert into public.admin_user_roles (user_id, role, is_active)
+  values (target_user_id, new_role, true);
 
   -- Feature access is driven by the user's subscription/access tier. Without
   -- this, the dropdown can say `clinician` while has_feature() still evaluates
