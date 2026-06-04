@@ -4,25 +4,44 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../supabaseClient";
 
-export default function NotificationDrawer({ 
-  isOpen, 
-  onClose, 
-  notifications, 
-  setNotifications, 
-  darkMode 
+export default function NotificationDrawer({
+  isOpen,
+  onClose,
+  notifications,
+  setNotifications,
+  darkMode
 }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("unread");
   const [readNotifications, setReadNotifications] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
-    if (isOpen) loadReadNotifications();
+    if (!isOpen) return;
+
+    let cancelled = false;
+    const loadCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!cancelled) setCurrentUserId(data?.user?.id || null);
+    };
+
+    loadCurrentUser();
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
-  const loadReadNotifications = async () => {
+  useEffect(() => {
+    if (isOpen && currentUserId) loadReadNotifications(currentUserId);
+  }, [isOpen, currentUserId]);
+
+  const loadReadNotifications = async (userId = currentUserId) => {
+    if (!userId) return;
+
     const { data } = await supabase
       .from("notifications")
       .select("*")
+      .eq("user_id", userId)
       .eq("is_read", true)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -32,17 +51,19 @@ export default function NotificationDrawer({
 
   const unreadNotifications = useMemo(() => notifications.filter(n => !n.is_read), [notifications]);
   const visibleNotifications = activeTab === "unread" ? unreadNotifications : readNotifications;
-  
+
   const markAsRead = async (notification) => {
-    if (notification.is_read) return;
+    if (notification.is_read || !currentUserId) return;
+    const readAt = new Date().toISOString();
     const { error } = await supabase
       .from("notifications")
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq("id", notification.id);
-      
+      .update({ is_read: true, read_at: readAt })
+      .eq("id", notification.id)
+      .eq("user_id", currentUserId);
+
     if (!error) {
       setNotifications(prev => prev.filter(n => n.id !== notification.id));
-      setReadNotifications(prev => [{ ...notification, is_read: true }, ...prev]);
+      setReadNotifications(prev => [{ ...notification, is_read: true, read_at: readAt }, ...prev]);
       window.dispatchEvent(new Event("notificationsUpdated"));
       toast.success("Marked as read");
     } else {
@@ -51,13 +72,16 @@ export default function NotificationDrawer({
   };
 
   const markAllRead = async () => {
+    if (!currentUserId) return;
+    const readAt = new Date().toISOString();
     const { error } = await supabase
       .from("notifications")
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true, read_at: readAt })
+      .eq("user_id", currentUserId)
       .eq("is_read", false);
 
     if (!error) {
-      setReadNotifications(prev => [...notifications.map(n => ({ ...n, is_read: true })), ...prev]);
+      setReadNotifications(prev => [...notifications.map(n => ({ ...n, is_read: true, read_at: readAt })), ...prev]);
       setNotifications([]);
       window.dispatchEvent(new Event("notificationsUpdated"));
       toast.success("All marked as read");
@@ -65,7 +89,13 @@ export default function NotificationDrawer({
   };
 
   const deleteNotification = async (notification) => {
-    const { error } = await supabase.from("notifications").delete().eq("id", notification.id);
+    if (!currentUserId) return;
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notification.id)
+      .eq("user_id", currentUserId);
+
     if (!error) {
       setNotifications(prev => prev.filter(n => n.id !== notification.id));
       setReadNotifications(prev => prev.filter(n => n.id !== notification.id));
@@ -74,10 +104,14 @@ export default function NotificationDrawer({
   };
 
   const deleteVisibleNotifications = async () => {
-    if (visibleNotifications.length === 0) return;
+    if (visibleNotifications.length === 0 || !currentUserId) return;
 
     const ids = visibleNotifications.map(notification => notification.id);
-    const { error } = await supabase.from("notifications").delete().in("id", ids);
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", currentUserId)
+      .in("id", ids);
 
     if (!error) {
       setNotifications(prev => prev.filter(notification => !ids.includes(notification.id)));
@@ -97,7 +131,7 @@ export default function NotificationDrawer({
 
     switch (notification.type) {
       case "message":
-        navigate("/messages"); 
+        navigate("/messages");
         break;
       case "connection_request":
       case "connection_accepted":
@@ -162,8 +196,8 @@ export default function NotificationDrawer({
             </div>
           ) : (
             visibleNotifications.map((notification) => (
-              <div 
-                key={notification.id} 
+              <div
+                key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 className={`p-4 rounded-xl border cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${
                   notification.is_read
@@ -178,16 +212,16 @@ export default function NotificationDrawer({
                   </div>
                   <div className="flex gap-2 ml-2">
                     {!notification.is_read && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); markAsRead(notification); }} 
+                      <button
+                        onClick={(e) => { e.stopPropagation(); markAsRead(notification); }}
                         className="p-1 text-[#0F8F83] dark:text-[#71CFC2] hover:bg-black/5 dark:hover:bg-white/10 rounded"
                         title="Mark as read"
                       >
                         <Check size={14} />
                       </button>
                     )}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification); }} 
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification); }}
                       className="p-1 opacity-50 hover:opacity-100 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-all"
                       title="Delete"
                     >
