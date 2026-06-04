@@ -83,20 +83,37 @@ export default function Messages({ user, darkMode }) {
   }, [activeChat?.id, user?.id]);
 
   useEffect(() => {
-    const colleagueId = searchParams.get("colleague");
-    if (!colleagueId || loading || !user?.id) return;
+    if (loading || !user?.id) return;
 
-    const existingConversation = conversations.find(conversation => String(conversation.colleague?.id) === String(colleagueId));
-    if (existingConversation) {
-      setActiveChat(existingConversation);
-      setSearchParams({}, { replace: true });
-      return;
+    const conversationId = searchParams.get("conversation");
+    const colleagueId = searchParams.get("colleague");
+
+    if (!conversationId && !colleagueId) return;
+
+    // Handle deep link to specific conversation
+    if (conversationId) {
+      const existingConversation = conversations.find(c => String(c.id) === String(conversationId));
+      if (existingConversation) {
+        setActiveChat(existingConversation);
+        setSearchParams({}, { replace: true });
+        return;
+      }
     }
 
-    const colleague = colleagues.find(item => String(item?.id) === String(colleagueId));
-    if (colleague) {
-      handleStartNewChat(colleague);
-      setSearchParams({}, { replace: true });
+    // Handle deep link to specific colleague
+    if (colleagueId) {
+      const existingConversation = conversations.find(conversation => String(conversation.colleague?.id) === String(colleagueId));
+      if (existingConversation) {
+        setActiveChat(existingConversation);
+        setSearchParams({}, { replace: true });
+        return;
+      }
+
+      const colleague = colleagues.find(item => String(item?.id) === String(colleagueId));
+      if (colleague) {
+        handleStartNewChat(colleague);
+        setSearchParams({}, { replace: true });
+      }
     }
   }, [searchParams, setSearchParams, loading, user?.id, conversations, colleagues]);
 
@@ -318,19 +335,13 @@ export default function Messages({ user, darkMode }) {
 
   const notifyRecipient = async (message) => {
     const recipientId = activeChat.user1_id === user.id ? activeChat.user2_id : activeChat.user1_id;
-    await supabase.from("notifications").insert({
-      user_id: recipientId,
-      type: "message",
-      title: "New message",
-      message: "You have a new VetLearn message.",
-      is_read: false,
-      related_id: String(message.id)
-    });
 
     sendMessagePushNotification({
       recipientId,
       title: "New VetLearn message",
-      body: activeChat.colleague?.full_name ? `New message from ${activeChat.colleague.full_name}` : "You have a new VetLearn message.",
+      body: user?.user_metadata?.full_name 
+        ? `New message from ${user.user_metadata.full_name}` 
+        : "You have a new VetLearn message.",
       messageId: message.id,
       conversationId: activeChat.id
     });
