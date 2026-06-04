@@ -52,8 +52,16 @@ const featureLabels = {
   ai_assistant: "AI Assistant"
 };
 
-const tierLabels = ["free", "clinician", "professional", "premium", "enterprise"];
-const roleOptions = ["user", "clinician", "admin", "super_admin"];
+const userTypeOptions = ["free", "clinician", "professional", "premium", "admin", "super_admin"];
+const internalAdminTypes = ["admin", "super_admin"];
+const userTypeLabels = {
+  free: "Free",
+  clinician: "Clinician",
+  professional: "Professional",
+  premium: "Premium",
+  admin: "Admin",
+  super_admin: "Super Admin"
+};
 
 export default function AdminDashboard({ user, profile, darkMode }) {
   const [activeTab, setActiveTab] = useState("overview");
@@ -95,18 +103,36 @@ export default function AdminDashboard({ user, profile, darkMode }) {
 
     setAdminRole(roleRes.data.role);
 
-    const [statsRes, usersRes, auditRes, featureRes, subRes] = await Promise.all([
+    const [statsRes, usersRes, auditRes, subRes] = await Promise.all([
       supabase.rpc("admin_dashboard_stats"),
       supabase.from("admin_user_overview").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("subscription_feature_access").select("*").order("subscription_tier", { ascending: true }),
       supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true })
     ]);
+
+    const featureRes = await supabase
+      .from("user_type_feature_access")
+      .select("*")
+      .order("user_type", { ascending: true });
 
     if (!statsRes.error) setStats(statsRes.data || {});
     if (!usersRes.error) setUsers(usersRes.data || []);
     if (!auditRes.error) setAuditLogs(auditRes.data || []);
-    if (!featureRes.error) setFeatureMatrix(featureRes.data || []);
+    if (!featureRes.error) {
+      setFeatureMatrix(featureRes.data || []);
+    } else {
+      const fallback = await supabase
+        .from("subscription_feature_access")
+        .select("*")
+        .order("subscription_tier", { ascending: true });
+      setFeatureMatrix((fallback.data || []).map(item => ({
+        user_type: item.subscription_tier,
+        feature_key: item.feature_key,
+        is_enabled: item.is_enabled,
+        updated_at: item.updated_at,
+        updated_by: item.updated_by
+      })));
+    }
     if (!subRes.error) setSubscriptions(subRes.data || []);
 
     setLoading(false);
@@ -116,7 +142,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter(item =>
-      [item.full_name, item.email, item.role, item.subscription_tier, item.account_status]
+      [item.full_name, item.email, getUserType(item), item.role, item.subscription_tier, item.account_status]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(q))
     );
@@ -188,36 +214,46 @@ export default function AdminDashboard({ user, profile, darkMode }) {
     return true;
   };
 
-  const changeRole = async (targetUser, role) => {
-    if (!isSuperAdmin) return toast.error("Only Super Admins can change admin roles");
-    if (targetUser.user_id === user.id && targetUser.role === "super_admin" && role !== "super_admin") {
-      return toast.error("You cannot demote yourself here. Keep at least one Super Admin.");
+  const changeUserType = async (targetUser, userType) => {
+    const currentType = getUserType(targetUser);
+    if (internalAdminTypes.includes(userType) && !isSuperAdmin) {
+      toast.error("Only Super Admins can assign admin roles");
+      return;
+    }
+    if (internalAdminTypes.includes(currentType) && !isSuperAdmin) {
+      toast.error("Only Super Admins can remove admin roles");
+      return;
+    }
+    if (targetUser.user_id === user.id && currentType === "super_admin" && userType !== "super_admin") {
+      toast.error("You cannot remove your own Super Admin access");
+      return;
     }
 
     setWorking(true);
-    const { error } = await supabase.rpc("admin_set_user_role", {
+    const { error } = await supabase.rpc("admin_set_user_type", {
       target_user_id: targetUser.user_id,
-      new_role: role
+      new_user_type: userType
     });
 
-    if (error) toast.error(error.message || "Could not update role");
-    else {
-      await audit("role_changed", targetUser.user_id, { from: targetUser.role, to: role });
-      toast.success("Role updated");
+    if (error) {
+      toast.error(isMissingRpcError(error) ? "Run admin_user_types_notifications.sql first" : error.message || "Could not update user type");
+    } else {
+      toast.success("User type updated");
       loadAdminData();
     }
     setWorking(false);
   };
 
-  const toggleTierFeature = async (tier, featureKey, enabled) => {
+  const toggleUserTypeFeature = async (userType, featureKey, enabled) => {
     setWorking(true);
     const { error } = await supabase
-      .from("subscription_feature_access")
-      .upsert({ subscription_tier: tier, feature_key: featureKey, is_enabled: enabled, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "subscription_tier,feature_key" });
+      .from("user_type_feature_access")
+      .upsert({ user_type: userType, feature_key: featureKey, is_enabled: enabled, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "user_type,feature_key" });
 
-    if (error) toast.error("Could not update feature access");
-    else {
-      await audit("feature_access_changed", null, { tier, featureKey, enabled });
+    if (error) {
+      toast.error("Run admin_user_types_notifications.sql first");
+    } else {
+      await audit("feature_access_changed", null, { userType, featureKey, enabled });
       toast.success("Feature access updated");
       loadAdminData();
     }
@@ -300,14 +336,14 @@ export default function AdminDashboard({ user, profile, darkMode }) {
           setQuery={setQuery}
           onStatus={updateUserStatus}
           onDelete={deleteUser}
-          onRole={changeRole}
+          onUserType={changeUserType}
           currentUserId={user.id}
           isSuperAdmin={isSuperAdmin}
           working={working}
         />
       )}
       {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
-      {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleTierFeature} working={working} />}
+      {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
       {activeTab === "subscriptions" && <SubscriptionsPanel panelClass={panelClass} darkMode={darkMode} subscriptions={subscriptions} />}
       {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} />}
       {activeTab === "audit" && <AdminActivityExplorer panelClass={panelClass} darkMode={darkMode} users={users} initialLogs={auditLogs} />}
@@ -369,7 +405,7 @@ function Overview({ stats = {}, panelClass, darkMode, onRefresh }) {
   );
 }
 
-function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onRole, currentUserId, isSuperAdmin, working }) {
+function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const canConfirmDelete = deleteConfirm.trim().toUpperCase() === "DELETE";
@@ -391,7 +427,7 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
         <UserCog className="text-[#0F8F83] shrink-0" />
         <div>
           <h2 className="text-xl font-black">User Management</h2>
-          <p className="text-sm opacity-60">Search, suspend, reactivate and manage roles.</p>
+          <p className="text-sm opacity-60">Search, suspend, reactivate and manage user type.</p>
         </div>
       </div>
       <label className={`flex items-center gap-2 rounded-lg px-3 py-3 mb-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
@@ -399,36 +435,49 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users..." className="bg-transparent outline-none flex-1 text-sm" />
       </label>
       <div className="space-y-3">
-        {users.map(item => (
-          <div key={item.user_id} className={`rounded-lg border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-[#DCEDEA] bg-white"}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="font-black truncate">{item.full_name || "Unnamed user"}</h3>
-                <p className="text-sm opacity-65 truncate">{item.email}</p>
-                <p className="text-xs opacity-50 mt-1">Joined {formatDate(item.created_at)} - Last login {formatDate(item.last_sign_in_at)}</p>
+        {users.map(item => {
+          const userType = getUserType(item);
+          const isInternal = internalAdminTypes.includes(userType);
+          const canChangeType = isSuperAdmin || !isInternal;
+          return (
+            <div key={item.user_id} className={`rounded-lg border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-[#DCEDEA] bg-white"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-black truncate">{item.full_name || "Unnamed user"}</h3>
+                  <p className="text-sm opacity-65 truncate">{item.email}</p>
+                  <p className="text-xs opacity-50 mt-1">Joined {formatDate(item.created_at)} - Last login {formatDate(item.last_sign_in_at)}</p>
+                </div>
+                <span className={`rounded-full px-2 py-1 text-[10px] font-black ${item.account_status === "suspended" ? "bg-red-100 text-red-700" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>{item.account_status || "active"}</span>
               </div>
-              <span className={`rounded-full px-2 py-1 text-[10px] font-black ${item.account_status === "suspended" ? "bg-red-100 text-red-700" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>{item.account_status || "active"}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <select value={item.role || "user"} disabled={!isSuperAdmin || working} onChange={(event) => onRole(item, event.target.value)} className={`rounded-lg p-3 text-sm font-bold ${darkMode ? "bg-[#071A24]" : "bg-[#F0F6F5]"}`}>
-                {roleOptions.map(role => <option key={role} value={role}>{role.replace("_", " ")}</option>)}
-              </select>
-              <button disabled={working} onClick={() => onStatus(item, item.account_status === "suspended" ? "active" : "suspended")} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-3 text-sm font-black">
-                {item.account_status === "suspended" ? "Reactivate" : "Suspend"}
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <label className="block">
+                  <span className="text-[10px] font-black uppercase opacity-50">User type</span>
+                  <select value={userType} disabled={!canChangeType || working} onChange={(event) => onUserType(item, event.target.value)} className={`mt-1 w-full rounded-lg p-3 text-sm font-bold ${darkMode ? "bg-[#071A24]" : "bg-[#F0F6F5]"}`}>
+                    {userTypeOptions.map(option => (
+                      <option key={option} value={option} disabled={internalAdminTypes.includes(option) && !isSuperAdmin}>
+                        {userTypeLabels[option]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button disabled={working} onClick={() => onStatus(item, item.account_status === "suspended" ? "active" : "suspended")} className="self-end rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-3 text-sm font-black">
+                  {item.account_status === "suspended" ? "Reactivate" : "Suspend"}
+                </button>
+              </div>
+              {isInternal && !isSuperAdmin && <p className="mt-2 text-xs font-bold text-orange-500">Only Super Admins can change admin access.</p>}
+              <button
+                disabled={working || !isSuperAdmin || item.user_id === currentUserId}
+                onClick={() => { setDeleteCandidate(item); setDeleteConfirm(""); }}
+                className={`mt-2 w-full rounded-lg px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${
+                  darkMode ? "bg-red-500/15 text-red-200 disabled:bg-white/5 disabled:text-slate-500" : "bg-red-50 text-red-600 disabled:bg-slate-100 disabled:text-slate-400"
+                }`}
+              >
+                <Trash2 size={16} />
+                Delete user and data
               </button>
             </div>
-            <button
-              disabled={working || !isSuperAdmin || item.user_id === currentUserId}
-              onClick={() => { setDeleteCandidate(item); setDeleteConfirm(""); }}
-              className={`mt-2 w-full rounded-lg px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${
-                darkMode ? "bg-red-500/15 text-red-200 disabled:bg-white/5 disabled:text-slate-500" : "bg-red-50 text-red-600 disabled:bg-slate-100 disabled:text-slate-400"
-              }`}
-            >
-              <Trash2 size={16} />
-              Delete user and data
-            </button>
-          </div>
-        ))}
+          );
+        })}
         {users.length === 0 && <p className="text-sm opacity-60">No users found.</p>}
       </div>
       {deleteCandidate && (
@@ -481,42 +530,42 @@ function PermissionsPanel({ panelClass, darkMode, isSuperAdmin }) {
   return (
     <section className={panelClass}>
       <h2 className="text-xl font-black mb-3">Roles & Permissions</h2>
-      <p className="text-sm opacity-65 leading-6 mb-4">Roles are stored in Supabase and enforced by RLS. Admins can manage users and content. Super Admins can create or remove admins and change permissions.</p>
+      <p className="text-sm opacity-65 leading-6 mb-4">User type controls app access. Admin and Super Admin are internal permission roles and should not be treated as paid plans.</p>
       <div className="space-y-3">
-        {roleOptions.map(role => (
-          <div key={role} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-            <h3 className="font-black capitalize">{role.replace("_", " ")}</h3>
-            <p className="text-sm opacity-65 mt-1">{roleDescription(role)}</p>
+        {userTypeOptions.map(type => (
+          <div key={type} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+            <h3 className="font-black">{userTypeLabels[type]}</h3>
+            <p className="text-sm opacity-65 mt-1">{roleDescription(type)}</p>
           </div>
         ))}
       </div>
-      {!isSuperAdmin && <p className="mt-4 text-xs text-orange-500 font-bold">Only Super Admins may alter admin permissions.</p>}
+      {!isSuperAdmin && <p className="mt-4 text-xs text-orange-500 font-bold">Only Super Admins may assign or remove Admin and Super Admin roles.</p>}
     </section>
   );
 }
 
 function FeaturesPanel({ panelClass, darkMode, matrix, onToggle, working }) {
-  const lookup = (tier, featureKey) => matrix.find(item => item.subscription_tier === tier && item.feature_key === featureKey)?.is_enabled ?? false;
+  const lookup = (userType, featureKey) => matrix.find(item => (item.user_type || item.subscription_tier) === userType && item.feature_key === featureKey)?.is_enabled ?? false;
   return (
     <section className={panelClass}>
       <h2 className="text-xl font-black mb-3">Feature Access</h2>
-      <p className="text-sm opacity-65 leading-6 mb-4">Toggle access by subscription tier. Individual user overrides are supported in the database for future expansion.</p>
+      <p className="text-sm opacity-65 leading-6 mb-4">Toggle access by user type. Changes are stored in Supabase and apply after users refresh or log in again.</p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[620px] text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="text-left opacity-60">
               <th className="p-2">Feature</th>
-              {tierLabels.map(tier => <th key={tier} className="p-2 capitalize">{tier}</th>)}
+              {userTypeOptions.map(type => <th key={type} className="p-2">{userTypeLabels[type]}</th>)}
             </tr>
           </thead>
           <tbody>
             {Object.entries(featureLabels).map(([key, label]) => (
               <tr key={key} className={darkMode ? "border-t border-white/10" : "border-t border-[#DCEDEA]"}>
                 <td className="p-2 font-black">{label}</td>
-                {tierLabels.map(tier => (
-                  <td key={tier} className="p-2">
-                    <button disabled={working} onClick={() => onToggle(tier, key, !lookup(tier, key))} className={`rounded-full px-3 py-1 text-xs font-black ${lookup(tier, key) ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>
-                      {lookup(tier, key) ? "On" : "Off"}
+                {userTypeOptions.map(type => (
+                  <td key={type} className="p-2">
+                    <button disabled={working} onClick={() => onToggle(type, key, !lookup(type, key))} className={`rounded-full px-3 py-1 text-xs font-black ${lookup(type, key) ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>
+                      {lookup(type, key) ? "On" : "Off"}
                     </button>
                   </td>
                 ))}
@@ -533,7 +582,7 @@ function SubscriptionsPanel({ panelClass, darkMode, subscriptions }) {
   return (
     <section className={panelClass}>
       <h2 className="text-xl font-black mb-3">Subscription Foundation</h2>
-      <p className="text-sm opacity-65 leading-6 mb-4">Plans are ready for future Stripe integration. Feature access can already be linked to each tier.</p>
+      <p className="text-sm opacity-65 leading-6 mb-4">Paid plan records remain separate from Admin and Super Admin permission roles.</p>
       <div className="space-y-3">
         {subscriptions.map(plan => (
           <div key={plan.tier} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
@@ -566,7 +615,6 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
           <option value="clinician">Clinician users</option>
           <option value="professional">Professional users</option>
           <option value="premium">Premium users</option>
-          <option value="enterprise">Enterprise users</option>
         </select>
         <input value={message.title} onChange={(event) => setMessage(prev => ({ ...prev, title: event.target.value }))} placeholder="Announcement title" className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
         <textarea value={message.body} onChange={(event) => setMessage(prev => ({ ...prev, body: event.target.value }))} placeholder="Message" rows={5} className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
@@ -582,9 +630,9 @@ function AdminSettings({ panelClass }) {
       <h2 className="text-xl font-black mb-3">Admin Settings</h2>
       <div className="space-y-3 text-sm opacity-75 leading-6">
         <p><CheckCircle2 className="inline mr-2 text-[#0F8F83]" size={16} />RLS policies protect admin tables.</p>
-        <p><Database className="inline mr-2 text-[#0F8F83]" size={16} />Dashboard metrics use a Supabase RPC function.</p>
-        <p><SlidersHorizontal className="inline mr-2 text-[#0F8F83]" size={16} />Feature flags and subscription tiers are database-driven.</p>
-        <p><Bell className="inline mr-2 text-[#0F8F83]" size={16} />Announcements create in-app notifications and are ready for push/email expansion.</p>
+        <p><Database className="inline mr-2 text-[#0F8F83]" size={16} />Dashboard metrics use Supabase functions and views.</p>
+        <p><SlidersHorizontal className="inline mr-2 text-[#0F8F83]" size={16} />Feature flags are database-driven by user type.</p>
+        <p><Bell className="inline mr-2 text-[#0F8F83]" size={16} />Messages and colleague requests create in-app notifications automatically.</p>
       </div>
     </section>
   );
@@ -603,11 +651,22 @@ function MetricGrid({ metrics, darkMode }) {
   );
 }
 
-function roleDescription(role) {
-  if (role === "super_admin") return "Full unrestricted control. Can create and remove admins. Protected from removing the last Super Admin.";
-  if (role === "admin") return "Can manage users, content, announcements, features and audit logs.";
-  if (role === "clinician") return "Standard user plus clinical tools and clinician-only features.";
-  return "Standard VetLearn user account.";
+function getUserType(item) {
+  if (item.user_type) return item.user_type;
+  if (internalAdminTypes.includes(item.role)) return item.role;
+  if (["free", "clinician", "professional", "premium"].includes(item.subscription_tier)) return item.subscription_tier;
+  if (item.subscription_tier === "enterprise") return "premium";
+  if (item.role === "clinician") return "clinician";
+  return "free";
+}
+
+function roleDescription(type) {
+  if (type === "super_admin") return "Full internal control. Can assign or remove Admin and Super Admin roles.";
+  if (type === "admin") return "Internal admin access. Can manage users and features, but cannot change protected admin roles.";
+  if (type === "premium") return "Highest normal user tier for paid feature access.";
+  if (type === "professional") return "Professional user tier for advanced clinical and workflow features.";
+  if (type === "clinician") return "Clinician tier for clinical tools and everyday practice features.";
+  return "Default account type for new users unless another plan or role is set.";
 }
 
 function isMissingRpcError(error) {
