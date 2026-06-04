@@ -1,11 +1,12 @@
 -- Fix admin role changes so user access changes at the same time.
--- Run this in Supabase SQL Editor, then changing a user between `user` and
--- `clinician` in the Admin Dashboard will also update their feature tier.
+-- Run this whole file in Supabase SQL Editor.
 --
--- This also removes the accidental text overload. Supabase/PostgREST cannot
--- choose between admin_set_user_role(uuid, text) and
--- admin_set_user_role(uuid, public.admin_role), so only the enum version should
--- remain.
+-- It does two things:
+-- 1. Removes the accidental text overload that made PostgREST unable to choose
+--    the right admin_set_user_role function.
+-- 2. Updates role and feature checks so an active `clinician` role grants the
+--    same feature access as the clinician tier, even if your live database does
+--    not store subscription_tier on profiles.
 
 drop function if exists public.admin_set_user_role(uuid, text);
 
@@ -65,31 +66,82 @@ begin
   where user_id = target_user_id
     and is_active = true;
 
-  -- Keep an active role row for the admin dashboard overview, but access for
-  -- normal users is controlled through profiles.subscription_tier below.
   insert into public.admin_user_roles (user_id, role, is_active)
   values (target_user_id, new_role, true);
-
-  -- Feature access is driven by the user's subscription/access tier. Without
-  -- this, the dropdown can say `clinician` while has_feature() still evaluates
-  -- the account as `free`.
-  if next_role = 'clinician' then
-    update public.profiles
-    set subscription_tier = 'clinician',
-        updated_at = now()
-    where id = target_user_id;
-  elsif next_role = 'user' then
-    update public.profiles
-    set subscription_tier = 'free',
-        updated_at = now()
-    where id = target_user_id;
-  elsif next_role in ('admin', 'super_admin') then
-    update public.profiles
-    set subscription_tier = coalesce(nullif(subscription_tier, 'free'), 'clinician'),
-        updated_at = now()
-    where id = target_user_id;
-  end if;
 end;
 $$;
 
 grant execute on function public.admin_set_user_role(uuid, public.admin_role) to authenticated;
+
+create or replace function public.has_feature(feature text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  active_role text;
+  effective_tier text := 'free';
+  candidate_tier text;
+begin
+  select aur.role::text
+    into active_role
+  from public.admin_user_roles aur
+  where aur.user_id = auth.uid()
+    and aur.is_active = true
+  order by case aur.role::text when 'super_admin' then 0 when 'admin' then 1 when 'clinician' then 2 else 3 end
+  limit 1;
+
+  if active_role in ('admin', 'super_admin') then
+    return true;
+  end if;
+
+  if active_role = 'clinician' and exists (
+    select 1
+    from public.subscription_feature_access sfa
+    where sfa.subscription_tier = 'clinician'
+      and sfa.feature_key = feature
+      and sfa.is_enabled = true
+  ) then
+    return true;
+  end if;
+
+  -- Support whichever tier storage exists in the live database. These checks
+  -- use dynamic SQL so missing columns do not break the function.
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'subscription_tier'
+  ) then
+    execute 'select subscription_tier::text from public.profiles where id = $1 limit 1'
+      into candidate_tier
+      using auth.uid();
+    effective_tier := coalesce(candidate_tier, effective_tier);
+  elsif exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'user_subscriptions' and column_name = 'subscription_tier'
+  ) then
+    execute 'select subscription_tier::text from public.user_subscriptions where user_id = $1 limit 1'
+      into candidate_tier
+      using auth.uid();
+    effective_tier := coalesce(candidate_tier, effective_tier);
+  elsif exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'user_subscriptions' and column_name = 'tier'
+  ) then
+    execute 'select tier::text from public.user_subscriptions where user_id = $1 limit 1'
+      into candidate_tier
+      using auth.uid();
+    effective_tier := coalesce(candidate_tier, effective_tier);
+  end if;
+
+  return exists (
+    select 1
+    from public.subscription_feature_access sfa
+    where sfa.subscription_tier = effective_tier
+      and sfa.feature_key = feature
+      and sfa.is_enabled = true
+  );
+end;
+$$;
+
+grant execute on function public.has_feature(text) to authenticated;
