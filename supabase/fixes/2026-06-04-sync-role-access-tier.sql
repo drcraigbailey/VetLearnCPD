@@ -62,12 +62,14 @@ begin
   end if;
 
   update public.admin_user_roles
-  set is_active = false
-  where user_id = target_user_id
-    and is_active = true;
+  set role = new_role,
+      is_active = true
+  where user_id = target_user_id;
 
-  insert into public.admin_user_roles (user_id, role, is_active)
-  values (target_user_id, new_role, true);
+  if not found then
+    insert into public.admin_user_roles (user_id, role, is_active)
+    values (target_user_id, new_role, true);
+  end if;
 end;
 $$;
 
