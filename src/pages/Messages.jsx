@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X, Paperclip, Download } from "lucide-react";
+import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X, Paperclip, Download, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
@@ -18,6 +18,8 @@ export default function Messages({ user, darkMode }) {
   const [chatLoading, setChatLoading] = useState(false);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingConversation, setDeletingConversation] = useState(false);
 
   // Local file storage state
   const [attachment, setAttachment] = useState(null);
@@ -302,6 +304,47 @@ export default function Messages({ user, darkMode }) {
     if (activeTab === "unread") setActiveTab("read");
   };
 
+  const deleteConversation = async (chat) => {
+    if (!chat?.id || deletingConversation) return;
+
+    setDeletingConversation(true);
+
+    const { error: messagesError } = await supabase
+      .from("messages")
+      .delete()
+      .eq("conversation_id", chat.id);
+
+    if (messagesError) {
+      toast.error("Could not delete messages");
+      setDeletingConversation(false);
+      return;
+    }
+
+    const { error: conversationError } = await supabase
+      .from("conversations")
+      .delete()
+      .eq("id", chat.id)
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+    if (conversationError) {
+      toast.error("Could not delete conversation");
+      setDeletingConversation(false);
+      return;
+    }
+
+    setConversations(prev => prev.filter(conversation => conversation.id !== chat.id));
+
+    if (activeChat?.id === chat.id) {
+      setActiveChat(null);
+      setChatItems([]);
+    }
+
+    setDeleteCandidate(null);
+    setDeletingConversation(false);
+    refreshBadges();
+    toast.success("Conversation deleted");
+  };
+
   const handleOpenChat = (chat) => {
     setActiveChat(chat);
   };
@@ -496,21 +539,60 @@ export default function Messages({ user, darkMode }) {
                 visibleConversations.map(chat => {
                   const isUnread = chat.unread > 0;
                   return (
-                    <button key={chat.id} onClick={() => handleOpenChat(chat)} className="w-full text-left p-5 border-b border-inherit transition-colors flex items-center gap-4 hover:bg-black/5 dark:hover:bg-white/5">
-                      <div className={`${isUnread ? "bg-[#71CFC2] text-[#0B3760]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"} h-12 w-12 rounded-full flex items-center justify-center shrink-0 font-bold text-lg`}>
-                        {chat.colleague?.full_name?.charAt(0) || <User size={20} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-1">
-                          <span className={`${isUnread ? "font-black" : "font-bold opacity-80"} text-lg truncate ${textPrimary}`}>{chat.colleague?.full_name}</span>
-                          {chat.lastMsg && <span className="text-xs font-medium opacity-50 whitespace-nowrap ml-2">{new Date(chat.lastMsg.created_at).toLocaleDateString()}</span>}
+                    <div
+                      key={chat.id}
+                      className="w-full p-5 border-b border-inherit transition-colors flex items-center gap-4 hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      <button
+                        onClick={() => handleOpenChat(chat)}
+                        className="flex-1 min-w-0 text-left flex items-center gap-4"
+                      >
+                        <div className={`${isUnread ? "bg-[#71CFC2] text-[#0B3760]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"} h-12 w-12 rounded-full flex items-center justify-center shrink-0 font-bold text-lg`}>
+                          {chat.colleague?.full_name?.charAt(0) || <User size={20} />}
                         </div>
-                        <div className={`${isUnread ? "font-semibold opacity-90" : "opacity-60"} text-sm truncate`}>
-                          {chat.lastMsg?.sender_id === user.id && "You: "}{chat.lastMsg?.content || "No messages yet"}
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-1">
+                            <span className={`${isUnread ? "font-black" : "font-bold opacity-80"} text-lg truncate ${textPrimary}`}>
+                              {chat.colleague?.full_name}
+                            </span>
+                            {chat.lastMsg && (
+                              <span className="text-xs font-medium opacity-50 whitespace-nowrap ml-2">
+                                {new Date(chat.lastMsg.created_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className={`${isUnread ? "font-semibold opacity-90" : "opacity-60"} text-sm truncate`}>
+                            {chat.lastMsg?.sender_id === user.id && "You: "}
+                            {chat.lastMsg?.content || "No messages yet"}
+                          </div>
                         </div>
+                      </button>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isUnread && (
+                          <div className="h-6 min-w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center px-2 shadow-md">
+                            {chat.unread}
+                          </div>
+                        )}
+
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeleteCandidate(chat);
+                          }}
+                          className={`h-9 w-9 rounded-full grid place-items-center transition ${
+                            darkMode
+                              ? "bg-red-500/15 text-red-200 hover:bg-red-500/25"
+                              : "bg-red-50 text-red-600 hover:bg-red-100"
+                          }`}
+                          title="Delete conversation"
+                          aria-label="Delete conversation"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                      {isUnread && <div className="h-6 min-w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0 px-2 shadow-md">{chat.unread}</div>}
-                    </button>
+                    </div>
                   );
                 })
               )}
@@ -562,38 +644,148 @@ export default function Messages({ user, darkMode }) {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSend} className={`p-4 bg-white dark:bg-[#0B242B] border-t ${darkMode ? "border-white/10" : "border-slate-100"}`}>
+            <form
+              onSubmit={handleSend}
+              className={`p-4 border-t ${
+                darkMode
+                  ? "bg-[#071A24] border-white/10"
+                  : "bg-white border-slate-100"
+              }`}
+            >
               {attachment && (
-                <div className={`mb-3 px-4 py-2 rounded-lg flex justify-between items-center text-sm ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
+                <div
+                  className={`mb-3 px-4 py-3 rounded-lg flex justify-between items-center text-sm ${
+                    darkMode
+                      ? "bg-white/10 border border-white/10"
+                      : "bg-[#F0F6F5] border border-[#DCEDEA]"
+                  }`}
+                >
                   <span className="truncate opacity-80 flex items-center gap-2 font-medium">
                     <Paperclip size={14} /> {attachment.name}
                   </span>
-                  <button type="button" onClick={() => setAttachment(null)} className="text-red-400 hover:opacity-70 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setAttachment(null)}
+                    className="text-red-400 hover:opacity-70 p-1"
+                  >
                     <X size={16} />
                   </button>
                 </div>
               )}
-              <div className="flex gap-3 items-center">
-                <label className={`cursor-pointer p-3 rounded-xl transition shadow-sm ${darkMode ? "bg-[#071A24] border border-white/10 hover:bg-white/5" : "bg-white border border-slate-200 hover:bg-slate-50"}`}>
+
+              <div
+                className={`flex gap-3 items-center rounded-lg p-3 border ${
+                  darkMode
+                    ? "bg-white/10 border-white/10"
+                    : "bg-[#F0F6F5] border-[#DCEDEA]"
+                }`}
+              >
+                <label
+                  className={`cursor-pointer h-11 w-11 rounded-lg grid place-items-center shrink-0 transition ${
+                    darkMode
+                      ? "bg-[#071A24] text-slate-200 hover:bg-white/10"
+                      : "bg-white text-[#0B3760] hover:bg-[#E8F8F5]"
+                  }`}
+                >
                   <Paperclip size={18} className="opacity-70" />
-                  <input type="file" className="hidden" onChange={(e) => setAttachment(e.target.files[0])} />
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => setAttachment(e.target.files[0])}
+                  />
                 </label>
+
                 <textarea
                   ref={chatInputRef}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
-                  className={`flex-1 rounded-xl px-5 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-[#71CFC2]/50 resize-none max-h-12 overflow-hidden shadow-sm ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-slate-200 text-[#113247]"}`}
+                  className={`flex-1 rounded-lg px-4 py-3 text-sm border-none outline-none resize-none max-h-12 overflow-hidden ${
+                    darkMode
+                      ? "bg-[#071A24] text-white placeholder:text-slate-400"
+                      : "bg-white text-[#113247] placeholder:text-slate-400"
+                  }`}
                   rows={1}
                 />
-                <button type="submit" disabled={(!newMessage.trim() && !attachment) || sending} className="h-11 w-11 rounded-xl bg-[#A3E4D7] hover:bg-[#71CFC2] text-[#0B3760] flex items-center justify-center disabled:opacity-50 disabled:grayscale transition-all shrink-0 shadow-sm">
-                  {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-1" />}
+
+                <button
+                  type="submit"
+                  disabled={(!newMessage.trim() && !attachment) || sending}
+                  className="h-11 w-11 rounded-lg bg-[#71CFC2] text-[#0B3760] flex items-center justify-center disabled:opacity-40 disabled:grayscale transition-all shrink-0"
+                >
+                  {sending ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Send size={18} className="ml-1" />
+                  )}
                 </button>
               </div>
             </form>
           </div>
         )}
       </div>
+
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${
+              darkMode
+                ? "bg-[#071A24] border-white/10 text-white"
+                : "bg-white border-[#DCEDEA] text-[#113247]"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xl font-black">Delete conversation?</h3>
+                <p className="mt-2 text-sm opacity-70 leading-6">
+                  This will delete the conversation with{" "}
+                  <span className="font-black">
+                    {deleteCandidate.colleague?.full_name || "this colleague"}
+                  </span>{" "}
+                  and remove its messages.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                disabled={deletingConversation}
+                className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${
+                  darkMode
+                    ? "bg-white/10 text-slate-200"
+                    : "bg-[#E8F8F5] text-[#0B3760]"
+                }`}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                disabled={deletingConversation}
+                className={`flex-1 rounded-lg px-4 py-3 text-sm font-black ${
+                  darkMode
+                    ? "bg-white/10 text-slate-200"
+                    : "bg-[#E8F8F5] text-[#0B3760]"
+                }`}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => deleteConversation(deleteCandidate)}
+                disabled={deletingConversation}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-3 text-sm font-black text-white disabled:opacity-50"
+              >
+                {deletingConversation ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
