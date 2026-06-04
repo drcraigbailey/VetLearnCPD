@@ -353,21 +353,21 @@ create or replace function public.create_deduped_notification(
   p_message text,
   p_related_id text default null
 )
-returns uuid
+returns text
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  existing_id uuid;
-  new_id uuid;
+  existing_id text;
+  new_id text;
 begin
   if p_user_id is null then
     return null;
   end if;
 
   if p_related_id is not null then
-    select id into existing_id
+    select id::text into existing_id
     from public.notifications
     where user_id = p_user_id
       and type = p_type
@@ -382,12 +382,12 @@ begin
         is_read = false,
         read_at = null,
         created_at = now()
-    where id = existing_id
-    returning id into new_id;
+    where id::text = existing_id
+    returning id::text into new_id;
   else
     insert into public.notifications (user_id, type, title, message, is_read, related_id, created_at)
     values (p_user_id, p_type, p_title, p_message, false, p_related_id, now())
-    returning id into new_id;
+    returning id::text into new_id;
   end if;
 
   return new_id;
