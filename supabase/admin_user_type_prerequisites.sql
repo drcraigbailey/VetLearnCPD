@@ -48,3 +48,20 @@ where subscriptions.ctid = ranked.ctid
 
 create unique index if not exists user_subscriptions_user_id_unique
   on public.user_subscriptions (user_id);
+
+alter table if exists public.notifications add column if not exists related_id text;
+
+with ranked_notifications as (
+  select
+    ctid,
+    row_number() over (
+      partition by user_id, type, related_id
+      order by is_read asc, created_at desc
+    ) as row_number
+  from public.notifications
+  where related_id is not null
+)
+delete from public.notifications notifications
+using ranked_notifications ranked
+where notifications.ctid = ranked.ctid
+  and ranked.row_number > 1;
