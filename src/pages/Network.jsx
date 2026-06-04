@@ -272,6 +272,16 @@ export default function Network({ user, darkMode = false }) {
 
       {activeTab === "search" && (
         <div className="space-y-4">
+          <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+            {searching ? <Loader2 size={18} className="animate-spin text-[#71CFC2]"/> : <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"}/>}            
+            <input
+              placeholder="Search colleagues by name..."
+              className={`w-full py-4 outline-none bg-transparent text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-500" : "text-[#113247]"}`}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+
           {(requests.length > 0 || sentRequestDetails.length > 0) && (
             <section className="space-y-3">
               <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><UserPlus size={16}/> Pending Requests</h3>
@@ -304,16 +314,6 @@ export default function Network({ user, darkMode = false }) {
               ))}
             </section>
           )}
-
-          <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
-            {searching ? <Loader2 size={18} className="animate-spin text-[#71CFC2]"/> : <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"}/>}            
-            <input
-              placeholder="Search colleagues by name..."
-              className={`w-full py-4 outline-none bg-transparent text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-500" : "text-[#113247]"}`}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
 
           {searchQuery.trim().length > 2 && searchResults.length === 0 && !searching && (
             <div className="text-center opacity-60 py-4 text-sm">No new colleagues found matching "{searchQuery}"</div>
