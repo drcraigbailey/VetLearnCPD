@@ -35,7 +35,7 @@ const adminTabs = [
   { id: "features", label: "Features", icon: Flag },
   { id: "subscriptions", label: "Subscriptions", icon: Crown },
   { id: "messaging", label: "Messaging", icon: MessageSquare },
-  { id: "audit", label: "Audit", icon: Lock },
+  { id: "audit", label: "Site Analytics", icon: Lock },
   { id: "settings", label: "Settings", icon: Settings }
 ];
 
