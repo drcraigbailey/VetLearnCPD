@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Crown,
   Database,
-  Eye,
   Flag,
   Lock,
   Mail,
@@ -159,8 +158,14 @@ export default function AdminDashboard({ user, profile, darkMode }) {
   };
 
   const deleteUser = async (targetUser) => {
-    if (!isSuperAdmin) return toast.error("Only Super Admins can delete users");
-    if (targetUser.user_id === user.id) return toast.error("You cannot delete your own account here");
+    if (!isSuperAdmin) {
+      toast.error("Only Super Admins can delete users");
+      return false;
+    }
+    if (targetUser.user_id === user.id) {
+      toast.error("You cannot delete your own account here");
+      return false;
+    }
 
     setWorking(true);
     const { error } = await supabase.functions.invoke("admin-user-actions", {
@@ -171,12 +176,16 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       }
     });
 
-    if (error) toast.error(error.message || "Could not delete user");
-    else {
-      toast.success("User and associated data deleted");
-      loadAdminData();
+    if (error) {
+      toast.error(getAdminActionErrorMessage(error));
+      setWorking(false);
+      return false;
     }
+
+    toast.success("User and associated data deleted");
+    loadAdminData();
     setWorking(false);
+    return true;
   };
 
   const changeRole = async (targetUser, role) => {
@@ -372,8 +381,8 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
 
   const confirmDelete = async () => {
     if (!deleteCandidate || !canConfirmDelete) return;
-    await onDelete(deleteCandidate);
-    closeDeleteWarning();
+    const deleted = await onDelete(deleteCandidate);
+    if (deleted) closeDeleteWarning();
   };
 
   return (
@@ -603,6 +612,14 @@ function roleDescription(role) {
 
 function isMissingRpcError(error) {
   return error?.code === "42883" || error?.code === "PGRST202" || /function .* does not exist/i.test(error?.message || "");
+}
+
+function getAdminActionErrorMessage(error) {
+  const message = error?.message || "";
+  if (/failed to send a request to the edge function/i.test(message)) {
+    return "Admin action service is unavailable. Deploy admin-user-actions in Supabase, then try again.";
+  }
+  return message || "Could not delete user";
 }
 
 function formatDate(value) {

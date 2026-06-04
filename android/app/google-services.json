@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008330554448",
+    "project_id": "vetlearn-c84eb",
+    "storage_bucket": "vetlearn-c84eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008330554448:android:763a5fce34c1f260b6e555",
+        "android_client_info": {
+          "package_name": "com.vetlearn.cpd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBapnYu-OqGSnFI26aQ8otsDV2Ab5xR1og"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
