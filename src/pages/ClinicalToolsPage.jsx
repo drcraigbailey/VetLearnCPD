@@ -10,6 +10,7 @@ import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
+  const additionalCalculatorsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
@@ -37,6 +38,10 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       root.removeEventListener("change", refreshDoseControls);
     };
   }, [darkMode]);
+
+  const scrollToAdditionalCalculators = () => {
+    additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
@@ -85,7 +90,24 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       {activeSection === "calculators" && (
         <>
           <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <AdditionalClinicalCalculators darkMode={darkMode} />
+          <button
+            type="button"
+            onClick={scrollToAdditionalCalculators}
+            className={`w-full rounded-lg border px-4 py-3 text-left transition flex items-center justify-between gap-3 ${
+              darkMode
+                ? "bg-white/10 border-white/10 text-slate-100 hover:bg-white/15"
+                : "bg-white/90 border-[#DCEDEA] text-[#0B3760] hover:bg-[#E8F8F5]"
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-black">
+              <Calculator size={18} />
+              Additional Calculators
+            </span>
+            <span className="text-xs font-bold opacity-60">Jump to quick tools</span>
+          </button>
+          <div ref={additionalCalculatorsRef} id="additional-calculators" className="scroll-mt-24">
+            <AdditionalClinicalCalculators darkMode={darkMode} />
+          </div>
         </>
       )}
 
