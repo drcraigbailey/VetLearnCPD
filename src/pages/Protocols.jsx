@@ -3,7 +3,6 @@ import { Search, Plus, Share2, X, Loader2, Trash2, Edit3, ClipboardList } from "
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
-import PageBanner from "../components/PageBanner";
 
 const emptyForm = { name: "", indication: "", drug_ids: [], drug_doses: {} };
 const doseUnits = ["mg/kg", "mcg/kg", "mg/m2", "IU/kg", "ml/kg", "tablet", "drops", "other"];
@@ -239,54 +238,59 @@ export default function Protocols({ user, darkMode }) {
         </div>
       )}
 
-      <PageBanner
-        title="Clinical Protocols"
-        subtitle="Create, manage and share treatment protocols."
-        darkMode={darkMode}
-        badges={[{ label: `${filteredProtocols.length} shown`, icon: <ClipboardList size={13} />, accent: true }]}
-      />
-
-      <div className="flex flex-col gap-4 mb-6">
-        <div className={`${panelClass} !p-3 flex items-center gap-3`}>
-          <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"} />
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search protocols..." className={`w-full bg-transparent outline-none text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247]"}`} />
+      <section className={`${panelClass} space-y-4`}>
+        <div className="flex items-start gap-3">
+          <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+            <ClipboardList size={20} />
+          </div>
+          <div>
+            <h2 className="font-black text-xl leading-tight">Clinical Protocols</h2>
+            <p className="text-sm opacity-60 leading-6">Create, manage and share treatment protocols.</p>
+          </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {["my_protocols", "network"].map(t => (
-            <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-full font-bold text-sm ${activeTab === t ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>{t.replace("_", " ")}</button>
-          ))}
-        </div>
-        <button onClick={() => openEditor()} className="bg-[#0F8F83] text-white px-4 py-3 rounded-lg font-bold flex items-center justify-center gap-2">
-          <Plus size={18} /> New Protocol
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {loading ? <div className={panelClass}><LoadingState label="Loading protocols..." darkMode={darkMode} /></div> : filteredProtocols.length === 0 ? <div className={panelClass}>No protocols found.</div> : filteredProtocols.map(p => (
-          <div key={p.id} className={panelClass}>
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-bold text-lg">{p.name}</h3>
-              <div className="flex gap-2">
-                <button onClick={() => openShareMenu(p)} className="text-[#0F8F83]"><Share2 size={16} /></button>
-                {p.user_id === user.id && (
-                  <>
-                    <button onClick={() => openEditor(p)}><Edit3 size={16} /></button>
-                    <button onClick={() => deleteProtocol(p.id)} className="text-red-500"><Trash2 size={16} /></button>
-                  </>
-                )}
+        <div className="space-y-4">
+          <div className={`rounded-lg p-3 flex items-center gap-3 ${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"}`}>
+            <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"} />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search protocols..." className={`w-full bg-transparent outline-none text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247]"}`} />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {["my_protocols", "network"].map(t => (
+              <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-full font-bold text-sm ${activeTab === t ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>{t.replace("_", " ")}</button>
+            ))}
+          </div>
+          <button onClick={() => openEditor()} className="bg-[#0F8F83] text-white px-4 py-3 rounded-lg font-bold flex items-center justify-center gap-2">
+            <Plus size={18} /> New Protocol
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {loading ? <div className={`${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"} border rounded-lg p-4`}><LoadingState label="Loading protocols..." darkMode={darkMode} /></div> : filteredProtocols.length === 0 ? <div className={`${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"} border rounded-lg p-4`}>No protocols found.</div> : filteredProtocols.map(p => (
+            <div key={p.id} className={`${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"} border rounded-lg p-4`}>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-bold text-lg">{p.name}</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => openShareMenu(p)} className="text-[#0F8F83]"><Share2 size={16} /></button>
+                  {p.user_id === user.id && (
+                    <>
+                      <button onClick={() => openEditor(p)}><Edit3 size={16} /></button>
+                      <button onClick={() => deleteProtocol(p.id)} className="text-red-500"><Trash2 size={16} /></button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm opacity-60 mb-2">{p.indication}</p>
+              <div className="flex flex-wrap gap-1">
+                {asIdList(p.drug_ids).map(id => {
+                  const drug = drugs.find(d => idKey(d.id) === idKey(id));
+                  const dose = asDoseMap(p.drug_doses)[idKey(id)];
+                  return drug ? <span key={idKey(id)} className="text-[10px] bg-slate-100 dark:bg-black/20 px-2 py-1 rounded font-bold">{drug.name}{dose?.dose ? ` - ${dose.dose} ${dose.dose_unit || "mg/kg"}` : ""}</span> : null;
+                })}
               </div>
             </div>
-            <p className="text-sm opacity-60 mb-2">{p.indication}</p>
-            <div className="flex flex-wrap gap-1">
-              {asIdList(p.drug_ids).map(id => {
-                const drug = drugs.find(d => idKey(d.id) === idKey(id));
-                const dose = asDoseMap(p.drug_doses)[idKey(id)];
-                return drug ? <span key={idKey(id)} className="text-[10px] bg-slate-100 dark:bg-black/20 px-2 py-1 rounded font-bold">{drug.name}{dose?.dose ? ` - ${dose.dose} ${dose.dose_unit || "mg/kg"}` : ""}</span> : null;
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
