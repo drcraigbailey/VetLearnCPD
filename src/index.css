@@ -45,6 +45,33 @@ body,
   overscroll-behavior-inline: contain;
 }
 
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem !important;
+  overflow: visible !important;
+  padding-bottom: 0 !important;
+}
+
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button {
+  min-height: 5.25rem;
+  width: 100%;
+  white-space: normal !important;
+  border-radius: 0.5rem !important;
+  padding: 0.85rem 0.65rem !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 .cpd-tab-strip {
   width: calc(100% + 2rem);
   margin-left: -1rem;
@@ -72,6 +99,10 @@ body,
 @media (min-width: 640px) {
   .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
     justify-content: center !important;
+  }
+
+  .flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .cpd-tab-strip {
