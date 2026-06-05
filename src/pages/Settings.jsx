@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Bell, Briefcase, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Trash2, Upload, UserRound } from "lucide-react";
+import { Bell, Briefcase, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Trash2, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
+import SettingsLegalDocuments from "../components/SettingsLegalDocuments";
 import { supabase } from "../supabaseClient";
 import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
 import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
@@ -286,12 +287,13 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     { id: "profile", label: "Profile", icon: UserRound },
     { id: "professional", label: "Professional", icon: GraduationCap },
     { id: "ai", label: "AI", icon: Sparkles },
-    { id: "app", label: "App", icon: Shield }
+    { id: "app", label: "App", icon: Shield },
+    { id: "docs", label: "Docs", icon: FileText }
   ];
 
   return (
     <div className="pb-8">
-      <PageBanner title="Settings" subtitle="Manage your profile, professional details, AI preferences and account settings." darkMode={darkMode} />
+      <PageBanner title="Settings" subtitle="Manage your profile, professional details, AI preferences, documents and account settings." darkMode={darkMode} />
 
       {aiApiPromptOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
@@ -474,6 +476,8 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
               <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
             </section>
           )}
+
+          {activeTab === "docs" && <SettingsLegalDocuments darkMode={darkMode} />}
         </div>
       )}
     </div>
