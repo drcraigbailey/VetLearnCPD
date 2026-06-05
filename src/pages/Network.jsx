@@ -169,11 +169,10 @@ export default function Network({ user, darkMode = false }) {
     setBusyId(null);
   };
 
-  const tabClass = (tab) => `px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${
-    activeTab === tab
-      ? "bg-[#71CFC2] text-[#062F63]"
-      : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"
-  }`;
+  const networkTabs = [
+    { id: "colleagues", label: "Colleagues", icon: Users },
+    { id: "search", label: "Find Colleagues", icon: Search },
+  ];
 
   if (loading) {
     return (
@@ -202,9 +201,30 @@ export default function Network({ user, darkMode = false }) {
         badges={[{ label: `${requests.length} pending`, icon: <UserPlus size={13} />, accent: true }]}
       />
 
-      <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
-        <button className={tabClass("colleagues")} onClick={() => setActiveTab("colleagues")}>Colleagues</button>
-        <button className={tabClass("search")} onClick={() => setActiveTab("search")}>Find Colleagues</button>
+      <div className={`grid grid-cols-2 gap-2 rounded-lg p-1 mb-6 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`}>
+        {networkTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-md px-2 py-2 text-sm font-semibold transition ${
+                isActive
+                  ? "bg-white text-[#123C3A] shadow-sm"
+                  : darkMode
+                    ? "text-slate-200 hover:bg-white/10"
+                    : "text-[#123C3A]/75 hover:bg-white/60"
+              }`}
+              aria-pressed={isActive}
+            >
+              <Icon size={18} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "colleagues" && (
