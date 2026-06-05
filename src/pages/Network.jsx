@@ -287,6 +287,30 @@ export default function Network({ user, darkMode = false }) {
             className={searching ? "[&_svg]:animate-spin" : ""}
           />
 
+          {searchQuery.trim().length > 2 && searchResults.length === 0 && !searching && (
+            <div className="text-center opacity-60 py-4 text-sm">No new colleagues found matching "{searchQuery}"</div>
+          )}
+
+          {searchResults.length > 0 && (
+            <section className="space-y-2">
+              {searchResults.map(result => (
+                <div key={result.id} className={`${panelClass} flex justify-between items-center`}>
+                  <div>
+                    <div className="font-bold text-lg">{result.title} {result.full_name}</div>
+                    <div className="text-xs opacity-70">{result.qualifications || "Veterinary Professional"}</div>
+                  </div>
+                  {sentRequests.includes(result.id) ? (
+                    <AppButton disabled variant="secondary" darkMode={darkMode}>Pending</AppButton>
+                  ) : (
+                    <AppButton onClick={() => handleSendRequest(result.id)} disabled={busyId === result.id} icon={busyId === result.id ? Loader2 : UserPlus} variant="secondary" darkMode={darkMode} className={busyId === result.id ? "[&_svg]:animate-spin" : ""}>
+                      Connect
+                    </AppButton>
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+
           {(requests.length > 0 || sentRequestDetails.length > 0) && (
             <section className="space-y-3">
               <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><UserPlus size={16}/> Pending Requests</h3>
@@ -317,28 +341,6 @@ export default function Network({ user, darkMode = false }) {
               ))}
             </section>
           )}
-
-          {searchQuery.trim().length > 2 && searchResults.length === 0 && !searching && (
-            <div className="text-center opacity-60 py-4 text-sm">No new colleagues found matching "{searchQuery}"</div>
-          )}
-
-          <div className="space-y-2">
-            {searchResults.map(result => (
-              <div key={result.id} className={`${panelClass} flex justify-between items-center`}>
-                <div>
-                  <div className="font-bold text-lg">{result.title} {result.full_name}</div>
-                  <div className="text-xs opacity-70">{result.qualifications || "Veterinary Professional"}</div>
-                </div>
-                {sentRequests.includes(result.id) ? (
-                  <AppButton disabled variant="secondary" darkMode={darkMode}>Pending</AppButton>
-                ) : (
-                  <AppButton onClick={() => handleSendRequest(result.id)} disabled={busyId === result.id} icon={busyId === result.id ? Loader2 : UserPlus} variant="secondary" darkMode={darkMode} className={busyId === result.id ? "[&_svg]:animate-spin" : ""}>
-                    Connect
-                  </AppButton>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>
