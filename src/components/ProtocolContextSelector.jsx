@@ -52,7 +52,7 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         .order("name");
     }
 
-    if (result.error) toast.error("Could not load protocols for calculator context");
+    if (result.error) toast.error("Could not load protocols for the calculator");
     setProtocols(result.data || []);
     setLoading(false);
   };
@@ -105,8 +105,8 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
           <ClipboardList size={19} />
         </div>
         <div className="min-w-0">
-          <h2 className="font-black text-lg leading-tight">Protocol Context</h2>
-          <p className="text-sm opacity-60 leading-6">Select a saved protocol to pre-fill the Drug Calculator with its medicines and protocol doses.</p>
+          <h2 className="font-black text-lg leading-tight">Select Protocol</h2>
+          <p className="text-sm opacity-60 leading-6">Choose a saved protocol to calculate all matching medicines for the patient weight.</p>
         </div>
       </div>
 
@@ -142,7 +142,7 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         <div className={`mt-4 rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
           <div className="font-black">{selectedProtocol.name}</div>
           {selectedProtocol.indication && <p className="text-sm opacity-65 leading-6 mt-1">{selectedProtocol.indication}</p>}
-          <p className="text-xs font-bold uppercase tracking-widest opacity-45 mt-3">Applied to Drug Calculator</p>
+          <p className="text-xs font-bold uppercase tracking-widest opacity-45 mt-3">Ready for protocol calculation</p>
           {protocolDrugs.length > 0 ? (
             <div className="flex flex-wrap gap-2 mt-2">
               {protocolDrugs.map((drug) => {
