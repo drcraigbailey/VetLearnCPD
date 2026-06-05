@@ -223,8 +223,70 @@ async function deleteProtocolChildren(client, targetUserId) {
 }
 
 async function deleteStorageObjects(client, targetUserId) {
+  await deleteStorageApiObjects(client, targetUserId);
   await maybeStorageDelete(client.schema("storage").from("objects").delete().eq("owner", targetUserId));
   await maybeStorageDelete(client.schema("storage").from("objects").delete().eq("owner_id", targetUserId));
+}
+
+async function deleteStorageApiObjects(client, targetUserId) {
+  const { data: buckets, error } = await client.storage.listBuckets();
+  if (error) {
+    console.warn("Skipping storage bucket scan during user deletion", {
+      code: error?.code || null,
+      message: error?.message || String(error)
+    });
+    return;
+  }
+
+  for (const bucket of buckets || []) {
+    await removeStoragePrefix(client, bucket.name, targetUserId);
+  }
+}
+
+async function removeStoragePrefix(client, bucketName, targetUserId) {
+  const paths = await listStoragePaths(client, bucketName, targetUserId);
+  if (paths.length === 0) return;
+
+  const { error } = await client.storage.from(bucketName).remove(paths);
+  if (error) {
+    console.warn("Storage file removal failed during user deletion", {
+      bucketName,
+      code: error?.code || null,
+      message: error?.message || String(error)
+    });
+  }
+}
+
+async function listStoragePaths(client, bucketName, prefix) {
+  const paths = [];
+
+  async function walk(path) {
+    const { data, error } = await client.storage.from(bucketName).list(path, {
+      limit: 1000,
+      sortBy: { column: "name", order: "asc" }
+    });
+
+    if (error) {
+      const message = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
+      if (message.includes("not found") || message.includes("does not exist")) return;
+      console.warn("Storage listing failed during user deletion", {
+        bucketName,
+        path,
+        code: error?.code || null,
+        message: error?.message || String(error)
+      });
+      return;
+    }
+
+    for (const item of data || []) {
+      const fullPath = path ? `${path}/${item.name}` : item.name;
+      if (item.id) paths.push(fullPath);
+      else await walk(fullPath);
+    }
+  }
+
+  await walk(prefix);
+  return paths;
 }
 
 async function nullOrDelete(client, table, column, targetUserId) {
@@ -271,6 +333,7 @@ function isSafeToIgnoreSchemaError(error) {
   return (
     error.code === "42P01" ||
     error.code === "42703" ||
+    error.code === "PGRST106" ||
     error.code === "PGRST204" ||
     error.code === "PGRST205" ||
     message.includes("relation") ||
