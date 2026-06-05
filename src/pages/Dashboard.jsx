@@ -45,7 +45,7 @@ export default function Dashboard({ user, profile, darkMode = false, activeReadi
         subtitle="Your CPD records and future reading are saved to your profile, so they follow you between devices."
         darkMode={darkMode}
         badges={[
-          { label: `${cpdTargetHours:g} hr target`.replace(":g", "") }
+          { label: `${cpdTargetHours} hr target` }
         ]}
       />
 
