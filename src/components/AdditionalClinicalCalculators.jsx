@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Syringe } from "lucide-react";
 
 const calculators = [
@@ -50,9 +50,17 @@ const formatNumber = (value, decimals = 2) => {
 };
 
 export default function AdditionalClinicalCalculators({ darkMode = false }) {
+  const resultRef = useRef(null);
   const [active, setActive] = useState("energy");
   const activeCalculator = calculators.find((item) => item.id === active) || calculators[0];
   const ActiveIcon = activeCalculator.icon;
+
+  const selectCalculator = (id) => {
+    setActive(id);
+    window.requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   return (
     <section className={`${panelClass(darkMode)} space-y-4`}>
@@ -72,12 +80,13 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
           return (
             <button
               key={item.id}
-              onClick={() => setActive(item.id)}
+              onClick={() => selectCalculator(item.id)}
               className={`rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 transition ${
                 active === item.id
                   ? "bg-[#71CFC2] text-[#062F63] shadow-md"
-                  : darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"
+                  : darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
               }`}
+              aria-pressed={active === item.id}
             >
               <Icon size={18} />
               {item.label}
@@ -86,7 +95,7 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
         })}
       </div>
 
-      <div className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+      <div ref={resultRef} className={`scroll-mt-24 rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
         <div className="flex items-center gap-2 mb-4">
           <ActiveIcon size={18} className="text-[#0F8F83]" />
           <h3 className="font-black">{activeCalculator.label}</h3>
