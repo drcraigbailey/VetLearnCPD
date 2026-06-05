@@ -1,4 +1,5 @@
 import { AlertTriangle, ExternalLink, FileText, Lock, Mail, Shield, Trash2 } from "lucide-react";
+import UserDataExportButton from "./UserDataExportButton";
 
 const updatedDate = "5 June 2026";
 
@@ -86,7 +87,7 @@ const documents = [
         items: [
           "Users can ask for a copy of their personal data, correction of inaccurate data, deletion of eligible data, or restriction/objection where applicable.",
           "Profile details can be corrected in Settings. Data that cannot be edited directly should be requested through the VetLearn CPD administrator.",
-          "Deletion and export requests should be handled by the administrator until self-service export and deletion controls are fully connected."
+          "Deletion requests should be handled by the administrator while self-service account deletion is connected and tested."
         ]
       },
       {
@@ -100,7 +101,7 @@ const documents = [
       {
         heading: "Contact",
         items: [
-          "Use the VetLearn CPD administrator/support contact supplied with your account to request access, export, correction or deletion.",
+          "Use the VetLearn CPD administrator/support contact supplied with your account to request access, correction or deletion.",
           "Before public launch, confirm the final public privacy contact email and retention schedule."
         ]
       }
@@ -174,6 +175,19 @@ export default function SettingsLegalDocuments({ darkMode = false }) {
 
       <div className={`rounded-lg border p-4 text-sm leading-6 ${darkMode ? "bg-amber-500/10 border-amber-400/20 text-amber-100" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
         These documents support GDPR readiness, but they do not by themselves make the app compliant. Account deletion, data export, RLS, audit logging and processor agreements still need to work in practice.
+      </div>
+
+      <div className={`rounded-lg border p-4 ${cardClass}`}>
+        <div className="flex items-start gap-3 mb-3">
+          <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-2 shrink-0`}>
+            <Lock size={18} />
+          </div>
+          <div>
+            <h3 className="font-black">Personal Data Export</h3>
+            <p className="text-sm opacity-65 leading-6">Download a JSON copy of the app data currently readable by your account.</p>
+          </div>
+        </div>
+        <UserDataExportButton darkMode={darkMode} />
       </div>
 
       <div className="space-y-3">
