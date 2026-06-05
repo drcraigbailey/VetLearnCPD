@@ -203,7 +203,8 @@ export default function AdminDashboard({ user, profile, darkMode }) {
     });
 
     if (error) {
-      toast.error(getAdminActionErrorMessage(error));
+      console.error("Admin delete user failed", error);
+      toast.error(await getAdminActionErrorMessage(error));
       setWorking(false);
       return false;
     }
@@ -673,10 +674,33 @@ function isMissingRpcError(error) {
   return error?.code === "42883" || error?.code === "PGRST202" || /function .* does not exist/i.test(error?.message || "");
 }
 
-function getAdminActionErrorMessage(error) {
+async function getAdminActionErrorMessage(error) {
+  const response = error?.context;
+  if (response) {
+    try {
+      const body = await response.clone().json();
+      if (body?.error) {
+        const suffix = [body.code, body.details, body.hint].filter(Boolean).join(" | ");
+        return suffix ? `${body.error} (${suffix})` : body.error;
+      }
+    } catch (_jsonError) {
+      // Fall back to text and then the Supabase client message.
+    }
+
+    try {
+      const text = await response.clone().text();
+      if (text) return text;
+    } catch (_textError) {
+      // Fall back to the Supabase client message.
+    }
+  }
+
   const message = error?.message || "";
   if (/failed to send a request to the edge function/i.test(message)) {
     return "Admin action service is unavailable. Deploy admin-user-actions in Supabase, then try again.";
+  }
+  if (/edge function returned a non-2xx status code/i.test(message)) {
+    return "The admin delete service returned an error. Check the admin-user-actions function logs in Supabase for the exact table or constraint, then try again.";
   }
   return message || "Could not delete user";
 }
