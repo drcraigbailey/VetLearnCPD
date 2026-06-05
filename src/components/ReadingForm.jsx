@@ -6,7 +6,6 @@ import {
   Loader2,
   Check,
   Sparkles,
-  Cloud,
   FileText,
   Search,
   Clock3,
@@ -166,8 +165,8 @@ export default function ReadingForm({ user, darkMode = false, activeReading, onS
           <p className={`text-sm ${darkMode ? "text-slate-300" : "text-slate-500"}`}>Track articles and generate reflections</p>
         </div>
         <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-full px-3 py-2 text-xs font-bold flex items-center gap-1 shrink-0`}>
-          <Cloud size={14} />
-          Cloud sync
+          <Clock3 size={14} />
+          Timer or manual
         </div>
       </div>
 
