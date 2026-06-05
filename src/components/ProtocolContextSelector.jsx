@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../supabaseClient";
+import { IconButton, SearchBox } from "./VetLearnUI";
 
 const fieldClass = (darkMode) =>
   `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${
@@ -101,15 +102,12 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <div className="relative">
-          <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
-          <input
-            className={`${fieldClass(darkMode)} pl-10`}
-            placeholder="Search protocols..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
+        <SearchBox
+          darkMode={darkMode}
+          placeholder="Search protocols..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
 
         <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
           <option value="">Select protocol</option>
@@ -119,14 +117,12 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         </select>
 
         {selectedId ? (
-          <button
-            type="button"
+          <IconButton
+            icon={X}
+            label="Clear selected protocol"
+            darkMode={darkMode}
             onClick={() => setSelectedId("")}
-            className={`rounded-lg px-3 min-h-[44px] flex items-center justify-center transition ${darkMode ? "bg-white/10 text-slate-300 hover:bg-white/15" : "bg-[#F0F6F5] text-slate-500 hover:bg-[#E8F8F5]"}`}
-            aria-label="Clear selected protocol"
-          >
-            <X size={17} />
-          </button>
+          />
         ) : null}
       </div>
 
