@@ -49,6 +49,16 @@ body,
   overscroll-behavior-inline: contain;
 }
 
+.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button:has(.lucide-file-text) {
+  font-size: 0 !important;
+}
+
+.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button:has(.lucide-file-text)::after {
+  content: "Privacy and Settings";
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
 .flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr));
