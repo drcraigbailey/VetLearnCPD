@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Share2, X, Loader2, Trash2, Edit3, ClipboardList } from "lucide-react";
+import { Plus, Share2, Loader2, Trash2, Edit3, ClipboardList } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
+import { AppButton, FilterPills, IconButton, SearchBox } from "../components/VetLearnUI";
 
 const emptyForm = { name: "", indication: "", drug_ids: [], drug_doses: {} };
 const doseUnits = ["mg/kg", "mcg/kg", "mg/m2", "IU/kg", "ml/kg", "tablet", "drops", "other"];
@@ -179,7 +180,7 @@ export default function Protocols({ user, darkMode }) {
             <input className={`${fieldClass} mb-3`} placeholder="Indication" value={form.indication} onChange={e => setForm({ ...form, indication: e.target.value })} />
 
             <label className="text-xs font-bold opacity-50 block mb-2">Search and select drugs</label>
-            <input className={`${fieldClass} mb-3`} placeholder="Search drugs..." value={drugSearch} onChange={e => setDrugSearch(e.target.value)} />
+            <SearchBox darkMode={darkMode} className="mb-3" placeholder="Search drugs..." value={drugSearch} onChange={e => setDrugSearch(e.target.value)} />
             <div className="h-36 overflow-y-auto mb-4 border rounded-lg p-2 dark:border-white/10">
               {drugs.filter(d => d.name.toLowerCase().includes(drugSearch.toLowerCase()) && !selectedIds.some((id) => idKey(id) === idKey(d.id))).map(d => (
                 <button key={d.id} onClick={() => addDrugToProtocol(d)} className="block w-full text-left p-2 hover:bg-[#71CFC2]/20 rounded text-sm mb-1">
@@ -202,7 +203,7 @@ export default function Protocols({ user, darkMode }) {
                         <div className="font-black">{drug?.name || "Drug"}</div>
                         <div className="text-xs opacity-55">{drug?.species || "Species"} | {drug?.route || "General route"}</div>
                       </div>
-                      <button onClick={() => removeDrugFromProtocol(id)} className="text-red-500"><X size={17} /></button>
+                      <IconButton icon={Trash2} label="Remove drug" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => removeDrugFromProtocol(id)} />
                     </div>
                     <div className="grid grid-cols-[1fr_110px] gap-2 mb-2">
                       <input className={fieldClass} type="number" step="0.01" placeholder="Protocol dose" value={dose.dose || ""} onChange={(event) => updateDrugDose(id, { dose: event.target.value })} />
@@ -217,8 +218,8 @@ export default function Protocols({ user, darkMode }) {
               })}
             </div>
 
-            <button onClick={handleSaveProtocol} className="w-full bg-[#0F8F83] text-white py-3 rounded-lg font-bold">Save Protocol</button>
-            <button onClick={() => { setIsEditorOpen(false); setEditingId(null); }} className="w-full mt-2 opacity-50 text-sm">Cancel</button>
+            <AppButton onClick={handleSaveProtocol} darkMode={darkMode} className="w-full">Save Protocol</AppButton>
+            <AppButton onClick={() => { setIsEditorOpen(false); setEditingId(null); }} variant="secondary" darkMode={darkMode} className="w-full mt-2">Cancel</AppButton>
           </div>
         </div>
       )}
@@ -233,7 +234,7 @@ export default function Protocols({ user, darkMode }) {
                 {f.full_name} {shareBusyId === f.id ? <Loader2 className="animate-spin" /> : "Send"}
               </button>
             ))}
-            <button onClick={() => setIsShareOpen(null)} className="w-full mt-4 opacity-50">Cancel</button>
+            <AppButton onClick={() => setIsShareOpen(null)} variant="secondary" darkMode={darkMode} className="w-full mt-4">Cancel</AppButton>
           </div>
         </div>
       )}
@@ -250,18 +251,17 @@ export default function Protocols({ user, darkMode }) {
         </div>
 
         <div className="space-y-4">
-          <div className={`rounded-lg p-3 flex items-center gap-3 ${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"}`}>
-            <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"} />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search protocols..." className={`w-full bg-transparent outline-none text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247]"}`} />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {["my_protocols", "network"].map(t => (
-              <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-full font-bold text-sm ${activeTab === t ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>{t.replace("_", " ")}</button>
-            ))}
-          </div>
-          <button onClick={() => openEditor()} className="bg-[#0F8F83] text-white px-4 py-3 rounded-lg font-bold flex items-center justify-center gap-2">
-            <Plus size={18} /> New Protocol
-          </button>
+          <SearchBox darkMode={darkMode} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search protocols..." />
+          <FilterPills
+            darkMode={darkMode}
+            activeId={activeTab}
+            onChange={setActiveTab}
+            items={[
+              { id: "my_protocols", label: "My protocols" },
+              { id: "network", label: "Network" }
+            ]}
+          />
+          <AppButton onClick={() => openEditor()} icon={Plus} darkMode={darkMode}>New Protocol</AppButton>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,11 +270,11 @@ export default function Protocols({ user, darkMode }) {
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-bold text-lg">{p.name}</h3>
                 <div className="flex gap-2">
-                  <button onClick={() => openShareMenu(p)} className="text-[#0F8F83]"><Share2 size={16} /></button>
+                  <IconButton icon={Share2} label="Share protocol" darkMode={darkMode} className="h-8 w-8" onClick={() => openShareMenu(p)} />
                   {p.user_id === user.id && (
                     <>
-                      <button onClick={() => openEditor(p)}><Edit3 size={16} /></button>
-                      <button onClick={() => deleteProtocol(p.id)} className="text-red-500"><Trash2 size={16} /></button>
+                      <IconButton icon={Edit3} label="Edit protocol" darkMode={darkMode} className="h-8 w-8" onClick={() => openEditor(p)} />
+                      <IconButton icon={Trash2} label="Delete protocol" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => deleteProtocol(p.id)} />
                     </>
                   )}
                 </div>
