@@ -4,6 +4,7 @@ import { Briefcase, Check, Globe, GraduationCap, Loader2, Mail, MapPin, MessageS
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import { AppButton, IconButton, PageToolbar, SearchBox } from "../components/VetLearnUI";
 import { supabase } from "../supabaseClient";
 
 export default function Network({ user, darkMode = false }) {
@@ -201,31 +202,7 @@ export default function Network({ user, darkMode = false }) {
         badges={[{ label: `${requests.length} pending`, icon: <UserPlus size={13} />, accent: true }]}
       />
 
-      <div className={`grid grid-cols-2 gap-2 rounded-lg p-1 mb-6 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`}>
-        {networkTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-md px-2 py-2 text-sm font-semibold transition ${
-                isActive
-                  ? "bg-white text-[#123C3A] shadow-sm"
-                  : darkMode
-                    ? "text-slate-200 hover:bg-white/10"
-                    : "text-[#123C3A]/75 hover:bg-white/60"
-              }`}
-              aria-pressed={isActive}
-            >
-              <Icon size={18} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <PageToolbar items={networkTabs} activeId={activeTab} onChange={setActiveTab} darkMode={darkMode} className="mb-6" />
 
       {activeTab === "colleagues" && (
         <div className="space-y-6">
@@ -240,12 +217,10 @@ export default function Network({ user, darkMode = false }) {
                       <div className="text-xs opacity-70">{request.requester?.qualifications || "Veterinary Professional"}</div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleRespond(request.id, "accepted")} className="bg-[#71CFC2] text-[#062F63] p-2 rounded-lg font-bold flex items-center gap-1">
-                        {busyId === request.id ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16}/> Accept</>}
-                      </button>
-                      <button onClick={() => handleRespond(request.id, "rejected")} className="bg-slate-100 text-slate-500 p-2 rounded-lg">
-                        <X size={16}/>
-                      </button>
+                      <AppButton onClick={() => handleRespond(request.id, "accepted")} icon={busyId === request.id ? Loader2 : Check} darkMode={darkMode} className={busyId === request.id ? "[&_svg]:animate-spin" : ""}>
+                        Accept
+                      </AppButton>
+                      <IconButton icon={X} label="Decline request" darkMode={darkMode} onClick={() => handleRespond(request.id, "rejected")} />
                     </div>
                   </div>
                 ))}
@@ -273,32 +248,25 @@ export default function Network({ user, darkMode = false }) {
                     <div className="flex gap-2 shrink-0">
                       <Link
                         to={`/messages?colleague=${connection.colleague?.id}`}
-                        className={`h-11 w-11 rounded-full grid place-items-center transition ${
+                        className={`h-10 w-10 rounded-full grid place-items-center transition ${
                           darkMode
                             ? "bg-white/10 text-[#71CFC2] hover:bg-white/15"
-                            : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#D7F2EE]"
+                            : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"
                         }`}
                         aria-label={`Message ${connection.colleague?.full_name || "colleague"}`}
                       >
                         <MessageSquare size={18} />
                       </Link>
 
-                      <button
-                        onClick={() => handleRemoveConnection(connection.connection_id)}
-                        className={`h-11 w-11 rounded-full grid place-items-center transition ${
-                          darkMode
-                            ? "bg-red-500/15 text-red-200 hover:bg-red-500/25"
-                            : "bg-red-50 text-red-600 hover:bg-red-100"
-                        }`}
-                        aria-label={`Remove ${connection.colleague?.full_name || "colleague"}`}
+                      <IconButton
+                        icon={busyId === connection.connection_id ? Loader2 : Trash2}
+                        label={`Remove ${connection.colleague?.full_name || "colleague"}`}
+                        variant="danger"
+                        darkMode={darkMode}
+                        className={busyId === connection.connection_id ? "[&_svg]:animate-spin" : ""}
                         disabled={busyId === connection.connection_id}
-                      >
-                        {busyId === connection.connection_id ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={18} />
-                        )}
-                      </button>
+                        onClick={() => handleRemoveConnection(connection.connection_id)}
+                      />
                     </div>
                   </div>
                 ))}
@@ -310,15 +278,14 @@ export default function Network({ user, darkMode = false }) {
 
       {activeTab === "search" && (
         <div className="space-y-4">
-          <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
-            {searching ? <Loader2 size={18} className="animate-spin text-[#71CFC2]"/> : <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"}/>}            
-            <input
-              placeholder="Search colleagues by name..."
-              className={`w-full py-4 outline-none bg-transparent text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-500" : "text-[#113247]"}`}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
+          <SearchBox
+            darkMode={darkMode}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search colleagues by name..."
+            icon={searching ? Loader2 : Search}
+            className={searching ? "[&_svg]:animate-spin" : ""}
+          />
 
           {(requests.length > 0 || sentRequestDetails.length > 0) && (
             <section className="space-y-3">
@@ -331,12 +298,10 @@ export default function Network({ user, darkMode = false }) {
                     <div className="text-[10px] font-black uppercase tracking-widest text-[#0F8F83] mt-1">Waiting for your response</div>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <button onClick={() => handleRespond(request.id, "accepted")} className="bg-[#71CFC2] text-[#062F63] p-2 rounded-lg font-bold flex items-center gap-1">
-                      {busyId === request.id ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16}/> Accept</>}
-                    </button>
-                    <button onClick={() => handleRespond(request.id, "rejected")} className="bg-slate-100 text-slate-500 p-2 rounded-lg">
-                      <X size={16}/>
-                    </button>
+                    <AppButton onClick={() => handleRespond(request.id, "accepted")} icon={busyId === request.id ? Loader2 : Check} darkMode={darkMode} className={busyId === request.id ? "[&_svg]:animate-spin" : ""}>
+                      Accept
+                    </AppButton>
+                    <IconButton icon={X} label="Decline request" darkMode={darkMode} onClick={() => handleRespond(request.id, "rejected")} />
                   </div>
                 </div>
               ))}
@@ -365,11 +330,11 @@ export default function Network({ user, darkMode = false }) {
                   <div className="text-xs opacity-70">{result.qualifications || "Veterinary Professional"}</div>
                 </div>
                 {sentRequests.includes(result.id) ? (
-                  <button disabled className="px-4 py-2 rounded-lg font-bold text-sm opacity-50 border">Pending</button>
+                  <AppButton disabled variant="secondary" darkMode={darkMode}>Pending</AppButton>
                 ) : (
-                  <button onClick={() => handleSendRequest(result.id)} disabled={busyId === result.id} className="px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#E8F8F5] text-[#0F8F83]">
-                    {busyId === result.id ? <Loader2 size={16} className="animate-spin"/> : <UserPlus size={16}/>} Connect
-                  </button>
+                  <AppButton onClick={() => handleSendRequest(result.id)} disabled={busyId === result.id} icon={busyId === result.id ? Loader2 : UserPlus} variant="secondary" darkMode={darkMode} className={busyId === result.id ? "[&_svg]:animate-spin" : ""}>
+                    Connect
+                  </AppButton>
                 )}
               </div>
             ))}
@@ -398,7 +363,7 @@ function ColleagueProfileModal({ colleague, loading, darkMode, onClose }) {
               <p className="text-sm opacity-65">{colleague?.title || "Veterinary Professional"}</p>
             </div>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-full ${softClass}`} aria-label="Close colleague profile"><X size={18} /></button>
+          <IconButton icon={X} label="Close colleague profile" darkMode={darkMode} onClick={onClose} />
         </div>
 
         {loading ? (
