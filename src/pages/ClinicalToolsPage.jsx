@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Calculator, ClipboardList, Pill } from "lucide-react";
+import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
 import PillCounter from "../components/PillCounter";
@@ -82,7 +83,10 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       </div>
 
       {activeSection === "calculators" && (
-        <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
+        <>
+          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
+          <AdditionalClinicalCalculators darkMode={darkMode} />
+        </>
       )}
 
       {activeSection === "pillCounter" && <PillCounter darkMode={darkMode} />}
