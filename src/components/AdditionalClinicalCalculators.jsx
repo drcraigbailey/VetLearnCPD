@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Pill, Syringe } from "lucide-react";
-import PillCounter from "./PillCounter";
+import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Syringe } from "lucide-react";
 
 const calculators = [
   { id: "energy", label: "Energy", icon: Flame },
@@ -8,8 +7,7 @@ const calculators = [
   { id: "dextrose", label: "Dextrose", icon: Droplets },
   { id: "potassium", label: "Potassium", icon: Syringe },
   { id: "sodium", label: "Sodium", icon: GlassWater },
-  { id: "osmolality", label: "Osmolality", icon: Gauge },
-  { id: "pillCounter", label: "Pill Count", icon: Pill }
+  { id: "osmolality", label: "Osmolality", icon: Gauge }
 ];
 
 const unitConversions = {
@@ -99,7 +97,6 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
         {active === "potassium" && <PotassiumCalculator darkMode={darkMode} />}
         {active === "sodium" && <SodiumCalculator darkMode={darkMode} />}
         {active === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
-        {active === "pillCounter" && <PillCounter darkMode={darkMode} />}
       </div>
     </section>
   );
