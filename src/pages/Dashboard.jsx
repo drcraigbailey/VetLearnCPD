@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardCards from "../components/DashboardCards";
-import PageBanner from "../components/PageBanner";
 import ReadingForm from "../components/ReadingForm";
 import { Target } from "lucide-react";
 import { supabase } from "../supabaseClient";
@@ -10,7 +9,6 @@ const DEFAULT_CPD_TARGET_HOURS = 35;
 
 export default function Dashboard({ user, profile, darkMode = false, activeReading, onStartReading, onFinishReading, onSaveManualReading, savingReading = false }) {
   const navigate = useNavigate();
-  const firstName = (profile?.full_name || user?.user_metadata?.full_name || "there").split(" ")[0];
   const [cpdTargetHours, setCpdTargetHours] = useState(DEFAULT_CPD_TARGET_HOURS);
 
   useEffect(() => {
@@ -40,15 +38,6 @@ export default function Dashboard({ user, profile, darkMode = false, activeReadi
 
   return (
     <div>
-      <PageBanner
-        title={`Welcome Back, ${firstName}`}
-        subtitle="Your CPD records and future reading are saved to your profile, so they follow you between devices."
-        darkMode={darkMode}
-        badges={[
-          { label: `${cpdTargetHours} hr target` }
-        ]}
-      />
-
       <button
         type="button"
         onClick={openCpdTargetSetting}
