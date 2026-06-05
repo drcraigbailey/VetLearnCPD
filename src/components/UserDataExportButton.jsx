@@ -43,6 +43,7 @@ export default function UserDataExportButton({ darkMode = false }) {
       if (authError || !authData.user) throw new Error("Please sign in before exporting data");
 
       const user = authData.user;
+      const skipped = [];
       const exportPayload = {
         exported_at: new Date().toISOString(),
         export_type: "vetlearn_user_personal_data",
@@ -50,22 +51,23 @@ export default function UserDataExportButton({ darkMode = false }) {
           id: user.id,
           email: user.email || null
         },
-        tables: {}
+        tables: {},
+        skipped_tables: skipped
       };
 
-      exportPayload.tables.profiles = await safeSelect("profiles", "id", user.id);
-      exportPayload.tables.drugs = await safeSelect("drugs", "user_id", user.id);
+      exportPayload.tables.profiles = await safeSelect("profiles", "id", user.id, skipped);
+      exportPayload.tables.drugs = await safeSelect("drugs", "user_id", user.id, skipped);
 
       for (const table of userIdTables) {
-        exportPayload.tables[table] = await safeSelect(table, "user_id", user.id);
+        exportPayload.tables[table] = await safeSelect(table, "user_id", user.id, skipped);
       }
 
       for (const relationship of relationshipTables) {
-        exportPayload.tables[relationship.table] = await selectRelationshipRows(relationship.table, relationship.columns, user.id);
+        exportPayload.tables[relationship.table] = await selectRelationshipRows(relationship.table, relationship.columns, user.id, skipped);
       }
 
       downloadJson(exportPayload, `vetlearn-data-export-${new Date().toISOString().slice(0, 10)}.json`);
-      toast.success("Data export downloaded");
+      toast.success(skipped.length ? "Data export downloaded with skipped tables noted" : "Data export downloaded");
     } catch (error) {
       toast.error(error.message || "Could not export your data");
     } finally {
@@ -88,11 +90,11 @@ export default function UserDataExportButton({ darkMode = false }) {
   );
 }
 
-async function selectRelationshipRows(table, columns, userId) {
+async function selectRelationshipRows(table, columns, userId, skipped) {
   const rowsById = new Map();
 
   for (const column of columns) {
-    const rows = await safeSelect(table, column, userId);
+    const rows = await safeSelect(table, column, userId, skipped);
     for (const row of rows) {
       rowsById.set(row.id || JSON.stringify(row), row);
     }
@@ -101,11 +103,18 @@ async function selectRelationshipRows(table, columns, userId) {
   return Array.from(rowsById.values());
 }
 
-async function safeSelect(table, column, value) {
+async function safeSelect(table, column, value, skipped) {
   const { data, error } = await supabase.from(table).select("*").eq(column, value);
-  if (isSafeToIgnoreSchemaError(error)) return [];
-  if (error) throw error;
-  return data || [];
+  if (!error) return data || [];
+
+  skipped.push({
+    table,
+    column,
+    reason: isSafeToIgnoreSchemaError(error) ? "table_or_column_unavailable" : "query_failed",
+    message: error.message || "Unknown export query error"
+  });
+
+  return [];
 }
 
 function isSafeToIgnoreSchemaError(error) {
