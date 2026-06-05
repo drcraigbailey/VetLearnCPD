@@ -1,19 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Calculator, ClipboardList, Pill } from "lucide-react";
-import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
 import PillCounter from "../components/PillCounter";
-import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 import ClinicalTools from "./ClinicalTools";
 import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
-  const [protocolContext, setProtocolContext] = useState(null);
   const [activeSection, setActiveSection] = useState("calculators");
-  const handleProtocolChange = useCallback((nextProtocol) => setProtocolContext(nextProtocol), []);
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
   useEffect(() => {
@@ -43,10 +39,9 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
-    { id: "pillCounter", label: "Pill Count", icon: Pill },
+    { id: "pillCounter", label: "Pill Counter", icon: Pill },
     ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
   ];
-  const tabGridClass = sectionTabs.length === 3 ? "grid-cols-3" : sectionTabs.length === 2 ? "grid-cols-2" : "grid-cols-1";
 
   return (
     <div ref={pageRef} className="space-y-6 pb-40">
@@ -57,7 +52,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
         badges={[{ label: "Clinical workspace", icon: <Calculator size={14} />, accent: true }]}
       />
 
-      <div className={`grid ${tabGridClass} gap-2 rounded-lg p-1 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {sectionTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSection === tab.id;
@@ -67,18 +62,14 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
               key={tab.id}
               type="button"
               onClick={() => setActiveSection(tab.id)}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-md px-2 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg p-3 min-h-[86px] text-sm font-black flex flex-col items-center justify-center gap-2 transition ${
                 isActive
-                  ? darkMode
-                    ? "bg-white text-[#123C3A] shadow-sm"
-                    : "bg-white text-[#123C3A] shadow-sm"
-                  : darkMode
-                    ? "text-white/75 hover:bg-white/10 hover:text-white"
-                    : "text-[#123C3A]/70 hover:bg-white/60 hover:text-[#123C3A]"
+                  ? "bg-[#71CFC2] text-[#062F63] shadow-md"
+                  : darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
               }`}
               aria-pressed={isActive}
             >
-              <Icon size={16} />
+              <Icon size={20} />
               <span>{tab.label}</span>
             </button>
           );
@@ -86,11 +77,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       </div>
 
       {activeSection === "calculators" && (
-        <>
-          <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
-          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <AdditionalClinicalCalculators darkMode={darkMode} />
-        </>
+        <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
       )}
 
       {activeSection === "pillCounter" && <PillCounter darkMode={darkMode} />}
