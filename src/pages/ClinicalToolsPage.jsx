@@ -30,7 +30,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   }, [darkMode]);
 
   return (
-    <div ref={pageRef} className="space-y-6">
+    <div ref={pageRef} className="space-y-6 pb-40">
       <PageBanner
         title="Clinical Tools"
         subtitle="Calculate doses, CRIs, fluids, transfusions and toxicology guidance."
