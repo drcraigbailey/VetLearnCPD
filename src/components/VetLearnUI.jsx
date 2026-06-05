@@ -136,7 +136,9 @@ export function IconButton({ icon: Icon, label, badge, darkMode = false, variant
       className={joinClasses(
         "h-10 w-10 rounded-full grid place-items-center relative transition disabled:opacity-60 disabled:cursor-not-allowed",
         isDanger
-          ? "bg-red-500 text-white hover:bg-red-600"
+          ? darkMode
+            ? "bg-transparent text-red-400 hover:bg-red-500/10"
+            : "bg-transparent text-red-600 hover:bg-red-50"
           : darkMode
             ? "bg-white/10 text-slate-100 hover:bg-white/15"
             : "bg-[#E8F8F5] text-[#0B3760] hover:bg-white",
