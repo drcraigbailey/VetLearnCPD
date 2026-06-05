@@ -335,3 +335,37 @@ body,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Clinical Tools calculator tiles: match the Additional Calculators card grid. */
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  padding: 1.25rem !important;
+}
+
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button {
+  min-height: 4.75rem !important;
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  background: #e8f8f5 !important;
+  color: #0b3760 !important;
+  font-size: 0.75rem !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button.bg-\[\#71CFC2\] {
+  background: #71cfc2 !important;
+  color: #062f63 !important;
+  box-shadow: 0 8px 18px rgba(11, 55, 96, 0.16) !important;
+}
+
+.dark .flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgb(226, 232, 240) !important;
+}
+
+.dark .flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) > button.bg-\[\#71CFC2\] {
+  background: #71cfc2 !important;
+  color: #062f63 !important;
+}
