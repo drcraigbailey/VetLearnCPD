@@ -3,10 +3,53 @@ import { Camera, Loader2, RotateCcw, Search, Trash2, Undo2, Upload } from "lucid
 
 const buttonBase = "min-h-[44px] rounded-lg px-3 py-2 text-sm font-black transition flex items-center justify-center gap-2";
 
+const detectionModes = [
+  { id: "strict", label: "Strict" },
+  { id: "normal", label: "Normal" },
+  { id: "sensitive", label: "Sensitive" },
+];
+
+const detectionPresets = {
+  strict: {
+    brightBoost: 34,
+    colorBoost: 46,
+    darkBoost: 42,
+    minAreaFactor: 0.00012,
+    maxAreaFactor: 0.04,
+    minFill: 0.42,
+    minCircularity: 0.19,
+    minDiameter: 8,
+    closeIterations: 1,
+  },
+  normal: {
+    brightBoost: 22,
+    colorBoost: 32,
+    darkBoost: 34,
+    minAreaFactor: 0.000075,
+    maxAreaFactor: 0.06,
+    minFill: 0.32,
+    minCircularity: 0.11,
+    minDiameter: 7,
+    closeIterations: 1,
+  },
+  sensitive: {
+    brightBoost: 12,
+    colorBoost: 20,
+    darkBoost: 26,
+    minAreaFactor: 0.000045,
+    maxAreaFactor: 0.075,
+    minFill: 0.23,
+    minCircularity: 0.06,
+    minDiameter: 6,
+    closeIterations: 2,
+  },
+};
+
 export default function PillCounter({ darkMode = false }) {
   const [imageUrl, setImageUrl] = useState("");
   const [markers, setMarkers] = useState([]);
   const [detecting, setDetecting] = useState(false);
+  const [detectionMode, setDetectionMode] = useState("normal");
   const [detectionMessage, setDetectionMessage] = useState("");
   const imageUrlRef = useRef("");
 
@@ -28,10 +71,10 @@ export default function PillCounter({ darkMode = false }) {
       setDetecting(true);
       setDetectionMessage("Scanning image...");
       try {
-        const detectedMarkers = await detectPillsFromImage(imageUrl);
+        const detectedMarkers = await detectPillsFromImage(imageUrl, detectionMode);
         if (cancelled || imageUrlRef.current !== imageUrl) return;
         setMarkers(detectedMarkers);
-        setDetectionMessage(formatDetectionMessage(detectedMarkers.length));
+        setDetectionMessage(formatDetectionMessage(detectedMarkers.length, detectionMode));
       } catch (error) {
         if (!cancelled) setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
       } finally {
@@ -44,7 +87,7 @@ export default function PillCounter({ darkMode = false }) {
     return () => {
       cancelled = true;
     };
-  }, [imageUrl]);
+  }, [imageUrl, detectionMode]);
 
   const handleImageSelection = (event) => {
     const file = event.target.files?.[0];
@@ -62,10 +105,10 @@ export default function PillCounter({ darkMode = false }) {
     setDetecting(true);
     setDetectionMessage("Scanning image...");
     try {
-      const detectedMarkers = await detectPillsFromImage(imageUrl);
+      const detectedMarkers = await detectPillsFromImage(imageUrl, detectionMode);
       if (imageUrlRef.current !== imageUrl) return;
       setMarkers(detectedMarkers);
-      setDetectionMessage(formatDetectionMessage(detectedMarkers.length));
+      setDetectionMessage(formatDetectionMessage(detectedMarkers.length, detectionMode));
     } catch (error) {
       setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
     } finally {
@@ -134,6 +177,27 @@ export default function PillCounter({ darkMode = false }) {
 
       {imageUrl ? (
         <>
+          <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+            <p className="mb-2 text-xs font-black uppercase tracking-widest opacity-60">Detection sensitivity</p>
+            <div className="grid grid-cols-3 gap-2">
+              {detectionModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setDetectionMode(mode.id)}
+                  disabled={detecting}
+                  className={`min-h-[40px] rounded-md px-2 py-2 text-xs font-black transition ${
+                    detectionMode === mode.id
+                      ? "bg-[#71CFC2] text-[#062F63] shadow-sm"
+                      : darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"
+                  } disabled:opacity-60`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {detectionMessage && (
             <div className={`rounded-lg border p-3 text-sm leading-6 ${darkMode ? "bg-white/5 border-white/10 text-slate-100" : "bg-[#F9FCFB] border-[#DCEDEA] text-[#113247]"}`}>
               {detecting ? "Scanning image..." : detectionMessage}
@@ -211,18 +275,19 @@ export default function PillCounter({ darkMode = false }) {
   );
 }
 
-function formatDetectionMessage(count) {
-  if (count === 0) return "No clear tablets detected. Try a plainer background or tap tablets manually.";
-  if (count === 1) return "Auto-detected 1 likely tablet. Check the marker before relying on the count.";
-  return `Auto-detected ${count} likely tablets. Check the markers before relying on the count.`;
+function formatDetectionMessage(count, mode) {
+  const modeLabel = detectionModes.find((item) => item.id === mode)?.label || "Normal";
+  if (count === 0) return `${modeLabel} scan found no clear tablets. Try Sensitive mode, a plainer background, or tap tablets manually.`;
+  if (count === 1) return `${modeLabel} scan found 1 likely tablet. Check the marker before relying on the count.`;
+  return `${modeLabel} scan found ${count} likely tablets. Check the markers before relying on the count.`;
 }
 
-function detectPillsFromImage(imageUrl) {
+function detectPillsFromImage(imageUrl, mode = "normal") {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
       try {
-        resolve(findPillMarkers(image));
+        resolve(findPillMarkers(image, mode));
       } catch (error) {
         reject(error);
       }
@@ -232,12 +297,13 @@ function detectPillsFromImage(imageUrl) {
   });
 }
 
-function findPillMarkers(image) {
+function findPillMarkers(image, mode = "normal") {
   const sourceWidth = image.naturalWidth || image.width;
   const sourceHeight = image.naturalHeight || image.height;
   if (!sourceWidth || !sourceHeight) return [];
 
-  const maxDimension = 900;
+  const preset = detectionPresets[mode] || detectionPresets.normal;
+  const maxDimension = 760;
   const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
   const width = Math.max(1, Math.round(sourceWidth * scale));
   const height = Math.max(1, Math.round(sourceHeight * scale));
@@ -271,19 +337,28 @@ function findPillMarkers(image) {
 
   const averageLuminance = luminanceTotal / pixelCount;
   const otsu = otsuThreshold(histogram, pixelCount);
-  const brightThreshold = Math.min(245, Math.max(82, otsu + 12, averageLuminance + 22));
-  const colorThreshold = Math.min(230, Math.max(92, averageLuminance + 32));
-  const mask = new Uint8Array(pixelCount);
+  const brightThreshold = Math.min(246, Math.max(76, otsu + 8, averageLuminance + preset.brightBoost));
+  const colorThreshold = Math.min(238, Math.max(86, averageLuminance + preset.colorBoost));
+  const darkThreshold = Math.max(12, Math.min(otsu - 8, averageLuminance - preset.darkBoost));
+  const allowDarkObjects = averageLuminance > 145;
+  const rawMask = new Uint8Array(pixelCount);
 
   for (let pixel = 0; pixel < pixelCount; pixel += 1) {
     const lum = luminance[pixel];
     const sat = saturation[pixel];
-    const brightTablet = lum >= brightThreshold && sat <= 190;
-    const coloredTablet = lum >= colorThreshold && sat >= 35 && sat <= 215;
-    mask[pixel] = brightTablet || coloredTablet ? 1 : 0;
+    const brightTablet = lum >= brightThreshold && sat <= 205;
+    const coloredTablet = lum >= colorThreshold && sat >= 28 && sat <= 225;
+    const darkTablet = allowDarkObjects && lum <= darkThreshold && sat >= 18 && sat <= 230;
+    rawMask[pixel] = brightTablet || coloredTablet || darkTablet ? 1 : 0;
   }
 
-  return connectedComponentMarkers(mask, width, height, pixelCount);
+  const openedMask = dilateMask(erodeMask(rawMask, width, height), width, height);
+  let cleanedMask = openedMask;
+  for (let i = 0; i < preset.closeIterations; i += 1) {
+    cleanedMask = erodeMask(dilateMask(cleanedMask, width, height), width, height);
+  }
+
+  return connectedComponentMarkers(cleanedMask, width, height, pixelCount, preset);
 }
 
 function otsuThreshold(histogram, total) {
@@ -316,24 +391,73 @@ function otsuThreshold(histogram, total) {
   return threshold;
 }
 
-function connectedComponentMarkers(mask, width, height, pixelCount) {
+function erodeMask(mask, width, height) {
+  const output = new Uint8Array(mask.length);
+
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const index = y * width + x;
+      if (!mask[index]) continue;
+
+      let keep = 1;
+      for (let dy = -1; dy <= 1 && keep; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (!mask[index + dy * width + dx]) {
+            keep = 0;
+            break;
+          }
+        }
+      }
+      output[index] = keep;
+    }
+  }
+
+  return output;
+}
+
+function dilateMask(mask, width, height) {
+  const output = new Uint8Array(mask.length);
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = y * width + x;
+      if (!mask[index]) continue;
+
+      for (let dy = -1; dy <= 1; dy += 1) {
+        const nextY = y + dy;
+        if (nextY < 0 || nextY >= height) continue;
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const nextX = x + dx;
+          if (nextX < 0 || nextX >= width) continue;
+          output[nextY * width + nextX] = 1;
+        }
+      }
+    }
+  }
+
+  return output;
+}
+
+function connectedComponentMarkers(mask, width, height, pixelCount, preset) {
   const visited = new Uint8Array(pixelCount);
   const stack = new Int32Array(pixelCount);
   const candidates = [];
-  const minArea = Math.max(24, pixelCount * 0.00008);
-  const maxArea = pixelCount * 0.055;
+  const minArea = Math.max(18, pixelCount * preset.minAreaFactor);
+  const maxArea = pixelCount * preset.maxAreaFactor;
 
   for (let start = 0; start < pixelCount; start += 1) {
     if (!mask[start] || visited[start]) continue;
 
     let top = 0;
     let area = 0;
+    let perimeter = 0;
     let sumX = 0;
     let sumY = 0;
     let minX = width;
     let minY = height;
     let maxX = 0;
     let maxY = 0;
+    let touchesEdge = false;
 
     stack[top] = start;
     top += 1;
@@ -352,28 +476,36 @@ function connectedComponentMarkers(mask, width, height, pixelCount) {
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
       if (y > maxY) maxY = y;
+      if (x <= 1 || y <= 1 || x >= width - 2 || y >= height - 2) touchesEdge = true;
 
       const left = index - 1;
       const right = index + 1;
       const up = index - width;
       const down = index + width;
 
-      if (x > 0 && mask[left] && !visited[left]) {
+      if (x === 0 || !mask[left]) perimeter += 1;
+      else if (!visited[left]) {
         visited[left] = 1;
         stack[top] = left;
         top += 1;
       }
-      if (x < width - 1 && mask[right] && !visited[right]) {
+
+      if (x === width - 1 || !mask[right]) perimeter += 1;
+      else if (!visited[right]) {
         visited[right] = 1;
         stack[top] = right;
         top += 1;
       }
-      if (y > 0 && mask[up] && !visited[up]) {
+
+      if (y === 0 || !mask[up]) perimeter += 1;
+      else if (!visited[up]) {
         visited[up] = 1;
         stack[top] = up;
         top += 1;
       }
-      if (y < height - 1 && mask[down] && !visited[down]) {
+
+      if (y === height - 1 || !mask[down]) perimeter += 1;
+      else if (!visited[down]) {
         visited[down] = 1;
         stack[top] = down;
         top += 1;
@@ -386,23 +518,41 @@ function connectedComponentMarkers(mask, width, height, pixelCount) {
     const aspect = boxWidth / Math.max(boxHeight, 1);
     const fill = area / Math.max(boxArea, 1);
     const diameter = Math.max(boxWidth, boxHeight);
-    const isPillSized = area >= minArea && area <= maxArea && diameter >= 7;
-    const isPillShaped = aspect >= 0.45 && aspect <= 2.25 && fill >= 0.32;
+    const circularity = perimeter > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
+    const isPillSized = area >= minArea && area <= maxArea && diameter >= preset.minDiameter;
+    const isPillShaped = aspect >= 0.42 && aspect <= 2.4 && fill >= preset.minFill && circularity >= preset.minCircularity;
 
-    if (isPillSized && isPillShaped) {
+    if (!touchesEdge && isPillSized && isPillShaped) {
       candidates.push({
         id: `auto-${candidates.length}-${Date.now()}`,
         x: (sumX / area / width) * 100,
         y: (sumY / area / height) * 100,
         source: "auto",
-        score: area * fill,
+        score: area * fill * Math.max(circularity, 0.01),
       });
     }
   }
 
-  return candidates
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 80)
+  return mergeNearbyCandidates(candidates)
+    .slice(0, 100)
     .sort((a, b) => a.y - b.y || a.x - b.x)
     .map(({ score, ...marker }) => marker);
+}
+
+function mergeNearbyCandidates(candidates) {
+  const accepted = [];
+  const minDistancePercent = 2.2;
+
+  candidates
+    .sort((a, b) => b.score - a.score)
+    .forEach((candidate) => {
+      const duplicate = accepted.some((item) => {
+        const dx = item.x - candidate.x;
+        const dy = item.y - candidate.y;
+        return Math.sqrt(dx * dx + dy * dy) < minDistancePercent;
+      });
+      if (!duplicate) accepted.push(candidate);
+    });
+
+  return accepted;
 }
