@@ -14,6 +14,10 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   const [activeSection, setActiveSection] = useState("calculators");
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
+  function scrollToAdditionalCalculators() {
+    additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   useEffect(() => {
     if (!canUseProtocols && activeSection === "protocols") {
       setActiveSection("calculators");
@@ -24,7 +28,10 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
     const root = pageRef.current;
     if (!root) return undefined;
 
-    const refreshDoseControls = () => enhanceDoseControls(root, darkMode);
+    const refreshDoseControls = () => {
+      enhanceDoseControls(root, darkMode);
+      syncAdditionalCalculatorShortcut(root, darkMode, scrollToAdditionalCalculators);
+    };
     refreshDoseControls();
 
     const observer = new MutationObserver(refreshDoseControls);
@@ -38,10 +45,6 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       root.removeEventListener("change", refreshDoseControls);
     };
   }, [darkMode]);
-
-  const scrollToAdditionalCalculators = () => {
-    additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
@@ -90,21 +93,6 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       {activeSection === "calculators" && (
         <>
           <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <button
-            type="button"
-            onClick={scrollToAdditionalCalculators}
-            className={`w-full rounded-lg border px-4 py-3 text-left transition flex items-center justify-between gap-3 ${
-              darkMode
-                ? "bg-white/10 border-white/10 text-slate-100 hover:bg-white/15"
-                : "bg-white/90 border-[#DCEDEA] text-[#0B3760] hover:bg-[#E8F8F5]"
-            }`}
-          >
-            <span className="flex items-center gap-2 text-sm font-black">
-              <Calculator size={18} />
-              Additional Calculators
-            </span>
-            <span className="text-xs font-bold opacity-60">Jump to quick tools</span>
-          </button>
           <div ref={additionalCalculatorsRef} id="additional-calculators" className="scroll-mt-24">
             <AdditionalClinicalCalculators darkMode={darkMode} />
           </div>
@@ -122,6 +110,25 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       )}
     </div>
   );
+}
+
+function syncAdditionalCalculatorShortcut(root, darkMode, onClick) {
+  const calculatorTiles = root.querySelector(".flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide");
+  if (!calculatorTiles || !calculatorTiles.querySelector(".lucide-syringe") || !calculatorTiles.querySelector(".lucide-droplets")) return;
+
+  let shortcut = calculatorTiles.querySelector('[data-additional-calculator-shortcut="true"]');
+  if (!shortcut) {
+    shortcut = document.createElement("button");
+    shortcut.type = "button";
+    shortcut.dataset.additionalCalculatorShortcut = "true";
+    calculatorTiles.appendChild(shortcut);
+  }
+
+  shortcut.onclick = onClick;
+  shortcut.className = `rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 text-center transition ${
+    darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
+  }`;
+  shortcut.innerHTML = '<span class="text-xl leading-none">+</span><span>Additional Calculators</span>';
 }
 
 function enhanceDoseControls(root, darkMode) {
