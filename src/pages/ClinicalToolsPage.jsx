@@ -1,14 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Calculator } from "lucide-react";
+import { Calculator, ClipboardList } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
+import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
 import ProtocolContextSelector from "../components/ProtocolContextSelector";
+import { canUseFeature, featureKeys } from "../utils/featureAccess";
 import ClinicalTools from "./ClinicalTools";
+import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
   const [protocolContext, setProtocolContext] = useState(null);
+  const [activeSection, setActiveSection] = useState("calculators");
   const handleProtocolChange = useCallback((nextProtocol) => setProtocolContext(nextProtocol), []);
+  const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
+
+  useEffect(() => {
+    if (!canUseProtocols && activeSection === "protocols") {
+      setActiveSection("calculators");
+    }
+  }, [activeSection, canUseProtocols]);
 
   useEffect(() => {
     const root = pageRef.current;
@@ -29,17 +40,63 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
     };
   }, [darkMode]);
 
+  const sectionTabs = [
+    { id: "calculators", label: "Calculator", icon: Calculator },
+    ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
+  ];
+
   return (
     <div ref={pageRef} className="space-y-6 pb-40">
       <PageBanner
         title="Clinical Tools"
-        subtitle="Calculate doses, CRIs, fluids, transfusions and toxicology guidance."
+        subtitle="Calculate doses, CRIs, fluids, transfusions and manage clinical protocols."
         darkMode={darkMode}
-        badges={[{ label: "Clinical calculators", icon: <Calculator size={14} />, accent: true }]}
+        badges={[{ label: "Clinical workspace", icon: <Calculator size={14} />, accent: true }]}
       />
-      <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
-      <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
-      <AdditionalClinicalCalculators darkMode={darkMode} />
+
+      <div className={`grid ${canUseProtocols ? "grid-cols-2" : "grid-cols-1"} gap-2 rounded-lg p-1 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`}>
+        {sectionTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeSection === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSection(tab.id)}
+              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
+                isActive
+                  ? darkMode
+                    ? "bg-white text-[#123C3A] shadow-sm"
+                    : "bg-white text-[#123C3A] shadow-sm"
+                  : darkMode
+                    ? "text-white/75 hover:bg-white/10 hover:text-white"
+                    : "text-[#123C3A]/70 hover:bg-white/60 hover:text-[#123C3A]"
+              }`}
+              aria-pressed={isActive}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {activeSection === "calculators" && (
+        <>
+          <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
+          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
+          <AdditionalClinicalCalculators darkMode={darkMode} />
+        </>
+      )}
+
+      {activeSection === "protocols" && (
+        canUseProtocols ? (
+          <Protocols user={user} darkMode={darkMode} />
+        ) : (
+          <FeatureUnavailable darkMode={darkMode} title="Clinical Protocols" />
+        )
+      )}
     </div>
   );
 }
