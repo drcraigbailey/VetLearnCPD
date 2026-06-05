@@ -33,7 +33,7 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
     });
 
     if (rpcError) {
-      setError("Run the updated admin activity analytics SQL to unlock full usage charts.");
+      setError(`Analytics setup is incomplete. Run the latest admin activity analytics SQL script to enable full usage charts. (${rpcError.message})`);
       setAnalytics(buildFallbackAnalytics(initialLogs, selectedUserId));
       setLoading(false);
       return;
@@ -95,7 +95,7 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs font-bold text-orange-500">{error}</p>}
+        {error && <p className="mt-3 text-xs font-bold text-orange-500 leading-5">{error}</p>}
         {loading && <p className="mt-3 text-sm opacity-60">Loading analytics...</p>}
       </section>
 
