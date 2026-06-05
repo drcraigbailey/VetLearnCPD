@@ -95,7 +95,7 @@ serve(async (req) => {
 
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
-    return json({ error: error?.message || "Admin action failed" }, 500);
+    return json({ error: formatAdminError(error), code: error?.code || null }, 500);
   }
 });
 
@@ -109,6 +109,9 @@ async function audit(client, adminUserId, action, targetUserId, details) {
 }
 
 async function deleteUserData(client, targetUserId) {
+  await deleteConversationData(client, targetUserId);
+  await deleteProtocolChildren(client, targetUserId);
+
   const deleteByUserId = [
     "calculator_logs",
     "caselogs",
@@ -147,17 +150,71 @@ async function deleteUserData(client, targetUserId) {
   await maybeDelete(client.from("shared_records").delete().eq("recipient_id", targetUserId));
 
   await maybeUpdate(client.from("admin_audit_logs").update({ target_user_id: null }).eq("target_user_id", targetUserId));
+  await nullOrDelete(client, "admin_audit_logs", "admin_user_id", targetUserId);
   await maybeUpdate(client.from("admin_announcements").update({ created_by: null }).eq("created_by", targetUserId));
   await maybeUpdate(client.from("system_backups").update({ created_by: null }).eq("created_by", targetUserId));
   await maybeUpdate(client.from("system_error_logs").update({ user_id: null }).eq("user_id", targetUserId));
   await maybeUpdate(client.from("subscription_feature_access").update({ updated_by: null }).eq("updated_by", targetUserId));
+  await maybeUpdate(client.from("user_type_feature_access").update({ updated_by: null }).eq("updated_by", targetUserId));
   await maybeUpdate(client.from("user_account_status").update({ updated_by: null }).eq("updated_by", targetUserId));
   await maybeUpdate(client.from("user_subscriptions").update({ updated_by: null }).eq("updated_by", targetUserId));
   await maybeUpdate(client.from("profiles").update({ suspended_by: null }).eq("suspended_by", targetUserId));
+  await maybeUpdate(client.from("admin_user_roles").update({ assigned_by: null }).eq("assigned_by", targetUserId));
 
   await maybeDelete(client.from("admin_user_roles").delete().eq("user_id", targetUserId));
   await maybeDelete(client.from("user_account_status").delete().eq("user_id", targetUserId));
   await maybeDelete(client.from("profiles").delete().eq("id", targetUserId));
+}
+
+async function deleteConversationData(client, targetUserId) {
+  const conversations = await maybeSelect(
+    client
+      .from("conversations")
+      .select("id")
+      .or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`)
+  );
+
+  const conversationIds = (conversations || []).map((conversation) => conversation.id).filter(Boolean);
+  if (conversationIds.length === 0) return;
+
+  await maybeDelete(client.from("messages").delete().in("conversation_id", conversationIds));
+  await maybeDelete(client.from("notifications").delete().eq("type", "message").in("related_id", conversationIds.map(String)));
+}
+
+async function deleteProtocolChildren(client, targetUserId) {
+  const protocols = await maybeSelect(client.from("protocols").select("id").eq("user_id", targetUserId));
+  const protocolIds = (protocols || []).map((protocol) => protocol.id).filter(Boolean);
+  if (protocolIds.length === 0) return;
+
+  const childTables = [
+    "protocol_drugs",
+    "protocol_items",
+    "protocol_medications",
+    "protocol_steps",
+    "protocol_notes",
+    "protocol_saves"
+  ];
+
+  for (const table of childTables) {
+    await maybeDelete(client.from(table).delete().in("protocol_id", protocolIds));
+  }
+}
+
+async function nullOrDelete(client, table, column, targetUserId) {
+  const { error } = await client.from(table).update({ [column]: null }).eq(column, targetUserId);
+  if (!error || isSafeToIgnoreSchemaError(error)) return;
+  if (isNotNullConstraintError(error)) {
+    await maybeDelete(client.from(table).delete().eq(column, targetUserId));
+    return;
+  }
+  throw error;
+}
+
+async function maybeSelect(query) {
+  const { data, error } = await query;
+  if (isSafeToIgnoreSchemaError(error)) return [];
+  if (error) throw error;
+  return data || [];
 }
 
 async function maybeDelete(query) {
@@ -189,6 +246,14 @@ function isSafeToIgnoreSchemaError(error) {
 
 function isNotNullConstraintError(error) {
   return error?.code === "23502";
+}
+
+function formatAdminError(error) {
+  const message = error?.message || "Admin action failed";
+  if (error?.code === "23503") {
+    return `Could not delete user because older linked data still exists: ${message}`;
+  }
+  return message;
 }
 
 function json(body, status = 200) {
