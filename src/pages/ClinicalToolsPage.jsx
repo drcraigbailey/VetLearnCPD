@@ -1,19 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Calculator, ClipboardList, Pill } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
 import PillCounter from "../components/PillCounter";
-import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 import ClinicalTools from "./ClinicalTools";
 import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
-  const [protocolContext, setProtocolContext] = useState(null);
   const [activeSection, setActiveSection] = useState("calculators");
-  const handleProtocolChange = useCallback((nextProtocol) => setProtocolContext(nextProtocol), []);
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
   useEffect(() => {
@@ -26,7 +23,10 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
     const root = pageRef.current;
     if (!root) return undefined;
 
-    const refreshDoseControls = () => enhanceDoseControls(root, darkMode);
+    const refreshDoseControls = () => {
+      enhanceDoseControls(root, darkMode);
+      syncCalculatorTileScrolling(root);
+    };
     refreshDoseControls();
 
     const observer = new MutationObserver(refreshDoseControls);
@@ -73,12 +73,12 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
                     ? "bg-white text-[#123C3A] shadow-sm"
                     : "bg-white text-[#123C3A] shadow-sm"
                   : darkMode
-                    ? "text-white/75 hover:bg-white/10 hover:text-white"
-                    : "text-[#123C3A]/70 hover:bg-white/60 hover:text-[#123C3A]"
+                    ? "text-slate-200 hover:bg-white/10"
+                    : "text-[#123C3A]/75 hover:bg-white/60"
               }`}
               aria-pressed={isActive}
             >
-              <Icon size={16} />
+              <Icon size={18} />
               <span>{tab.label}</span>
             </button>
           );
@@ -87,8 +87,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
       {activeSection === "calculators" && (
         <>
-          <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={handleProtocolChange} />
-          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} protocolContext={protocolContext} featureAccess={featureAccess} adminAccess={adminAccess} />
+          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
           <AdditionalClinicalCalculators darkMode={darkMode} />
         </>
       )}
@@ -104,6 +103,21 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       )}
     </div>
   );
+}
+
+function syncCalculatorTileScrolling(root) {
+  const calculatorTiles = root.querySelector(".flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide");
+  if (!calculatorTiles || !calculatorTiles.querySelector(".lucide-syringe") || !calculatorTiles.querySelector(".lucide-droplets")) return;
+
+  calculatorTiles.querySelectorAll("button").forEach((button) => {
+    if (button.dataset.scrollEnhanced === "true") return;
+    button.dataset.scrollEnhanced = "true";
+    button.addEventListener("click", () => {
+      window.setTimeout(() => {
+        calculatorTiles.nextElementSibling?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    });
+  });
 }
 
 function enhanceDoseControls(root, darkMode) {

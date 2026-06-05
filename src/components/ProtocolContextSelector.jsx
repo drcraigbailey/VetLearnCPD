@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../supabaseClient";
 
@@ -52,7 +52,7 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         .order("name");
     }
 
-    if (result.error) toast.error("Could not load protocols for calculator context");
+    if (result.error) toast.error("Could not load protocols for the calculator");
     setProtocols(result.data || []);
     setLoading(false);
   };
@@ -99,20 +99,10 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
   });
 
   return (
-    <section className={`border rounded-lg p-4 shadow-[0_14px_35px_rgba(11,55,96,0.07)] ${darkMode ? "bg-white/10 border-white/10" : "bg-white/90 border-[#DCEDEA]"}`}>
-      <div className="flex items-start gap-3 mb-4">
-        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
-          <ClipboardList size={19} />
-        </div>
-        <div className="min-w-0">
-          <h2 className="font-black text-lg leading-tight">Protocol Context</h2>
-          <p className="text-sm opacity-60 leading-6">Select a saved protocol to pre-fill the Drug Calculator with its medicines and protocol doses.</p>
-        </div>
-      </div>
-
-      <div className="space-y-3">
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-3.5 opacity-45" />
+          <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
           <input
             className={`${fieldClass(darkMode)} pl-10`}
             placeholder="Search protocols..."
@@ -121,30 +111,33 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
           />
         </div>
 
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-            <option value="">No protocol selected</option>
-            {filteredProtocols.map((protocol) => (
-              <option key={protocol.id} value={protocol.id}>{protocol.name}</option>
-            ))}
-          </select>
-          {selectedId ? (
-            <button onClick={() => setSelectedId("")} className={`${darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"} rounded-lg px-3`} aria-label="Clear selected protocol">
-              <X size={17} />
-            </button>
-          ) : null}
-        </div>
+        <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+          <option value="">Select protocol</option>
+          {filteredProtocols.map((protocol) => (
+            <option key={protocol.id} value={protocol.id}>{protocol.name}</option>
+          ))}
+        </select>
+
+        {selectedId ? (
+          <button
+            type="button"
+            onClick={() => setSelectedId("")}
+            className={`rounded-lg px-3 min-h-[44px] flex items-center justify-center transition ${darkMode ? "bg-white/10 text-slate-300 hover:bg-white/15" : "bg-[#F0F6F5] text-slate-500 hover:bg-[#E8F8F5]"}`}
+            aria-label="Clear selected protocol"
+          >
+            <X size={17} />
+          </button>
+        ) : null}
       </div>
 
-      {loading && <div className="mt-3 flex items-center gap-2 text-sm opacity-60"><Loader2 size={16} className="animate-spin" /> Loading protocols...</div>}
+      {loading && <div className="flex items-center gap-2 text-sm opacity-60"><Loader2 size={16} className="animate-spin" /> Loading protocols...</div>}
 
       {selectedProtocol && (
-        <div className={`mt-4 rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+        <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
           <div className="font-black">{selectedProtocol.name}</div>
           {selectedProtocol.indication && <p className="text-sm opacity-65 leading-6 mt-1">{selectedProtocol.indication}</p>}
-          <p className="text-xs font-bold uppercase tracking-widest opacity-45 mt-3">Applied to Drug Calculator</p>
           {protocolDrugs.length > 0 ? (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-3">
               {protocolDrugs.map((drug) => {
                 const dose = doseMap[String(drug.id)];
                 return (
@@ -159,6 +152,6 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }

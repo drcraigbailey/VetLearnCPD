@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Beaker,
   Calculator,
+  ClipboardList,
   Clock,
   Droplets,
   HeartPulse,
@@ -14,12 +15,14 @@ import {
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import { supabase } from "../supabaseClient";
 import { drugService } from "../services/drugService";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const tabs = [
-  { id: "drug", label: "Drug Calculator", icon: Calculator },
+  { id: "drug", label: "Main Calculator", icon: Calculator },
+  { id: "protocol", label: "Protocol Calculator", icon: ClipboardList },
   { id: "emergency", label: "Emergency Drugs", icon: Syringe },
   { id: "fluids", label: "Fluid Therapy", icon: Droplets },
   { id: "transfusion", label: "Blood Transfusion", icon: HeartPulse },
@@ -56,8 +59,9 @@ const formatNumber = (value, decimals = 2) => {
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
 const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
 
-export default function ClinicalTools({ user, darkMode = false, showBanner = true, protocolContext = null, featureAccess, adminAccess = false }) {
+export default function ClinicalTools({ user, darkMode = false, showBanner = true, featureAccess, adminAccess = false }) {
   const [activeTab, setActiveTab] = useState("drug");
+  const [protocolContext, setProtocolContext] = useState(null);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState([]);
@@ -78,12 +82,8 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
     loadCalculationHistory();
   }, [user?.id]);
 
-  useEffect(() => {
-    if (protocolContext?.protocol) setActiveTab("drug");
-  }, [protocolContext?.protocol?.id]);
-
   const visibleTabs = useMemo(() => {
-    return tabs.filter((tab) => tab.id !== "drug" || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
+    return tabs.filter((tab) => !["drug", "protocol"].includes(tab.id) || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
   }, [featureAccess, adminAccess]);
 
   useEffect(() => {
@@ -184,7 +184,8 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} user={user} />}
+          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={null} user={user} />}
+          {activeTab === "protocol" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} setProtocolContext={setProtocolContext} protocolMode user={user} />}
           {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
@@ -197,7 +198,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   );
 }
 
-function DrugCalculator({ rows, darkMode, onLog, protocolContext, user }) {
+function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user }) {
   const [species, setSpecies] = useState("Dog");
   const [weight, setWeight] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -311,12 +312,18 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, user }) {
   const saveProtocolLog = () => {
     if (!protocolContext?.protocol || weightValue <= 0 || protocolRows.length === 0) return toast.error("Add a weight and check protocol drugs are available");
     const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue, doseMap, protocolContext.drugs || [])).join("; ");
-    onLog({ calculator_type: "drug", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
+    onLog({ calculator_type: "protocol", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
     toast.success("Protocol calculation logged");
   };
 
   return (
-    <ToolShell darkMode={darkMode} title="Drug Calculator" icon={<Calculator size={20} />} subtitle="Calculate dose and volume from weight, dose rate and product concentration.">
+    <ToolShell
+      darkMode={darkMode}
+      title={protocolMode ? "Protocol-based Calculator" : "Drug Calculator"}
+      icon={protocolMode ? <ClipboardList size={20} /> : <Calculator size={20} />}
+      subtitle={protocolMode ? "Select a saved protocol, enter weight, and calculate all matching medicines." : "Calculate dose and volume from weight, dose rate and product concentration."}
+    >
+      {protocolMode && <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={setProtocolContext} />}
       <SpeciesWeight species={species} setSpecies={(value) => { setSpecies(value); setSelectedId(""); }} weight={weight} setWeight={setWeight} darkMode={darkMode} />
       <div className="relative">
         <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
@@ -340,7 +347,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, user }) {
           </div>
         )}
       </div>
-      {protocolContext?.protocol && (
+      {protocolMode && protocolContext?.protocol && (
         <ProtocolDoseSet
           darkMode={darkMode}
           protocol={protocolContext.protocol}
@@ -793,6 +800,7 @@ function CalculationHistory({ rows, loading, darkMode, onRefresh }) {
 function readableCalculatorType(type) {
   const labels = {
     drug: "Drug Calculator",
+    protocol: "Protocol Calculator",
     emergency: "Emergency Drugs",
     fluid: "Fluid Therapy",
     transfusion: "Blood Transfusion",

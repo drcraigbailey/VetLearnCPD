@@ -1,7 +1,35 @@
-import { AlertTriangle, ExternalLink, FileText, Lock, Mail, Shield, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, FileText, Lock, Mail, Shield, Trash2 } from "lucide-react";
 import UserDataExportButton from "./UserDataExportButton";
 
 const updatedDate = "5 June 2026";
+
+const readinessItems = [
+  {
+    label: "Account deletion",
+    status: "Partially done",
+    detail: "A secure Supabase Edge Function exists for admin-led account deletion and related data cleanup. Self-service deletion is not shown in Settings yet, and live database constraints still need testing."
+  },
+  {
+    label: "Data export",
+    status: "Partially done",
+    detail: "The app has a personal JSON export button for data readable by the signed-in user. It notes skipped tables, so it should be verified against the live database before launch."
+  },
+  {
+    label: "Row Level Security / RLS",
+    status: "Partially done",
+    detail: "The app expects RLS policies and admin-only checks, but this component cannot prove every live table is protected. Use the Supabase audit SQL results to close any gaps."
+  },
+  {
+    label: "Audit logging",
+    status: "Partially done",
+    detail: "Admin audit logs and activity analytics are wired into the app. Not every user action is necessarily audited, so coverage should be reviewed by feature."
+  },
+  {
+    label: "Processor documentation support",
+    status: "Partially done",
+    detail: "Privacy documents and external processor references are included. Signed/accepted processor agreements and final retention wording still need operational confirmation."
+  }
+];
 
 const documents = [
   {
@@ -168,13 +196,30 @@ export default function SettingsLegalDocuments({ darkMode = false }) {
           <FileText size={20} />
         </div>
         <div>
-          <h2 className="font-black text-lg">Privacy, Terms and Data Rights</h2>
-          <p className="text-sm opacity-60 leading-6">Working documents for VetLearn CPD. Last updated {updatedDate}.</p>
+          <h2 className="font-black text-lg">Privacy and Settings</h2>
+          <p className="text-sm opacity-60 leading-6">Privacy documents, data rights and readiness checks. Last updated {updatedDate}.</p>
         </div>
       </div>
 
-      <div className={`rounded-lg border p-4 text-sm leading-6 ${darkMode ? "bg-amber-500/10 border-amber-400/20 text-amber-100" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
-        These documents support GDPR readiness, but they do not by themselves make the app compliant. Account deletion, data export, RLS, audit logging and processor agreements still need to work in practice.
+      <div className={`rounded-lg border p-4 ${cardClass}`}>
+        <div className="flex items-start gap-3 mb-3">
+          <CheckCircle2 size={18} className="text-[#0F8F83] shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-black">GDPR Readiness Status</h3>
+            <p className="text-sm opacity-65 leading-6">Honest implementation status based on the current app code. RLS should be in place before launch or testing with real user data, not left until the end.</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {readinessItems.map((item) => (
+            <div key={item.label} className={`rounded-lg p-3 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-black text-sm">{item.label}</p>
+                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-700">{item.status}</span>
+              </div>
+              <p className="text-xs opacity-65 leading-5 mt-2">{item.detail}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className={`rounded-lg border p-4 ${cardClass}`}>
