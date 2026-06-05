@@ -121,14 +121,16 @@ function syncAdditionalCalculatorShortcut(root, darkMode, onClick) {
     shortcut = document.createElement("button");
     shortcut.type = "button";
     shortcut.dataset.additionalCalculatorShortcut = "true";
+    shortcut.innerHTML = '<span class="text-xl leading-none">+</span><span>Additional Calculators</span>';
     calculatorTiles.appendChild(shortcut);
   }
 
-  shortcut.onclick = onClick;
-  shortcut.className = `rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 text-center transition ${
+  const shortcutClass = `rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 text-center transition ${
     darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
   }`;
-  shortcut.innerHTML = '<span class="text-xl leading-none">+</span><span>Additional Calculators</span>';
+
+  shortcut.onclick = onClick;
+  if (shortcut.className !== shortcutClass) shortcut.className = shortcutClass;
 }
 
 function enhanceDoseControls(root, darkMode) {
