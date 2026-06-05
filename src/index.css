@@ -44,43 +44,9 @@ body,
 }
 
 .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem !important;
-  justify-content: stretch !important;
-  overflow: visible !important;
-  padding-bottom: 0 !important;
+  justify-content: flex-start !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
-}
-
-.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button {
-  min-height: 4.75rem;
-  width: 100%;
-  white-space: normal !important;
-  border-radius: 0.5rem !important;
-  padding: 0.85rem 0.65rem !important;
-  display: inline-flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.45rem !important;
-  text-align: center;
-  line-height: 1.15;
-  box-shadow: 0 10px 24px rgba(11, 55, 96, 0.05);
-}
-
-.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button:hover {
-  transform: translateY(-1px);
-}
-
-.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button:active {
-  transform: translateY(0);
-}
-
-.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button svg {
-  width: 1.25rem;
-  height: 1.25rem;
 }
 
 .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide > button:has(.lucide-file-text) {
@@ -121,12 +87,12 @@ body,
 }
 
 .cpd-tab-strip {
-  width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0;
-  padding-right: 0;
-  scroll-padding-inline: 0;
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  scroll-padding-inline: 1rem;
 }
 
 .text-\[\#113247\] form.bg-white.dark\:bg-\[\#0B242B\] {
@@ -146,11 +112,18 @@ body,
 
 @media (min-width: 640px) {
   .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-    justify-content: stretch !important;
+    justify-content: center !important;
   }
 
   .flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide:has(.lucide-calculator):has(.lucide-syringe):has(.lucide-droplets) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cpd-tab-strip {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
