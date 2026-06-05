@@ -39,6 +39,10 @@ body,
   display: none;
 }
 
+.fixed.inset-y-0.right-0 a[href="/protocols"] {
+  display: none !important;
+}
+
 .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide {
   justify-content: flex-start !important;
   -webkit-overflow-scrolling: touch;
