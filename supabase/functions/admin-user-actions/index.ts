@@ -111,6 +111,7 @@ async function audit(client, adminUserId, action, targetUserId, details) {
 async function deleteUserData(client, targetUserId) {
   await deleteConversationData(client, targetUserId);
   await deleteProtocolChildren(client, targetUserId);
+  await deleteStorageObjects(client, targetUserId);
 
   const deleteByUserId = [
     "calculator_logs",
@@ -198,6 +199,11 @@ async function deleteProtocolChildren(client, targetUserId) {
   for (const table of childTables) {
     await maybeDelete(client.from(table).delete().in("protocol_id", protocolIds));
   }
+}
+
+async function deleteStorageObjects(client, targetUserId) {
+  await maybeDelete(client.schema("storage").from("objects").delete().eq("owner", targetUserId));
+  await maybeDelete(client.schema("storage").from("objects").delete().eq("owner_id", targetUserId));
 }
 
 async function nullOrDelete(client, table, column, targetUserId) {
