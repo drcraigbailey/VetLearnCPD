@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
-import { Bell, Briefcase, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Trash2, Upload, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Bell, Briefcase, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Target, Trash2, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import SettingsLegalDocuments from "../components/SettingsLegalDocuments";
 import { supabase } from "../supabaseClient";
 import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
 import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
+
+const DEFAULT_CPD_TARGET_HOURS = 35;
 
 const profileDefaults = {
   avatar_url: "",
@@ -41,10 +44,12 @@ const aiDefaults = {
 const maxAvatarSize = 2 * 1024 * 1024;
 
 export default function Settings({ user, darkMode = false, setDarkMode }) {
+  const location = useLocation();
+  const cpdTargetRef = useRef(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [profileForm, setProfileForm] = useState(profileDefaults);
   const [aiPrefs, setAiPrefs] = useState(aiDefaults);
-  const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light" });
+  const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", cpdTargetHours: DEFAULT_CPD_TARGET_HOURS });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -68,6 +73,16 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   useEffect(() => {
     setAppPrefs(prev => ({ ...prev, theme: darkMode ? "dark" : "light" }));
   }, [darkMode]);
+
+  useEffect(() => {
+    if (location.hash === "#cpd-target" || location.state?.scrollTo === "cpd-target") {
+      setActiveTab("app");
+      window.setTimeout(() => {
+        cpdTargetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        cpdTargetRef.current?.querySelector("input")?.focus();
+      }, 150);
+    }
+  }, [location.hash, location.state]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -95,7 +110,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
       nextAiPrefs.enabled = nextAiPrefs.enabled && Boolean(savedAiKey);
       setAiPrefs(nextAiPrefs);
       localStorage.setItem("vetlearn-ai-enabled", String(nextAiPrefs.enabled));
-      setAppPrefs({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", ...(prefsRes.data.app_preferences || {}) });
+      setAppPrefs({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", cpdTargetHours: DEFAULT_CPD_TARGET_HOURS, ...(prefsRes.data.app_preferences || {}) });
     }
 
     setBiometricAvailable(biometricSupport);
@@ -275,11 +290,19 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   };
 
   const savePreferences = async () => {
+    const targetHours = Number(appPrefs.cpdTargetHours);
+    if (!Number.isFinite(targetHours) || targetHours <= 0 || targetHours > 1000) {
+      toast.error("Add a valid CPD target in hours");
+      return;
+    }
+
+    const cleanedAppPrefs = { ...appPrefs, cpdTargetHours: targetHours };
     setSaving(true);
-    const { error } = await persistPreferences(aiPrefs, appPrefs);
+    const { error } = await persistPreferences(aiPrefs, cleanedAppPrefs);
 
     setSaving(false);
     if (error) return toast.error("Could not save preferences. Please run the latest Supabase SQL update.");
+    setAppPrefs(cleanedAppPrefs);
     toast.success("Preferences saved");
   };
 
@@ -288,7 +311,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     { id: "professional", label: "Professional", icon: GraduationCap },
     { id: "ai", label: "AI", icon: Sparkles },
     { id: "app", label: "App", icon: Shield },
-    { id: "docs", label: "Docs", icon: FileText }
+    { id: "docs", label: "Privacy and Settings", icon: FileText }
   ];
 
   return (
@@ -439,9 +462,10 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
                   <button
                     onClick={removeAiApiKey}
                     disabled={aiApiKeyBusy}
-                    className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`}
+                    className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-transparent text-slate-200 hover:bg-red-500/10" : "bg-transparent text-[#0B3760] hover:bg-red-50"}`}
+                    aria-label="Remove"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={14} className="text-red-500" />
                     Remove key and disable AI
                   </button>
                 )}
@@ -461,6 +485,27 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
               <SectionTitle icon={<Lock size={20} />} title="Application Settings" subtitle="Theme, notifications, privacy and account management." darkMode={darkMode} />
               <Toggle checked={darkMode} onChange={(value) => { setDarkMode?.(value); updateApp("theme", value ? "dark" : "light"); }} label="Dark mode" darkMode={darkMode} />
               <Toggle checked={appPrefs.notifications} onChange={(value) => updateApp("notifications", value)} label="Notifications" darkMode={darkMode} />
+              <div id="cpd-target" ref={cpdTargetRef} className={`scroll-mt-28 mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} h-10 w-10 rounded-lg grid place-items-center shrink-0`}>
+                    <Target size={18} />
+                  </div>
+                  <div>
+                    <label className="font-black text-sm" htmlFor="cpd-target-hours">CPD target hours</label>
+                    <p className="text-xs opacity-60 leading-5">Shown on your CPD dashboard and used for annual progress.</p>
+                  </div>
+                </div>
+                <input
+                  id="cpd-target-hours"
+                  className={fieldClass}
+                  type="number"
+                  min="0.25"
+                  max="1000"
+                  step="0.25"
+                  value={appPrefs.cpdTargetHours ?? DEFAULT_CPD_TARGET_HOURS}
+                  onChange={(event) => updateApp("cpdTargetHours", event.target.value)}
+                />
+              </div>
               <Toggle
                 checked={biometricEnabled}
                 onChange={toggleBiometricUnlock}
