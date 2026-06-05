@@ -95,7 +95,21 @@ serve(async (req) => {
 
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
-    return json({ error: formatAdminError(error), code: error?.code || null }, 500);
+    console.error("admin-user-actions failed", {
+      action,
+      targetUserId,
+      code: error?.code || null,
+      message: error?.message || String(error),
+      details: error?.details || null,
+      hint: error?.hint || null
+    });
+
+    return json({
+      error: formatAdminError(error),
+      code: error?.code || null,
+      details: error?.details || null,
+      hint: error?.hint || null
+    }, 500);
   }
 });
 
@@ -149,6 +163,13 @@ async function deleteUserData(client, targetUserId) {
   await maybeDelete(client.from("connections").delete().eq("user2_id", targetUserId));
   await maybeDelete(client.from("shared_records").delete().eq("sender_id", targetUserId));
   await maybeDelete(client.from("shared_records").delete().eq("recipient_id", targetUserId));
+  await maybeDelete(client.from("shared_records").delete().eq("receiver_id", targetUserId));
+  await maybeDelete(client.from("cpd_shares").delete().eq("sender_id", targetUserId));
+  await maybeDelete(client.from("cpd_shares").delete().eq("recipient_id", targetUserId));
+  await maybeDelete(client.from("cpd_shares").delete().eq("receiver_id", targetUserId));
+  await maybeDelete(client.from("shared_cpd_records").delete().eq("sender_id", targetUserId));
+  await maybeDelete(client.from("shared_cpd_records").delete().eq("recipient_id", targetUserId));
+  await maybeDelete(client.from("shared_cpd_records").delete().eq("receiver_id", targetUserId));
 
   await maybeUpdate(client.from("admin_audit_logs").update({ target_user_id: null }).eq("target_user_id", targetUserId));
   await nullOrDelete(client, "admin_audit_logs", "admin_user_id", targetUserId);
@@ -202,8 +223,8 @@ async function deleteProtocolChildren(client, targetUserId) {
 }
 
 async function deleteStorageObjects(client, targetUserId) {
-  await maybeDelete(client.schema("storage").from("objects").delete().eq("owner", targetUserId));
-  await maybeDelete(client.schema("storage").from("objects").delete().eq("owner_id", targetUserId));
+  await maybeStorageDelete(client.schema("storage").from("objects").delete().eq("owner", targetUserId));
+  await maybeStorageDelete(client.schema("storage").from("objects").delete().eq("owner_id", targetUserId));
 }
 
 async function nullOrDelete(client, table, column, targetUserId) {
@@ -227,6 +248,15 @@ async function maybeDelete(query) {
   const { error } = await query;
   if (isSafeToIgnoreSchemaError(error)) return;
   if (error) throw error;
+}
+
+async function maybeStorageDelete(query) {
+  const { error } = await query;
+  if (!error || isSafeToIgnoreSchemaError(error)) return;
+  console.warn("Skipping storage object cleanup during user deletion", {
+    code: error?.code || null,
+    message: error?.message || String(error)
+  });
 }
 
 async function maybeUpdate(query) {
