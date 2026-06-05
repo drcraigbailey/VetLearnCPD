@@ -10,13 +10,8 @@ import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
-  const additionalCalculatorsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
-
-  function scrollToAdditionalCalculators() {
-    additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   useEffect(() => {
     if (!canUseProtocols && activeSection === "protocols") {
@@ -30,7 +25,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
     const refreshDoseControls = () => {
       enhanceDoseControls(root, darkMode);
-      syncAdditionalCalculatorShortcut(root, darkMode, scrollToAdditionalCalculators);
+      syncCalculatorTileScrolling(root);
     };
     refreshDoseControls();
 
@@ -93,9 +88,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       {activeSection === "calculators" && (
         <>
           <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <div ref={additionalCalculatorsRef} id="additional-calculators" className="scroll-mt-24">
-            <AdditionalClinicalCalculators darkMode={darkMode} />
-          </div>
+          <AdditionalClinicalCalculators darkMode={darkMode} />
         </>
       )}
 
@@ -112,25 +105,19 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   );
 }
 
-function syncAdditionalCalculatorShortcut(root, darkMode, onClick) {
+function syncCalculatorTileScrolling(root) {
   const calculatorTiles = root.querySelector(".flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide");
   if (!calculatorTiles || !calculatorTiles.querySelector(".lucide-syringe") || !calculatorTiles.querySelector(".lucide-droplets")) return;
 
-  let shortcut = calculatorTiles.querySelector('[data-additional-calculator-shortcut="true"]');
-  if (!shortcut) {
-    shortcut = document.createElement("button");
-    shortcut.type = "button";
-    shortcut.dataset.additionalCalculatorShortcut = "true";
-    shortcut.innerHTML = '<span class="text-xl leading-none">+</span><span>Additional Calculators</span>';
-    calculatorTiles.appendChild(shortcut);
-  }
-
-  const shortcutClass = `rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 text-center transition ${
-    darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
-  }`;
-
-  shortcut.onclick = onClick;
-  if (shortcut.className !== shortcutClass) shortcut.className = shortcutClass;
+  calculatorTiles.querySelectorAll("button").forEach((button) => {
+    if (button.dataset.scrollEnhanced === "true") return;
+    button.dataset.scrollEnhanced = "true";
+    button.addEventListener("click", () => {
+      window.setTimeout(() => {
+        calculatorTiles.nextElementSibling?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    });
+  });
 }
 
 function enhanceDoseControls(root, darkMode) {
