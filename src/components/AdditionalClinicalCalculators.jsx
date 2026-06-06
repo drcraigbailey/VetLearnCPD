@@ -110,7 +110,7 @@ function AdditionalCalculatorTile({ icon: Icon, title, active, darkMode, onClick
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`min-h-[96px] rounded-lg border border-transparent p-3 flex flex-col items-center justify-center gap-2 text-center font-black transition ${
+      className={`h-[96px] rounded-lg border border-transparent p-3 flex flex-col items-center justify-center gap-2 text-center font-black transition overflow-hidden ${
         active
           ? "bg-[#71CFC2] text-[#062F63] shadow-sm"
           : darkMode
@@ -118,8 +118,8 @@ function AdditionalCalculatorTile({ icon: Icon, title, active, darkMode, onClick
             : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF4F1]"
       }`}
     >
-      {Icon && <Icon size={22} />}
-      <span className="text-sm leading-tight">{title}</span>
+      {Icon && <Icon size={22} className="shrink-0" />}
+      <span className="text-sm leading-tight line-clamp-2">{title}</span>
     </button>
   );
 }
