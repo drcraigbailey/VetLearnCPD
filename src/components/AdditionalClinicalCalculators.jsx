@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Syringe } from "lucide-react";
-import { ToolTile, ToolTileGrid } from "./VetLearnUI";
+import { ToolTileGrid } from "./VetLearnUI";
 
 const calculators = [
   { id: "energy", label: "Energy", icon: Flame },
@@ -77,7 +77,7 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
 
       <ToolTileGrid className="grid-cols-3">
         {calculators.map((item) => (
-          <ToolTile
+          <AdditionalCalculatorTile
             key={item.id}
             icon={item.icon}
             title={item.label}
@@ -101,6 +101,26 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
         {active === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
       </div>
     </section>
+  );
+}
+
+function AdditionalCalculatorTile({ icon: Icon, title, active, darkMode, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`min-h-[96px] rounded-lg border border-transparent p-3 flex flex-col items-center justify-center gap-2 text-center font-black transition ${
+        active
+          ? "bg-[#71CFC2] text-[#062F63] shadow-sm"
+          : darkMode
+            ? "bg-white/10 text-slate-100 hover:bg-white/15"
+            : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF4F1]"
+      }`}
+    >
+      {Icon && <Icon size={22} />}
+      <span className="text-sm leading-tight">{title}</span>
+    </button>
   );
 }
 
