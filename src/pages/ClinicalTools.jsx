@@ -12,7 +12,10 @@ import {
   Search,
   ShieldAlert,
   Syringe,
-  AlertOctagon
+  AlertOctagon,
+  Pill,
+  X,
+  Loader2
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
@@ -30,6 +33,7 @@ const tabs = [
   { id: "cri", label: "CRI Calculator", icon: Activity },
   { id: "toxicology", label: "Toxicology", icon: ShieldAlert },
   { id: "interaction", label: "Interaction Checker", icon: AlertOctagon },
+  { id: "pill_counter", label: "Pill Counter", icon: Pill },
   { id: "history", label: "History 24h", icon: Clock }
 ];
 
@@ -84,8 +88,20 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
     loadCalculationHistory();
   }, [user?.id]);
 
+  // THIS IS THE FIX: Explicitly checking the feature toggles for specific tabs
   const visibleTabs = useMemo(() => {
-    return tabs.filter((tab) => !["drug", "protocol", "interaction"].includes(tab.id) || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
+    return tabs.filter((tab) => {
+      // 1. Check Drug Calculators
+      if (["drug", "protocol", "interaction"].includes(tab.id)) {
+        return canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess);
+      }
+      // 2. Check Pill Counter (Matches the feature key added to AdminDashboard)
+      if (tab.id === "pill_counter") {
+        return canUseFeature(featureAccess, featureKeys.pillCounter || "pill_counter", adminAccess);
+      }
+      // 3. Show all other tabs by default
+      return true;
+    });
   }, [featureAccess, adminAccess]);
 
   useEffect(() => {
@@ -194,12 +210,36 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
           {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
           {activeTab === "interaction" && <InteractionChecker darkMode={darkMode} user={user} />}
+          {activeTab === "pill_counter" && <PillCounterTab darkMode={darkMode} />}
           {activeTab === "history" && <CalculationHistory rows={history} loading={historyLoading} darkMode={darkMode} onRefresh={loadCalculationHistory} />}
         </div>
       )}
     </div>
   );
 }
+
+// --------------------------------------------------------------------------
+// Pill Counter Stub (Replace with your actual YOLOv8 ONNX component)
+// --------------------------------------------------------------------------
+function PillCounterTab({ darkMode }) {
+  return (
+    <ToolShell
+      darkMode={darkMode}
+      title="AI Pill Counter"
+      icon={<Pill size={20} />}
+      subtitle="Use your device camera and ONNX model to automatically count medication."
+    >
+      <div className={`p-10 text-center rounded-lg border-2 border-dashed ${darkMode ? "border-white/20 text-white/50" : "border-[#0B3760]/20 text-[#0B3760]/50"}`}>
+        <p className="font-black mb-2">Pill Counter Interface</p>
+        <p className="text-sm">Integrate your YOLOv8 ONNX web component here.</p>
+      </div>
+    </ToolShell>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Existing Components Below
+// --------------------------------------------------------------------------
 
 function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user }) {
   const [species, setSpecies] = useState("Dog");

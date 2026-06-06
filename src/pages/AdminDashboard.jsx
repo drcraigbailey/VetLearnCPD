@@ -49,7 +49,8 @@ const featureLabels = {
   messaging: "Messaging",
   cpd_tracker: "CPD Tracker",
   vault: "Vault",
-  ai_assistant: "AI Assistant"
+  ai_assistant: "AI Assistant",
+  pill_counter: "Pill Counter" // Added Pill Counter feature here
 };
 
 const userTypeOptions = ["free", "clinician", "professional", "premium", "admin", "super_admin"];
