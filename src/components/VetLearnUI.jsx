@@ -85,19 +85,19 @@ export function ToolTile({ icon: Icon, title, subtitle, onClick, active = false,
       onClick={onClick}
       aria-pressed={active}
       className={joinClasses(
-        "min-h-[88px] rounded-xl border p-3 flex flex-col items-center justify-center gap-2 text-center font-black transition",
+        "h-[96px] rounded-lg border border-transparent p-3 flex flex-col items-center justify-center gap-2 text-center font-black transition overflow-hidden",
         active
-          ? "bg-[#71CFC2] text-[#062F63] border-transparent shadow-sm"
+          ? "bg-[#71CFC2] text-[#062F63] shadow-sm"
           : darkMode
-            ? "bg-white/10 border-white/10 text-slate-100 hover:bg-white/15"
-            : "bg-white/90 border-[#DCEDEA] text-[#0B3760] hover:bg-[#E8F8F5]",
+            ? "bg-white/10 text-slate-100 hover:bg-white/15"
+            : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF4F1]",
         className
       )}
       {...props}
     >
-      {Icon && <Icon size={20} />}
-      <span className="text-sm leading-tight">{title}</span>
-      {subtitle && <span className="text-xs font-bold opacity-60 leading-tight">{subtitle}</span>}
+      {Icon && <Icon size={22} className="shrink-0" />}
+      <span className="text-sm leading-tight line-clamp-2">{title}</span>
+      {subtitle && <span className="text-xs font-bold opacity-60 leading-tight line-clamp-1">{subtitle}</span>}
     </button>
   );
 }
