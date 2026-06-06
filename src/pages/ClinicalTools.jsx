@@ -1,158 +1,1037 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  Activity,
   AlertTriangle,
-  BookOpen,
-  ChevronRight,
-  Copy,
-  FileText,
-  History as HistoryIcon,
-  Loader2,
-  Plus,
-  Printer,
-  RefreshCw,
-  Save,
+  Beaker,
+  Calculator,
+  ClipboardList,
+  Clock,
+  Droplets,
+  HeartPulse,
   Search,
-  Share2,
   ShieldAlert,
-  Star,
   Syringe,
-  Trash2,
-  User as UserIcon,
-  X
+  AlertOctagon
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import ProtocolContextSelector from "../components/ProtocolContextSelector";
 import { supabase } from "../supabaseClient";
-import { exportDrugHistory } from "../utils/drugsPdfExport";
+import { drugService } from "../services/drugService";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
-// Helper components & utilities (assumed shared/existing)
-const unique = (items) => [...new Set((items || []).filter(Boolean))];
+const tabs = [
+  { id: "drug", label: "Main Calculator", icon: Calculator },
+  { id: "protocol", label: "Protocol Calculator", icon: ClipboardList },
+  { id: "emergency", label: "Emergency Drugs", icon: Syringe },
+  { id: "fluids", label: "Fluid Therapy", icon: Droplets },
+  { id: "transfusion", label: "Blood Transfusion", icon: HeartPulse },
+  { id: "cri", label: "CRI Calculator", icon: Activity },
+  { id: "toxicology", label: "Toxicology", icon: ShieldAlert },
+  { id: "interaction", label: "Interaction Checker", icon: AlertOctagon },
+  { id: "history", label: "History 24h", icon: Clock }
+];
+
+const speciesOptions = ["Dog", "Cat", "Rabbit", "Horse", "Other"];
+
+const panelClass = (darkMode) =>
+  darkMode
+    ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
+    : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
+
+const fieldClass = (darkMode) =>
+  `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${
+    darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"
+  }`;
+
 const normalise = (value) => String(value || "").toLowerCase().trim();
-const parseSafeNumber = (val, fallback = 0) => {
-  if (typeof val === "number" && !Number.isNaN(val)) return val;
-  const match = String(val).match(/\d+(\.\d+)?/);
-  return match ? parseFloat(match[0]) : fallback;
+
+const numberValue = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// --- Main Component ---
-export default function DrugCalculator({ user, darkMode = false, protocolMode = false, protocolContext = {} }) {
-  const [patient, setPatient] = useState({ name: "", weight: "", species: "Dog" });
-  const [selectedCalcDrugs, setSelectedCalcDrugs] = useState([]);
-  
-  // Interaction Checker State
-  const [interactionDrugs, setInteractionDrugs] = useState([]);
-  const [interactionSearch, setInteractionSearch] = useState("");
-  const [interactionSearchResults, setInteractionSearchResults] = useState([]);
-  const [interactionLoading, setInteractionLoading] = useState(false);
-  const [interactionResults, setInteractionResults] = useState(null);
+const formatNumber = (value, decimals = 2) => {
+  if (!Number.isFinite(value)) return "0";
+  const fixed = value.toFixed(decimals);
+  return fixed.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+};
 
-  // --- Interaction Checker Logic ---
+const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
+const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
+
+export default function ClinicalTools({ user, darkMode = false, showBanner = true, featureAccess, adminAccess = false }) {
+  const [activeTab, setActiveTab] = useState("drug");
+  const [protocolContext, setProtocolContext] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [data, setData] = useState({
+    drugCalculators: [],
+    criProtocols: [],
+    emergencyDrugs: [],
+    fluidCalculators: [],
+    transfusionCalculators: [],
+    toxicities: []
+  });
+
   useEffect(() => {
-    // Protocol support: prefill if provided
-    if (protocolMode && protocolContext?.drugs?.length > 0 && interactionDrugs.length === 0) {
-      setInteractionDrugs(protocolContext.drugs);
-    }
-  }, [protocolMode, protocolContext]);
+    loadClinicalTools();
+  }, []);
 
   useEffect(() => {
-    const checkInteractions = async () => {
-      if (interactionDrugs.length < 2) {
-        setInteractionResults(null);
-        return;
-      }
-      setInteractionLoading(true);
-      try {
-        const pairs = [];
-        for (let i = 0; i < interactionDrugs.length; i++) {
-          for (let j = i + 1; j < interactionDrugs.length; j++) {
-            pairs.push([interactionDrugs[i].name, interactionDrugs[j].name]);
-          }
-        }
+    loadCalculationHistory();
+  }, [user?.id]);
 
-        const orConditions = pairs.map(
-          ([a, b]) => `and(drug_name.ilike.%${a}%,interacting_drug.ilike.%${b}%),and(drug_name.ilike.%${b}%,interacting_drug.ilike.%${a}%)`
-        ).join(",");
+  const visibleTabs = useMemo(() => {
+    return tabs.filter((tab) => !["drug", "protocol", "interaction"].includes(tab.id) || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
+  }, [featureAccess, adminAccess]);
 
-        const { data, error } = await supabase
-          .from("drug_interactions")
-          .select("*")
-          .or(orConditions);
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) setActiveTab(visibleTabs[0]?.id || "history");
+  }, [activeTab, visibleTabs]);
 
-        if (error) throw error;
-        setInteractionResults(data || []);
-      } catch (err) {
-        console.error(err);
-        toast.error("Could not check interactions");
-      } finally {
-        setInteractionLoading(false);
-      }
-    };
-    checkInteractions();
-  }, [interactionDrugs]);
+  const loadClinicalTools = async () => {
+    setLoading(true);
+    const [drugCalculators, criProtocols, emergencyDrugs, fluidCalculators, transfusionCalculators, toxicities] = await Promise.all([
+      supabase.from("drug_calculators").select("*").order("drug_name"),
+      supabase.from("cri_protocols").select("*").order("drug_name"),
+      supabase.from("emergency_drug_calculator").select("*").order("drug_name"),
+      supabase.from("fluid_calculators").select("*").order("calculation_name"),
+      supabase.from("transfusion_calculators").select("*").order("species"),
+      supabase.from("species_toxicities").select("*").order("toxin")
+    ]);
 
-  const addInteractionDrug = (drug) => {
-    if (!interactionDrugs.find((d) => d.id === drug.id)) {
-      setInteractionDrugs([...interactionDrugs, drug]);
-    }
-    setInteractionSearch("");
+    const errors = [drugCalculators, criProtocols, emergencyDrugs, fluidCalculators, transfusionCalculators, toxicities].filter((result) => result.error);
+    if (errors.length) toast.error("Clinical tools need the Supabase calculator SQL first");
+
+    setData({
+      drugCalculators: drugCalculators.data || [],
+      criProtocols: criProtocols.data || [],
+      emergencyDrugs: emergencyDrugs.data || [],
+      fluidCalculators: fluidCalculators.data || [],
+      transfusionCalculators: transfusionCalculators.data || [],
+      toxicities: toxicities.data || []
+    });
+    setLoading(false);
   };
 
-  // --- UI ---
-  const panelClass = "bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700";
+  const loadCalculationHistory = async () => {
+    if (!user?.id) return;
+    setHistoryLoading(true);
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: logs, error } = await supabase
+      .from("calculator_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false });
+
+    if (error) toast.error("Could not load calculation history");
+    else setHistory(logs || []);
+    setHistoryLoading(false);
+  };
+
+  const logCalculation = async ({ calculator_type, drug_name, patient_weight, result }) => {
+    if (!user?.id) return;
+    const { error } = await supabase.from("calculator_logs").insert({
+      user_id: user.id,
+      calculator_type,
+      drug_name: drug_name || null,
+      patient_weight: patient_weight || null,
+      result
+    });
+    if (error) {
+      toast.error("Could not save calculation history");
+      return;
+    }
+    loadCalculationHistory();
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 1. Calculator Section (Unified) */}
-      <div className={panelClass}>
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Syringe /> Drug Calculator</h2>
-        {/* ... (Existing patient details, search, and calc logic remain here) */}
+    <div className="space-y-6 pb-8">
+      {showBanner && (
+        <PageBanner
+          title="Clinical Tools"
+          subtitle="Calculate doses, CRIs, fluids, transfusions and toxicology guidance."
+          darkMode={darkMode}
+          badges={[{ label: "Clinical calculators", icon: <Calculator size={14} />, accent: true }]}
+        />
+      )}
+
+      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 shrink-0 ${
+                activeTab === tab.id
+                  ? "bg-[#71CFC2] text-[#062F63] shadow-md"
+                  : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"
+              }`}
+            >
+              <Icon size={15} /> {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* 2. Interaction Checker Section */}
-      <div className={panelClass}>
-        <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-          <AlertTriangle className="text-amber-500" /> Interaction Checker
-        </h2>
-        <p className="text-sm opacity-60 mb-4">Add two or more drugs to check for recorded interactions.</p>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {interactionDrugs.map((d) => (
-            <span key={d.id} className="bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-              {d.name} <button onClick={() => setInteractionDrugs(interactionDrugs.filter((i) => i.id !== d.id))}><X size={14} /></button>
-            </span>
-          ))}
+      {loading ? (
+        <div className={`${panelClass(darkMode)} flex flex-col items-center justify-center py-16 gap-4`}>
+          <HeartbeatLoader size={72} />
+          <p className="font-bold opacity-70 text-sm tracking-widest uppercase text-[#71CFC2]">Loading Clinical Tools...</p>
         </div>
+      ) : (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={null} user={user} />}
+          {activeTab === "protocol" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} setProtocolContext={setProtocolContext} protocolMode user={user} />}
+          {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} />}
+          {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
+          {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
+          {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
+          {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
+          {activeTab === "interaction" && <InteractionChecker darkMode={darkMode} user={user} />}
+          {activeTab === "history" && <CalculationHistory rows={history} loading={historyLoading} darkMode={darkMode} onRefresh={loadCalculationHistory} />}
+        </div>
+      )}
+    </div>
+  );
+}
 
+function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user }) {
+  const [species, setSpecies] = useState("Dog");
+  const [weight, setWeight] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const [dose, setDose] = useState("");
+  const [drugSearch, setDrugSearch] = useState("");
+  const [drugSearchResults, setDrugSearchResults] = useState([]);
+  const [drugSearchLoading, setDrugSearchLoading] = useState(false);
+  const [selectedDatabaseDrug, setSelectedDatabaseDrug] = useState(null);
+  const [selectedDrugDetails, setSelectedDrugDetails] = useState(null);
+
+  const speciesRows = useMemo(() => rows.filter((row) => row.species === species), [rows, species]);
+  const selected = useMemo(() => {
+    const row = speciesRows.find((item) => String(item.id) === String(selectedId));
+    if (row) return row;
+    if (selectedDatabaseDrug) return buildCalculatorRowFromDrug(selectedDatabaseDrug, species, rows);
+    return firstBySpecies(speciesRows, species);
+  }, [rows, selectedDatabaseDrug, selectedId, species, speciesRows]);
+  const doseMap = doseMapFrom(protocolContext);
+
+  const protocolDrugNames = useMemo(() => {
+    return [...new Set((protocolContext?.drugs || []).map((drug) => normalise(drug.name)).filter(Boolean))];
+  }, [protocolContext?.drugs]);
+
+  const protocolRows = useMemo(() => {
+    if (!protocolDrugNames.length) return [];
+    return speciesRows.filter((row) => protocolDrugNames.includes(normalise(row.drug_name)));
+  }, [protocolDrugNames, speciesRows]);
+
+  useEffect(() => {
+    const firstProtocolSpecies = protocolContext?.drugs?.[0]?.species;
+    if (firstProtocolSpecies && species !== firstProtocolSpecies) {
+      setSpecies(firstProtocolSpecies);
+      setSelectedId("");
+    }
+  }, [protocolContext?.protocol?.id]);
+
+  useEffect(() => {
+    if (selected && !selectedId) setSelectedId(String(selected.id));
+  }, [selected, selectedId]);
+
+  useEffect(() => {
+    if (selected) setDose(selected.min_dose || selected.max_dose || "");
+  }, [selected?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const query = drugSearch.trim();
+
+    if (query.length < 2) {
+      setDrugSearchResults([]);
+      setDrugSearchLoading(false);
+      return undefined;
+    }
+
+    setDrugSearchLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await drugService.searchCalculatorDrugs(query, user?.id);
+        if (!cancelled) setDrugSearchResults(results);
+      } catch {
+        if (!cancelled) toast.error("Could not search drug database");
+      } finally {
+        if (!cancelled) setDrugSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [drugSearch, user?.id]);
+
+  const selectDatabaseDrug = async (drug) => {
+    const nextSpecies = drug.species || species;
+    setSpecies(nextSpecies);
+    setSelectedDatabaseDrug(drug);
+    setDrugSearch(drug.name || "");
+    setDrugSearchResults([]);
+
+    const calculatorRow = findCalculatorRowForDrug(rows, drug, nextSpecies);
+    setSelectedId(calculatorRow ? String(calculatorRow.id) : "");
+    setDose(calculatorRow?.min_dose || calculatorRow?.max_dose || drug.dose_min || drug.min_dose || "");
+
+    try {
+      setSelectedDrugDetails(await drugService.getDrugClinicalDetails(drug));
+    } catch {
+      setSelectedDrugDetails(null);
+    }
+  };
+
+  const handleCalculatorSelect = (value) => {
+    setSelectedId(value);
+    setSelectedDatabaseDrug(null);
+    setSelectedDrugDetails(null);
+    setDrugSearch("");
+    setDrugSearchResults([]);
+  };
+
+  const doseValue = numberValue(dose || selected?.min_dose);
+  const weightValue = numberValue(weight);
+  const totalDose = weightValue * doseValue;
+  const volume = selected?.concentration ? totalDose / numberValue(selected.concentration) : null;
+
+  const saveLog = () => {
+    if (!selected || weightValue <= 0) return toast.error("Add a weight and select a drug");
+    const result = `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}${volume ? `, give ${formatNumber(volume)} ml` : ""}`;
+    onLog({ calculator_type: "drug", drug_name: selected.drug_name, patient_weight: weightValue, result });
+    toast.success("Calculation logged");
+  };
+
+  const saveProtocolLog = () => {
+    if (!protocolContext?.protocol || weightValue <= 0 || protocolRows.length === 0) return toast.error("Add a weight and check protocol drugs are available");
+    const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue, doseMap, protocolContext.drugs || [])).join("; ");
+    onLog({ calculator_type: "protocol", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
+    toast.success("Protocol calculation logged");
+  };
+
+  return (
+    <ToolShell
+      darkMode={darkMode}
+      title={protocolMode ? "Protocol-based Calculator" : "Drug Calculator"}
+      icon={protocolMode ? <ClipboardList size={20} /> : <Calculator size={20} />}
+      subtitle={protocolMode ? "Select a saved protocol, enter weight, and calculate all matching medicines." : "Calculate dose and volume from weight, dose rate and product concentration."}
+    >
+      {protocolMode && <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={setProtocolContext} />}
+      <SpeciesWeight species={species} setSpecies={(value) => { setSpecies(value); setSelectedId(""); }} weight={weight} setWeight={setWeight} darkMode={darkMode} />
+      <div className="relative">
+        <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
         <input
-          className="w-full p-3 rounded-lg border dark:bg-slate-900 mb-4"
-          placeholder="Search drug to add to checker..."
-          value={interactionSearch}
-          onChange={(e) => setInteractionSearch(e.target.value)}
+          className={`${fieldClass(darkMode)} pl-10`}
+          placeholder="Search drug database by generic or brand name..."
+          value={drugSearch}
+          onChange={(event) => setDrugSearch(event.target.value)}
         />
-        
-        {/* Interaction Results Display */}
-        {interactionLoading && <p>Checking interactions...</p>}
-        {interactionDrugs.length >= 2 && !interactionLoading && (
-          <div className="mt-4">
-            <h3 className="font-bold mb-2">Interaction Warnings</h3>
-            {interactionResults?.length > 0 ? (
-              <div className="space-y-3">
-                {interactionResults.map((warn, i) => (
-                  <div key={i} className="p-4 border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20 rounded">
-                    <p className="font-bold">{warn.drug_name} + {warn.interacting_drug}</p>
-                    <p className="text-sm">{warn.interaction || warn.mechanism || warn.recommendation || warn.notes}</p>
-                    {warn.severity && <p className="text-xs mt-2 uppercase font-bold text-amber-600">Severity: {warn.severity}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-green-600">No known interactions found in the database.</p>
-            )}
+        {(drugSearchLoading || drugSearchResults.length > 0) && (
+          <div className={`absolute z-20 mt-2 w-full rounded-lg border overflow-hidden shadow-xl ${darkMode ? "bg-[#071A24] border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+            {drugSearchLoading && <div className="p-3 text-sm opacity-60">Searching...</div>}
+            {!drugSearchLoading && drugSearchResults.map((drug) => (
+              <button key={drug.id} type="button" onClick={() => selectDatabaseDrug(drug)} className={`w-full text-left p-3 border-b last:border-b-0 ${darkMode ? "border-white/10 hover:bg-white/10" : "border-[#DCEDEA] hover:bg-[#F0F6F5]"}`}>
+                <div className="font-black text-sm">{drug.name}</div>
+                <div className="text-xs opacity-60">
+                  {[drug.species, drug.route, drug.category, ...(drug.drug_aliases || []).map((alias) => alias.alias)].filter(Boolean).join(" | ")}
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>
+      {protocolMode && protocolContext?.protocol && (
+        <ProtocolDoseSet
+          darkMode={darkMode}
+          protocol={protocolContext.protocol}
+          protocolDrugs={protocolContext.drugs || []}
+          doseMap={doseMap}
+          rows={protocolRows}
+          weightValue={weightValue}
+          species={species}
+          onLog={saveProtocolLog}
+        />
+      )}
+      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => handleCalculatorSelect(event.target.value)}>
+        {speciesRows.length === 0 && <option value="">No drugs for this species</option>}
+        {selectedDatabaseDrug && !speciesRows.some((row) => String(row.id) === String(selectedId)) && (
+          <option value={selectedId || `drug-${selectedDatabaseDrug.id}`}>{selectedDatabaseDrug.name} (database record)</option>
+        )}
+        {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
+      </select>
+      {selected && (
+        <>
+          {selectedDatabaseDrug && (
+            <SelectedDrugSummary drug={selectedDatabaseDrug} details={selectedDrugDetails} darkMode={darkMode} />
+          )}
+          <DoseRange row={selected} dose={dose} setDose={setDose} darkMode={darkMode} />
+          <ResultGrid items={[
+            ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}`],
+            ["Give", volume ? `${formatNumber(volume)} ml` : "No concentration"]
+          ]} />
+          <Notes row={selected} />
+          <LogButton onClick={saveLog} />
+        </>
+      )}
+    </ToolShell>
+  );
+}
+
+function InteractionChecker({ darkMode, user }) {
+    const [interactionDrugs, setInteractionDrugs] = useState([]);
+    const [interactionSearch, setInteractionSearch] = useState("");
+    const [interactionSearchResults, setInteractionSearchResults] = useState([]);
+    const [interactionLoading, setInteractionLoading] = useState(false);
+    const [interactionResults, setInteractionResults] = useState(null);
+    const [searchLoading, setSearchLoading] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        const query = interactionSearch.trim();
+
+        if (query.length < 2) {
+            setInteractionSearchResults([]);
+            setSearchLoading(false);
+            return undefined;
+        }
+
+        setSearchLoading(true);
+        const timer = window.setTimeout(async () => {
+            try {
+                const results = await drugService.searchCalculatorDrugs(query, user?.id);
+                if (!cancelled) setInteractionSearchResults(results);
+            } catch {
+                if (!cancelled) toast.error("Could not search drug database");
+            } finally {
+                if (!cancelled) setSearchLoading(false);
+            }
+        }, 250);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [interactionSearch, user?.id]);
+
+    useEffect(() => {
+        const checkInteractions = async () => {
+            if (interactionDrugs.length < 2) {
+                setInteractionResults(null);
+                return;
+            }
+            setInteractionLoading(true);
+            try {
+                const pairs = [];
+                for (let i = 0; i < interactionDrugs.length; i++) {
+                    for (let j = i + 1; j < interactionDrugs.length; j++) {
+                        pairs.push([interactionDrugs[i].name, interactionDrugs[j].name]);
+                    }
+                }
+
+                const orConditions = pairs.map(
+                    ([a, b]) => `and(drug_name.ilike.%${a}%,interacting_drug.ilike.%${b}%),and(drug_name.ilike.%${b}%,interacting_drug.ilike.%${a}%)`
+                ).join(",");
+
+                const { data, error } = await supabase
+                    .from("drug_interactions")
+                    .select("*")
+                    .or(orConditions);
+
+                if (error) throw error;
+                setInteractionResults(data || []);
+            } catch (err) {
+                console.error(err);
+                toast.error("Could not check interactions");
+            } finally {
+                setInteractionLoading(false);
+            }
+        };
+        checkInteractions();
+    }, [interactionDrugs]);
+
+    const addInteractionDrug = (drug) => {
+        if (!interactionDrugs.find((d) => d.id === drug.id)) {
+            setInteractionDrugs([...interactionDrugs, drug]);
+        }
+        setInteractionSearch("");
+        setInteractionSearchResults([]);
+    };
+
+    return (
+        <ToolShell
+            darkMode={darkMode}
+            title="Interaction Checker"
+            icon={<AlertOctagon size={20} />}
+            subtitle="Add two or more drugs to check for recorded interactions."
+        >
+            <div className="relative">
+                <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+                <input
+                    className={`${fieldClass(darkMode)} pl-10`}
+                    placeholder="Search drug to add to checker..."
+                    value={interactionSearch}
+                    onChange={(event) => setInteractionSearch(event.target.value)}
+                />
+                {(searchLoading || interactionSearchResults.length > 0) && (
+                    <div className={`absolute z-20 mt-2 w-full rounded-lg border overflow-hidden shadow-xl ${darkMode ? "bg-[#071A24] border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+                        {searchLoading && <div className="p-3 text-sm opacity-60">Searching...</div>}
+                        {!searchLoading && interactionSearchResults.map((drug) => (
+                            <button key={drug.id} type="button" onClick={() => addInteractionDrug(drug)} className={`w-full text-left p-3 border-b last:border-b-0 ${darkMode ? "border-white/10 hover:bg-white/10" : "border-[#DCEDEA] hover:bg-[#F0F6F5]"}`}>
+                                <div className="font-black text-sm">{drug.name}</div>
+                                <div className="text-xs opacity-60">
+                                    {[drug.species, drug.route, drug.category].filter(Boolean).join(" | ")}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {interactionDrugs.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                    {interactionDrugs.map((d) => (
+                        <span key={d.id} className={`px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                            {d.name} <button onClick={() => setInteractionDrugs(interactionDrugs.filter((i) => i.id !== d.id))} className="opacity-50 hover:opacity-100"><X size={14} /></button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/10">
+                <h3 className="font-black mb-4 flex items-center gap-2"><AlertTriangle className="text-amber-500" size={18} /> Interaction Warnings</h3>
+                
+                {interactionDrugs.length < 2 ? (
+                    <p className="text-sm opacity-60">Add another drug to check for interactions.</p>
+                ) : interactionLoading ? (
+                    <div className="flex items-center gap-2 text-sm opacity-70"><Loader2 size={16} className="animate-spin" /> Checking interactions...</div>
+                ) : interactionResults?.length > 0 ? (
+                    <div className="space-y-3">
+                        {interactionResults.map((warn, i) => (
+                            <div key={i} className={`p-4 rounded-lg border ${darkMode ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                                <p className="font-bold text-amber-700 dark:text-amber-400 mb-1">{warn.drug_name} + {warn.interacting_drug}</p>
+                                <p className="text-sm opacity-90">{warn.interaction || warn.mechanism || warn.recommendation || warn.notes}</p>
+                                {warn.severity && <p className="text-[10px] uppercase tracking-widest font-black text-amber-600 mt-2">Severity: {warn.severity}</p>}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No known interactions found between selected drugs.</p>
+                )}
+            </div>
+        </ToolShell>
+    );
+}
+
+function findCalculatorRowForDrug(rows, drug, species) {
+  const names = [drug.name, ...(drug.drug_aliases || []).map((alias) => alias.alias)].map(normalise).filter(Boolean);
+  return rows.find((row) => row.species === species && names.includes(normalise(row.drug_name)))
+    || rows.find((row) => names.includes(normalise(row.drug_name)))
+    || null;
+}
+
+function buildCalculatorRowFromDrug(drug, species, rows) {
+  const row = findCalculatorRowForDrug(rows, drug, species);
+  if (row) return row;
+  return {
+    id: `drug-${drug.id}`,
+    drug_name: drug.name,
+    species: drug.species || species,
+    min_dose: drug.dose_min || drug.min_dose || "",
+    max_dose: drug.dose_max || drug.max_dose || drug.dose_min || drug.min_dose || "",
+    dose_unit: drug.dose_unit || "mg/kg",
+    route: drug.route || "",
+    concentration: drug.concentration || "",
+    concentration_unit: drug.concentration_unit || "mg/ml",
+    notes: drug.notes || drug.summary || drug.clinical_summary || ""
+  };
+}
+
+function SelectedDrugSummary({ drug, details, darkMode }) {
+  const warnings = [
+    ...(details?.warnings || []),
+    ...(details?.contraindications || []),
+    ...(details?.interactions || []),
+    ...(details?.monitoring || []),
+    ...(details?.speciesWarnings || [])
+  ];
+  const aliases = [...(drug.drug_aliases || []), ...(details?.aliases || [])].map((item) => item.alias || item.name).filter(Boolean);
+
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest opacity-45">Selected from formulary</p>
+        <h3 className="font-black text-base leading-tight">{drug.name}</h3>
+        {aliases.length > 0 && <p className="text-xs opacity-60 mt-1">Also known as {aliases.slice(0, 5).join(", ")}</p>}
+      </div>
+      <InfoLine label="Class" value={drug.category || drug.drug_class} />
+      <InfoLine label="Route" value={drug.route} />
+      <InfoLine label="Dose data" value={(drug.dose_min || drug.dose_max) ? `${drug.dose_min || drug.dose_max}${drug.dose_max && drug.dose_max !== drug.dose_min ? ` - ${drug.dose_max}` : ""} ${drug.dose_unit || "mg/kg"}` : ""} />
+      {warnings.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest opacity-45">Clinical cautions</p>
+          {warnings.slice(0, 5).map((item, index) => (
+            <p key={index} className="text-sm leading-6 opacity-75">
+              <span className="font-black">{item.title || item.warning_type || item.severity || item.species || "Note"}: </span>
+              {item.description || item.warning_text || item.warning || item.contraindication || item.interaction || item.recommendation || item.notes || item.mechanism}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, doseMap, rows, weightValue, species, onLog }) {
+  const unmatched = protocolDrugs.filter((drug) => drug.species === species && !rows.some((row) => normalise(row.drug_name) === normalise(drug.name)));
+
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest opacity-45">Protocol dose set</p>
+        <h3 className="font-black text-base leading-tight">{protocol.name}</h3>
+        {protocol.indication && <p className="text-sm opacity-60 leading-6">{protocol.indication}</p>}
+      </div>
+
+      {weightValue <= 0 && <p className="text-sm opacity-65">Enter a patient weight above to calculate every matching protocol drug.</p>}
+      {rows.length === 0 && weightValue > 0 && <p className="text-sm opacity-65">No calculator rows match this protocol for {species}. Check the protocol species or add calculator records for these drugs.</p>}
+
+      {rows.map((row) => {
+        const doseSetting = getProtocolDoseSetting(row, doseMap, protocolDrugs);
+        const exactDose = numberValue(doseSetting?.dose, NaN);
+        const hasProtocolDose = Number.isFinite(exactDose) && exactDose > 0;
+        const minDose = hasProtocolDose ? exactDose : numberValue(row.min_dose || row.dose_min);
+        const maxDose = hasProtocolDose ? exactDose : numberValue(row.max_dose || row.dose_max, minDose);
+        const minTotal = weightValue * minDose;
+        const maxTotal = weightValue * maxDose;
+        const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
+        const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
+        const doseUnit = doseSetting?.dose_unit || row.dose_unit || "mg/kg";
+        const totalUnit = doseUnit.split("/")[0] || "mg";
+        return (
+          <div key={row.id} className={`rounded-lg p-3 ${darkMode ? "bg-black/10" : "bg-[#F0F6F5]"}`}>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <div className="font-black">{row.drug_name}</div>
+                <div className="text-xs opacity-60">{doseSetting?.route || row.route || "General route"} | {doseUnit}</div>
+              </div>
+              <span className="text-xs font-black text-[#0F8F83]">{hasProtocolDose ? "Protocol dose" : row.species}</span>
+            </div>
+            <ResultGrid items={[
+              ["Dose", `${formatDoseRange(minTotal, maxTotal)} ${totalUnit}`],
+              ["Give", minVolume ? `${formatDoseRange(minVolume, maxVolume)} ml` : "No concentration"]
+            ]} />
+            {doseSetting?.notes && <p className="text-sm leading-6 opacity-70"><span className="font-black">Protocol note: </span>{doseSetting.notes}</p>}
+            <Notes row={row} />
+          </div>
+        );
+      })}
+
+      {unmatched.length > 0 && (
+        <p className="text-xs opacity-55 leading-5">
+          No calculator data for: {unmatched.map((drug) => drug.name).join(", ")}.
+        </p>
+      )}
+
+      {rows.length > 0 && <LogButton onClick={onLog} />}
+    </div>
+  );
+}
+
+function getProtocolDoseSetting(row, doseMap, protocolDrugs) {
+  const matchedDrug = protocolDrugs.find((drug) => normalise(drug.name) === normalise(row.drug_name));
+  if (!matchedDrug) return null;
+  return doseMap[String(matchedDrug.id)] || null;
+}
+
+function formatDoseRange(min, max) {
+  if (!Number.isFinite(max) || max === min) return formatNumber(min);
+  return `${formatNumber(min)} - ${formatNumber(max)}`;
+}
+
+function formatProtocolCalculation(row, weightValue, doseMap, protocolDrugs) {
+  const doseSetting = getProtocolDoseSetting(row, doseMap, protocolDrugs);
+  const exactDose = numberValue(doseSetting?.dose, NaN);
+  const hasProtocolDose = Number.isFinite(exactDose) && exactDose > 0;
+  const minDose = hasProtocolDose ? exactDose : numberValue(row.min_dose || row.dose_min);
+  const maxDose = hasProtocolDose ? exactDose : numberValue(row.max_dose || row.dose_max, minDose);
+  const minTotal = weightValue * minDose;
+  const maxTotal = weightValue * maxDose;
+  const minVolume = row.concentration ? minTotal / numberValue(row.concentration) : null;
+  const maxVolume = row.concentration ? maxTotal / numberValue(row.concentration) : null;
+  const doseUnit = doseSetting?.dose_unit || row.dose_unit || "mg/kg";
+  const totalUnit = doseUnit.split("/")[0] || "mg";
+  const volumeText = minVolume ? `, ${formatDoseRange(minVolume, maxVolume)} ml` : "";
+  return `${row.drug_name}: ${formatDoseRange(minTotal, maxTotal)} ${totalUnit}${volumeText}`;
+}
+
+function EmergencyCalculator({ rows, darkMode, onLog }) {
+  const [weight, setWeight] = useState("");
+  const [selectedId, setSelectedId] = useState(rows[0]?.id || "");
+  const [dose, setDose] = useState("");
+  const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0];
+
+  useEffect(() => {
+    if (selected && !selectedId) setSelectedId(String(selected.id));
+  }, [selected, selectedId]);
+
+  useEffect(() => {
+    if (selected) setDose(selected.dose_min || selected.dose_max || "");
+  }, [selected?.id]);
+
+  const doseValue = numberValue(dose || selected?.dose_min);
+  const weightValue = numberValue(weight);
+  const totalDose = weightValue * doseValue;
+  const volume = selected?.concentration ? totalDose / numberValue(selected.concentration) : null;
+
+  const saveLog = () => {
+    if (!selected || weightValue <= 0) return toast.error("Add a weight and select a drug");
+    const result = `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}${volume ? `, give ${formatNumber(volume)} ml` : ""}`;
+    onLog({ calculator_type: "emergency", drug_name: selected.drug_name, patient_weight: weightValue, result });
+    toast.success("Emergency calculation logged");
+  };
+
+  return (
+    <ToolShell darkMode={darkMode} title="Emergency Drug Calculator" icon={<Syringe size={20} />} subtitle="Fast weight-based emergency drug volumes.">
+      <input className={fieldClass(darkMode)} type="number" placeholder="Patient weight kg" value={weight} onChange={(event) => setWeight(event.target.value)} />
+      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+        {rows.length === 0 && <option value="">No emergency drugs loaded</option>}
+        {rows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.indication ? `- ${row.indication}` : ""}</option>)}
+      </select>
+      {selected && (
+        <>
+          <DoseRange row={{ ...selected, min_dose: selected.dose_min, max_dose: selected.dose_max }} dose={dose} setDose={setDose} darkMode={darkMode} />
+          <ResultGrid items={[
+            ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}`],
+            ["Give", volume ? `${formatNumber(volume)} ml` : "No concentration"]
+          ]} />
+          <Notes row={selected} />
+          <LogButton onClick={saveLog} />
+        </>
+      )}
+    </ToolShell>
+  );
+}
+
+function CriCalculator({ rows, darkMode, onLog }) {
+  const [weight, setWeight] = useState("");
+  const [selectedId, setSelectedId] = useState(rows[0]?.id || "");
+  const [rate, setRate] = useState("");
+  const selected = rows.find((row) => String(row.id) === String(selectedId)) || rows[0];
+
+  useEffect(() => {
+    if (selected && !selectedId) setSelectedId(String(selected.id));
+  }, [selected, selectedId]);
+
+  useEffect(() => {
+    if (selected) setRate(selected.cri_rate_min || selected.cri_rate_max || "");
+  }, [selected?.id]);
+
+  const weightValue = numberValue(weight);
+  const rateValue = numberValue(rate || selected?.cri_rate_min);
+  const unit = String(selected?.rate_unit || "mcg/kg/min").toLowerCase();
+  let mgPerHour = 0;
+
+  if (unit.includes("mcg") && unit.includes("min")) mgPerHour = (weightValue * rateValue / 1000) * 60;
+  else if (unit.includes("mcg") && unit.includes("hr")) mgPerHour = weightValue * rateValue / 1000;
+  else if (unit.includes("mg") && unit.includes("min")) mgPerHour = weightValue * rateValue * 60;
+  else mgPerHour = weightValue * rateValue;
+
+  const mgPerMin = mgPerHour / 60;
+  const mlPerHour = selected?.concentration ? mgPerHour / numberValue(selected.concentration) : null;
+
+  const saveLog = () => {
+    if (!selected || weightValue <= 0) return toast.error("Add a weight and select a CRI");
+    const result = `${formatNumber(mgPerHour)} mg/hr${mlPerHour ? `, ${formatNumber(mlPerHour)} ml/hr` : ""}`;
+    onLog({ calculator_type: "cri", drug_name: selected.drug_name, patient_weight: weightValue, result });
+    toast.success("CRI calculation logged");
+  };
+
+  return (
+    <ToolShell darkMode={darkMode} title="CRI Calculator" icon={<Activity size={20} />} subtitle="Calculate continuous rate infusion delivery rates.">
+      <input className={fieldClass(darkMode)} type="number" placeholder="Patient weight kg" value={weight} onChange={(event) => setWeight(event.target.value)} />
+      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+        {rows.length === 0 && <option value="">No CRI protocols loaded</option>}
+        {rows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.indication ? `- ${row.indication}` : ""}</option>)}
+      </select>
+      {selected && (
+        <>
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
+            <input className={fieldClass(darkMode)} type="number" step="0.01" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="CRI rate" />
+            <span className="text-sm font-black opacity-70">{selected.rate_unit || "mcg/kg/min"}</span>
+          </div>
+          <ResultGrid items={[
+            ["mg/min", `${formatNumber(mgPerMin, 3)} mg/min`],
+            ["mg/hr", `${formatNumber(mgPerHour)} mg/hr`],
+            ["Pump rate", mlPerHour ? `${formatNumber(mlPerHour)} ml/hr` : "No concentration"]
+          ]} />
+          <InfoLine label="Loading dose" value={selected.loading_dose} />
+          <InfoLine label="Dilution" value={selected.dilution} />
+          <InfoLine label="Monitoring" value={selected.monitoring} />
+          <Notes row={selected} />
+          <LogButton onClick={saveLog} />
+        </>
+      )}
+    </ToolShell>
+  );
+}
+
+function FluidCalculator({ rows, darkMode, onLog }) {
+  const [species, setSpecies] = useState("Dog");
+  const [weight, setWeight] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const speciesRows = rows.filter((row) => !row.species || row.species === species);
+  const selected = speciesRows.find((row) => String(row.id) === String(selectedId)) || speciesRows[0];
+
+  useEffect(() => {
+    if (selected && !selectedId) setSelectedId(String(selected.id));
+  }, [selected, selectedId]);
+
+  const weightValue = numberValue(weight);
+  const multiplier = parseFormulaMultiplier(selected?.formula);
+  const volume = weightValue * multiplier;
+  const hourly = volume / 24;
+
+  const saveLog = () => {
+    if (!selected || weightValue <= 0) return toast.error("Add a weight and select a fluid calculation");
+    const result = `${formatNumber(volume)} ml total${selected.calculation_name?.toLowerCase().includes("maintenance") ? `, ${formatNumber(hourly)} ml/hr` : ""}`;
+    onLog({ calculator_type: "fluid", drug_name: selected.calculation_name, patient_weight: weightValue, result });
+    toast.success("Fluid calculation logged");
+  };
+
+  return (
+    <ToolShell darkMode={darkMode} title="Fluid Therapy Calculator" icon={<Droplets size={20} />} subtitle="Calculate maintenance and shock fluid volumes.">
+      <SpeciesWeight species={species} setSpecies={(value) => { setSpecies(value); setSelectedId(""); }} weight={weight} setWeight={setWeight} darkMode={darkMode} />
+      <select className={fieldClass(darkMode)} value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+        {speciesRows.length === 0 && <option value="">No fluid formulas loaded</option>}
+        {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.calculation_name} ({row.formula})</option>)}
+      </select>
+      {selected && (
+        <>
+          <ResultGrid items={[
+            ["Volume", `${formatNumber(volume)} ml`],
+            ["Hourly", selected.calculation_name?.toLowerCase().includes("maintenance") ? `${formatNumber(hourly)} ml/hr` : "Not maintenance"]
+          ]} />
+          <InfoLine label="Formula" value={selected.formula} />
+          <Notes row={selected} />
+          <LogButton onClick={saveLog} />
+        </>
+      )}
+    </ToolShell>
+  );
+}
+
+function TransfusionCalculator({ rows, darkMode, onLog }) {
+  const [species, setSpecies] = useState("Dog");
+  const [weight, setWeight] = useState("");
+  const [currentPcv, setCurrentPcv] = useState("");
+  const [targetPcv, setTargetPcv] = useState("");
+  const [donorPcv, setDonorPcv] = useState("60");
+  const selected = rows.find((row) => row.species === species) || rows[0];
+
+  const volume = numberValue(weight) * numberValue(selected?.blood_volume_factor) * (numberValue(targetPcv) - numberValue(currentPcv)) / Math.max(numberValue(donorPcv), 1);
+
+  const saveLog = () => {
+    if (!selected || numberValue(weight) <= 0) return toast.error("Add weight and PCV values");
+    const result = `${formatNumber(Math.max(volume, 0))} ml blood product`;
+    onLog({ calculator_type: "transfusion", drug_name: `${species} transfusion`, patient_weight: numberValue(weight), result });
+    toast.success("Transfusion calculation logged");
+  };
+
+  return (
+    <ToolShell darkMode={darkMode} title="Blood Transfusion Calculator" icon={<HeartPulse size={20} />} subtitle="Estimate transfusion volume from blood volume factor and PCV change.">
+      <SpeciesWeight species={species} setSpecies={setSpecies} weight={weight} setWeight={setWeight} darkMode={darkMode} />
+      <div className="grid grid-cols-3 gap-3">
+        <input className={fieldClass(darkMode)} type="number" placeholder="Current PCV" value={currentPcv} onChange={(event) => setCurrentPcv(event.target.value)} />
+        <input className={fieldClass(darkMode)} type="number" placeholder="Target PCV" value={targetPcv} onChange={(event) => setTargetPcv(event.target.value)} />
+        <input className={fieldClass(darkMode)} type="number" placeholder="Donor PCV" value={donorPcv} onChange={(event) => setDonorPcv(event.target.value)} />
+      </div>
+      <ResultGrid items={[["Volume", `${formatNumber(Math.max(volume, 0))} ml`], ["Factor", selected?.blood_volume_factor ? `${selected.blood_volume_factor} ml/kg` : "Not loaded"]]} />
+      <Notes row={selected} />
+      <LogButton onClick={saveLog} />
+    </ToolShell>
+  );
+}
+
+function Toxicology({ rows, darkMode }) {
+  const [search, setSearch] = useState("");
+  const [species, setSpecies] = useState("All");
+
+  const filtered = rows.filter((row) => {
+    const matchesSpecies = species === "All" || row.species === species;
+    const q = search.toLowerCase().trim();
+    const matchesSearch = !q || [row.toxin, row.species, row.toxic_dose, row.clinical_signs, row.antidote, row.notes].some((value) => String(value || "").toLowerCase().includes(q));
+    return matchesSpecies && matchesSearch;
+  });
+
+  return (
+    <ToolShell darkMode={darkMode} title="Species Toxicities" icon={<ShieldAlert size={20} />} subtitle="Search common toxicities, signs and antidotes.">
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+          <input className={`${fieldClass(darkMode)} pl-10`} placeholder="Search toxin, signs or antidote..." value={search} onChange={(event) => setSearch(event.target.value)} />
+        </div>
+        <select className={`${fieldClass(darkMode)} max-w-[120px]`} value={species} onChange={(event) => setSpecies(event.target.value)}>
+          <option>All</option>
+          {speciesOptions.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </div>
+
+      <div className="space-y-3">
+        {filtered.length === 0 && <p className="text-sm opacity-60">No toxicology records found.</p>}
+        {filtered.map((row) => (
+          <div key={row.id} className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <h3 className="font-black text-lg">{row.toxin}</h3>
+                <p className="text-sm opacity-65">{row.species}</p>
+              </div>
+              <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+            </div>
+            <InfoLine label="Toxic dose" value={row.toxic_dose} />
+            <InfoLine label="Clinical signs" value={row.clinical_signs} />
+            <InfoLine label="Antidote" value={row.antidote} />
+            <Notes row={row} />
+          </div>
+        ))}
+      </div>
+    </ToolShell>
+  );
+}
+
+function CalculationHistory({ rows, loading, darkMode, onRefresh }) {
+  return (
+    <ToolShell darkMode={darkMode} title="Calculation History" icon={<Clock size={20} />} subtitle="Calculations logged from Clinical Tools in the last 24 hours.">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm opacity-60">{rows.length} calculation{rows.length === 1 ? "" : "s"} in the last 24 hours</p>
+        <button onClick={onRefresh} className="rounded-lg bg-[#E8F8F5] text-[#0B3760] px-3 py-2 text-xs font-black">
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8"><HeartbeatLoader size={48} /></div>
+      ) : rows.length === 0 ? (
+        <div className={`rounded-lg border p-4 text-center text-sm opacity-65 ${darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
+          No calculations logged in the last 24 hours.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div key={row.id} className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <h3 className="font-black text-base truncate">{row.drug_name || readableCalculatorType(row.calculator_type)}</h3>
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-45">{readableCalculatorType(row.calculator_type)}</p>
+                </div>
+                <span className="text-xs font-bold opacity-55 whitespace-nowrap">{new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+              <p className="text-sm leading-6 font-bold text-[#0F8F83]">{row.result}</p>
+              {row.patient_weight && <p className="text-xs opacity-55 mt-2">Patient weight: {row.patient_weight} kg</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </ToolShell>
+  );
+}
+
+function readableCalculatorType(type) {
+  const labels = {
+    drug: "Drug Calculator",
+    protocol: "Protocol Calculator",
+    emergency: "Emergency Drugs",
+    fluid: "Fluid Therapy",
+    transfusion: "Blood Transfusion",
+    cri: "CRI Calculator"
+  };
+  return labels[type] || "Calculator";
+}
+
+function ToolShell({ darkMode, title, subtitle, icon, children }) {
+  return (
+    <section className={`${panelClass(darkMode)} space-y-4`}>
+      <div className="flex items-start gap-3">
+        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>{icon}</div>
+        <div>
+          <h2 className="font-black text-xl leading-tight">{title}</h2>
+          <p className="text-sm opacity-60 leading-6">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SpeciesWeight({ species, setSpecies, weight, setWeight, darkMode }) {
+  return (
+    <div className="grid grid-cols-[1fr_1fr] gap-3">
+      <select className={fieldClass(darkMode)} value={species} onChange={(event) => setSpecies(event.target.value)}>
+        {speciesOptions.map((option) => <option key={option}>{option}</option>)}
+      </select>
+      <input className={fieldClass(darkMode)} type="number" placeholder="Weight kg" value={weight} onChange={(event) => setWeight(event.target.value)} />
+    </div>
+  );
+}
+
+function DoseRange({ row, dose, setDose, darkMode }) {
+  const min = numberValue(row.min_dose || row.dose_min);
+  const max = Math.max(numberValue(row.max_dose || row.dose_max, min), min || 1);
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between gap-3 text-xs font-black uppercase tracking-widest opacity-55">
+        <span>Dose rate</span>
+        <span>{row.dose_unit || "mg/kg"}</span>
+      </div>
+      <div className="grid grid-cols-[1fr_96px] gap-3 items-center">
+        <input type="range" min={min} max={max} step="0.01" value={dose || min} onChange={(event) => setDose(event.target.value)} className="accent-[#71CFC2]" />
+        <input className={`${fieldClass(darkMode)} text-center`} type="number" step="0.01" value={dose} onChange={(event) => setDose(event.target.value)} />
+      </div>
+      <p className="text-xs opacity-55">Range: {row.min_dose || row.dose_min} - {row.max_dose || row.dose_max} {row.dose_unit || "mg/kg"}</p>
+    </div>
+  );
+}
+
+function ResultGrid({ items }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {items.map(([label, value]) => (
+        <div key={label} className="rounded-lg bg-[#0F8F83]/10 text-[#0B3760] dark:text-[#71CFC2] p-4 text-center">
+          <div className="text-xs font-black uppercase tracking-widest opacity-60 mb-1">{label}</div>
+          <div className="font-black text-xl">{value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InfoLine({ label, value }) {
+  if (!value) return null;
+  return <p className="text-sm leading-6"><span className="font-black opacity-60">{label}: </span>{value}</p>;
+}
+
+function Notes({ row }) {
+  if (!row?.notes) return null;
+  return <p className="text-sm leading-6 opacity-70"><span className="font-black">Notes: </span>{row.notes}</p>;
+}
+
+function LogButton({ onClick }) {
+  return <button onClick={onClick} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2"><Beaker size={18} /> Log calculation</button>;
+}
+
+function parseFormulaMultiplier(formula) {
+  const text = String(formula || "").toLowerCase();
+  const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:x|\*)\s*bw/);
+  if (match) return numberValue(match[1]);
+  const leading = text.match(/^([0-9]+(?:\.[0-9]+)?)/);
+  return leading ? numberValue(leading[1]) : 0;
 }
