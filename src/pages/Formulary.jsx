@@ -533,7 +533,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
         {formularyTabs.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63] shadow-md" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
             {tab.label}
           </button>
         ))}
@@ -1071,7 +1071,7 @@ function CalculatorTab(props) {
       <div className={panelClass}>
         <h2 className="font-black mb-4 flex items-center gap-2"><AlertTriangle size={18} className="text-amber-500" /> Interaction Warnings</h2>
         {selectedCalcDrugs.length < 2 ? (
-          <p className="text-sm opacity-55">Add more than one drug to check interactions.</p>
+          <p className="text-sm opacity-55 italic">Add a second drug to check interactions.</p>
         ) : checkingInteractions ? (
           <div className="flex items-center gap-2 text-sm opacity-70"><Loader2 size={16} className="animate-spin" /> Checking interactions...</div>
         ) : interactionResults && interactionResults.length > 0 ? (
@@ -1088,7 +1088,7 @@ function CalculatorTab(props) {
             </button>
           </div>
         ) : (
-          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">No known interactions found between these drugs in the database.</p>
+          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">No known interactions found in the database.</p>
         )}
       </div>
     </div>
