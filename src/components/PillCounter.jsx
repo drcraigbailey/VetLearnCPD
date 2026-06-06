@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, RotateCcw, Search, Trash2, Undo2, Upload } from "lucide-react";
+import { AlertTriangle, Camera, Crop, Crosshair, Loader2, RotateCcw, Search, Trash2, Undo2, Upload, X } from "lucide-react";
+import { detectPillsFromImage } from "./pillCounterDetection";
 
 const buttonBase = "min-h-[44px] rounded-lg px-3 py-2 text-sm font-black transition flex items-center justify-center gap-2";
 
@@ -9,49 +10,21 @@ const detectionModes = [
   { id: "sensitive", label: "Sensitive" },
 ];
 
-const detectionPresets = {
-  strict: {
-    brightBoost: 34,
-    colorBoost: 46,
-    darkBoost: 42,
-    minAreaFactor: 0.00012,
-    maxAreaFactor: 0.04,
-    minFill: 0.42,
-    minCircularity: 0.19,
-    minDiameter: 8,
-    closeIterations: 1,
-  },
-  normal: {
-    brightBoost: 22,
-    colorBoost: 32,
-    darkBoost: 34,
-    minAreaFactor: 0.000075,
-    maxAreaFactor: 0.06,
-    minFill: 0.32,
-    minCircularity: 0.11,
-    minDiameter: 7,
-    closeIterations: 1,
-  },
-  sensitive: {
-    brightBoost: 12,
-    colorBoost: 20,
-    darkBoost: 26,
-    minAreaFactor: 0.000045,
-    maxAreaFactor: 0.075,
-    minFill: 0.23,
-    minCircularity: 0.06,
-    minDiameter: 6,
-    closeIterations: 2,
-  },
-};
-
 export default function PillCounter({ darkMode = false }) {
   const [imageUrl, setImageUrl] = useState("");
   const [markers, setMarkers] = useState([]);
   const [detecting, setDetecting] = useState(false);
   const [detectionMode, setDetectionMode] = useState("normal");
   const [detectionMessage, setDetectionMessage] = useState("");
+  const [qualityWarnings, setQualityWarnings] = useState([]);
+  const [crop, setCrop] = useState(null);
+  const [cropDraft, setCropDraft] = useState(null);
+  const [cropMode, setCropMode] = useState(false);
+  const [cropStart, setCropStart] = useState(null);
+  const [calibration, setCalibration] = useState(null);
+  const [calibrationMode, setCalibrationMode] = useState(false);
   const imageUrlRef = useRef("");
+  const imageStageRef = useRef(null);
 
   useEffect(() => {
     imageUrlRef.current = imageUrl;
@@ -71,10 +44,11 @@ export default function PillCounter({ darkMode = false }) {
       setDetecting(true);
       setDetectionMessage("Scanning image...");
       try {
-        const detectedMarkers = await detectPillsFromImage(imageUrl, detectionMode);
+        const result = await detectPillsFromImage(imageUrl, detectionMode, crop, calibration);
         if (cancelled || imageUrlRef.current !== imageUrl) return;
-        setMarkers(detectedMarkers);
-        setDetectionMessage(formatDetectionMessage(detectedMarkers.length, detectionMode));
+        setMarkers(result.markers);
+        setQualityWarnings(result.warnings);
+        setDetectionMessage(formatDetectionMessage(result.markers.length, detectionMode));
       } catch (error) {
         if (!cancelled) setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
       } finally {
@@ -87,7 +61,7 @@ export default function PillCounter({ darkMode = false }) {
     return () => {
       cancelled = true;
     };
-  }, [imageUrl, detectionMode]);
+  }, [imageUrl, detectionMode, crop, calibration]);
 
   const handleImageSelection = (event) => {
     const file = event.target.files?.[0];
@@ -95,6 +69,12 @@ export default function PillCounter({ darkMode = false }) {
 
     setImageUrl(URL.createObjectURL(file));
     setMarkers([]);
+    setQualityWarnings([]);
+    setCrop(null);
+    setCropDraft(null);
+    setCropMode(false);
+    setCalibration(null);
+    setCalibrationMode(false);
     setDetectionMessage("Scanning image...");
     event.target.value = "";
   };
@@ -105,10 +85,11 @@ export default function PillCounter({ darkMode = false }) {
     setDetecting(true);
     setDetectionMessage("Scanning image...");
     try {
-      const detectedMarkers = await detectPillsFromImage(imageUrl, detectionMode);
+      const result = await detectPillsFromImage(imageUrl, detectionMode, crop, calibration);
       if (imageUrlRef.current !== imageUrl) return;
-      setMarkers(detectedMarkers);
-      setDetectionMessage(formatDetectionMessage(detectedMarkers.length, detectionMode));
+      setMarkers(result.markers);
+      setQualityWarnings(result.warnings);
+      setDetectionMessage(formatDetectionMessage(result.markers.length, detectionMode));
     } catch (error) {
       setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
     } finally {
@@ -117,7 +98,7 @@ export default function PillCounter({ darkMode = false }) {
   };
 
   const addMarker = (event) => {
-    if (!imageUrl) return;
+    if (!imageUrl || cropMode || calibrationMode) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
@@ -135,6 +116,97 @@ export default function PillCounter({ darkMode = false }) {
     setDetectionMessage("Manual marker added. Tap any marker to remove it.");
   };
 
+  const getStagePoint = (event) => {
+    const rect = imageStageRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
+      y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)),
+    };
+  };
+
+  const beginCrop = (event) => {
+    if (!cropMode) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const point = getStagePoint(event);
+    if (!point) return;
+    setCropStart(point);
+    setCropDraft({ x: point.x, y: point.y, width: 0, height: 0 });
+  };
+
+  const updateCrop = (event) => {
+    if (!cropMode || !cropStart) return;
+    event.preventDefault();
+    const point = getStagePoint(event);
+    if (!point) return;
+    setCropDraft({
+      x: Math.min(cropStart.x, point.x),
+      y: Math.min(cropStart.y, point.y),
+      width: Math.abs(point.x - cropStart.x),
+      height: Math.abs(point.y - cropStart.y),
+    });
+  };
+
+  const finishCrop = (event) => {
+    if (!cropMode || !cropStart) return;
+    event.preventDefault();
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setCropStart(null);
+  };
+
+  const applyCrop = () => {
+    if (!cropDraft || cropDraft.width < 5 || cropDraft.height < 5) {
+      setDetectionMessage("Drag a larger crop area around the tablets.");
+      return;
+    }
+    setCrop(cropDraft);
+    setCropMode(false);
+    setMarkers([]);
+    setDetectionMessage("Crop applied. Scanning the selected area...");
+  };
+
+  const cancelCrop = () => {
+    setCropDraft(crop);
+    setCropMode(false);
+    setCropStart(null);
+  };
+
+  const clearCrop = () => {
+    setCrop(null);
+    setCropDraft(null);
+    setCropMode(false);
+    setMarkers([]);
+    setDetectionMessage("Crop cleared. Scanning the full image...");
+  };
+
+  const calibrateAtPoint = (event) => {
+    if (!calibrationMode) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const point = getStagePoint(event);
+    if (!point) return;
+
+    const nearest = markers
+      .map((marker) => ({
+        marker,
+        distance: Math.hypot(marker.x - point.x, marker.y - point.y),
+      }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    const matched = nearest?.distance <= 8 ? nearest.marker : null;
+    const estimatedDiameterPercent = matched?.diameterPercent || 5;
+    const estimatedAreaPercent = matched?.areaPercent || Math.PI * (estimatedDiameterPercent / 2) ** 2;
+
+    setCalibration({
+      x: matched?.x ?? point.x,
+      y: matched?.y ?? point.y,
+      estimatedDiameterPercent,
+      estimatedAreaPercent,
+    });
+    setCalibrationMode(false);
+    setDetectionMessage("Tablet size calibrated. Detection now favours similarly sized tablets.");
+  };
+
   const removeMarker = (event, markerId) => {
     event.stopPropagation();
     setMarkers((current) => current.filter((marker) => marker.id !== markerId));
@@ -145,6 +217,12 @@ export default function PillCounter({ darkMode = false }) {
     setImageUrl("");
     setMarkers([]);
     setDetectionMessage("");
+    setQualityWarnings([]);
+    setCrop(null);
+    setCropDraft(null);
+    setCropMode(false);
+    setCalibration(null);
+    setCalibrationMode(false);
   };
 
   return (
@@ -198,6 +276,81 @@ export default function PillCounter({ darkMode = false }) {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCropDraft(crop || { x: 10, y: 10, width: 80, height: 80 });
+                setCropMode(true);
+                setCalibrationMode(false);
+              }}
+              className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+            >
+              <Crop size={16} />
+              {crop ? "Adjust crop" : "Crop area"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCalibrationMode(true);
+                setCropMode(false);
+              }}
+              className={`${buttonBase} ${calibrationMode ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+            >
+              <Crosshair size={16} />
+              Calibrate size
+            </button>
+            {crop && (
+              <button type="button" onClick={clearCrop} className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                <X size={16} />
+                Clear crop
+              </button>
+            )}
+            {calibration && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCalibration(null);
+                  setCalibrationMode(false);
+                  setMarkers([]);
+                  setDetectionMessage("Tablet calibration cleared. Scanning with standard size filters...");
+                }}
+                className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              >
+                <X size={16} />
+                Clear calibration
+              </button>
+            )}
+          </div>
+
+          {cropMode && (
+            <div className={`rounded-lg border p-3 text-sm ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+              <p className="font-black">Drag over the tablets to set the crop area.</p>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button type="button" onClick={applyCrop} className={`${buttonBase} bg-[#71CFC2] text-[#062F63]`}>Apply crop</button>
+                <button type="button" onClick={cancelCrop} className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}>Cancel crop</button>
+              </div>
+            </div>
+          )}
+
+          {calibrationMode && (
+            <div className={`rounded-lg border p-3 text-sm font-bold ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+              Tap one clear, correctly marked tablet to calibrate its approximate size.
+            </div>
+          )}
+
+          {qualityWarnings.length > 0 && (
+            <div className={`rounded-lg border p-3 ${darkMode ? "bg-amber-400/10 border-amber-300/20 text-amber-100" : "bg-amber-50 border-amber-200 text-amber-900"}`}>
+              <div className="flex items-center gap-2 mb-2 font-black text-sm">
+                <AlertTriangle size={17} />
+                Photo tips
+              </div>
+              <ul className="space-y-1 text-xs leading-5">
+                {qualityWarnings.map((warning) => <li key={warning}>- {warning}</li>)}
+              </ul>
+            </div>
+          )}
+
           {detectionMessage && (
             <div className={`rounded-lg border p-3 text-sm leading-6 ${darkMode ? "bg-white/5 border-white/10 text-slate-100" : "bg-[#F9FCFB] border-[#DCEDEA] text-[#113247]"}`}>
               {detecting ? "Scanning image..." : detectionMessage}
@@ -205,19 +358,47 @@ export default function PillCounter({ darkMode = false }) {
           )}
 
           <div
+            ref={imageStageRef}
             className={`relative overflow-hidden rounded-lg border ${darkMode ? "border-white/10 bg-black" : "border-[#DCEDEA] bg-[#113247]"}`}
             onClick={addMarker}
+            onPointerDown={beginCrop}
+            onPointerMove={updateCrop}
+            onPointerUp={finishCrop}
+            onPointerCancel={finishCrop}
             role="button"
             tabIndex={0}
             aria-label="Tap tablets on the photo to mark them"
+            style={{ touchAction: cropMode ? "none" : "pan-y" }}
           >
             <img src={imageUrl} alt="Pills to count" className="block w-full select-none" draggable="false" />
+            {(cropMode ? cropDraft : crop) && (
+              <div
+                className={`absolute border-2 pointer-events-none ${cropMode ? "border-amber-400 bg-amber-300/10" : "border-[#71CFC2] bg-[#71CFC2]/10"}`}
+                style={{
+                  left: `${(cropMode ? cropDraft : crop).x}%`,
+                  top: `${(cropMode ? cropDraft : crop).y}%`,
+                  width: `${(cropMode ? cropDraft : crop).width}%`,
+                  height: `${(cropMode ? cropDraft : crop).height}%`,
+                }}
+              />
+            )}
+            {calibration && (
+              <div
+                className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-300 bg-amber-300/22 pointer-events-none"
+                style={{ left: `${calibration.x}%`, top: `${calibration.y}%` }}
+              >
+                <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 rounded bg-amber-300 px-1.5 py-0.5 text-[9px] font-black text-[#062F63] whitespace-nowrap">Calibrated</span>
+              </div>
+            )}
+            {calibrationMode && (
+              <button type="button" className="absolute inset-0 z-20 cursor-crosshair bg-transparent" onClick={calibrateAtPoint} aria-label="Tap a tablet to calibrate its size" />
+            )}
             {markers.map((marker, index) => (
               <button
                 key={marker.id}
                 type="button"
                 onClick={(event) => removeMarker(event, marker.id)}
-                className={`absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white text-[#062F63] text-xs font-black shadow-[0_0_0_4px_rgba(0,201,120,0.25)] ${marker.source === "auto" ? "bg-[#00C978]" : "bg-[#71CFC2]"}`}
+                className={`absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white text-[#062F63] text-xs font-black shadow-[0_0_0_4px_rgba(0,201,120,0.25)] ${marker.source === "manual" ? "bg-[#71CFC2]" : marker.source === "auto-split" ? "bg-amber-300" : "bg-[#00C978]"}`}
                 style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
                 aria-label={`Remove tablet marker ${index + 1}`}
               >
@@ -263,9 +444,10 @@ export default function PillCounter({ darkMode = false }) {
               Clear
             </button>
           </div>
+          <p className="text-xs opacity-65 leading-5">Auto count is an estimate. Check markers before relying on the count.</p>
         </>
       ) : (
-        <div className={`rounded-lg border border-dashed p-6 text-center ${darkMode ? "border-white/15 bg-white/5" : "border-[#B7D8D2] bg-[#F9FCFB]"}`}>
+        <div className={`rounded-lg border border-dashed p-6 text-center ${darkMode ? "border-white/15 bg-white/5" : "border-[#B7D8D2] bo-[#F9FCFB]"}`}>
           <Camera size={30} className="mx-auto mb-3 text-[#0F8F83]" />
           <p className="text-sm font-black">No photo selected</p>
           <p className="text-xs opacity-60 leading-5 mt-1">Use the phone camera or upload a photo. For best detection, place tablets on a plain, contrasting surface.</p>
@@ -280,279 +462,4 @@ function formatDetectionMessage(count, mode) {
   if (count === 0) return `${modeLabel} scan found no clear tablets. Try Sensitive mode, a plainer background, or tap tablets manually.`;
   if (count === 1) return `${modeLabel} scan found 1 likely tablet. Check the marker before relying on the count.`;
   return `${modeLabel} scan found ${count} likely tablets. Check the markers before relying on the count.`;
-}
-
-function detectPillsFromImage(imageUrl, mode = "normal") {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => {
-      try {
-        resolve(findPillMarkers(image, mode));
-      } catch (error) {
-        reject(error);
-      }
-    };
-    image.onerror = () => reject(new Error("Image could not be loaded"));
-    image.src = imageUrl;
-  });
-}
-
-function findPillMarkers(image, mode = "normal") {
-  const sourceWidth = image.naturalWidth || image.width;
-  const sourceHeight = image.naturalHeight || image.height;
-  if (!sourceWidth || !sourceHeight) return [];
-
-  const preset = detectionPresets[mode] || detectionPresets.normal;
-  const maxDimension = 760;
-  const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
-  const width = Math.max(1, Math.round(sourceWidth * scale));
-  const height = Math.max(1, Math.round(sourceHeight * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) return [];
-
-  context.drawImage(image, 0, 0, width, height);
-  const { data } = context.getImageData(0, 0, width, height);
-  const pixelCount = width * height;
-  const luminance = new Uint8Array(pixelCount);
-  const saturation = new Uint8Array(pixelCount);
-  const histogram = new Array(256).fill(0);
-  let luminanceTotal = 0;
-
-  for (let pixel = 0, dataIndex = 0; pixel < pixelCount; pixel += 1, dataIndex += 4) {
-    const red = data[dataIndex];
-    const green = data[dataIndex + 1];
-    const blue = data[dataIndex + 2];
-    const max = Math.max(red, green, blue);
-    const min = Math.min(red, green, blue);
-    const lum = Math.round(0.299 * red + 0.587 * green + 0.114 * blue);
-    const sat = max === 0 ? 0 : Math.round(((max - min) / max) * 255);
-    luminance[pixel] = lum;
-    saturation[pixel] = sat;
-    histogram[lum] += 1;
-    luminanceTotal += lum;
-  }
-
-  const averageLuminance = luminanceTotal / pixelCount;
-  const otsu = otsuThreshold(histogram, pixelCount);
-  const brightThreshold = Math.min(246, Math.max(76, otsu + 8, averageLuminance + preset.brightBoost));
-  const colorThreshold = Math.min(238, Math.max(86, averageLuminance + preset.colorBoost));
-  const darkThreshold = Math.max(12, Math.min(otsu - 8, averageLuminance - preset.darkBoost));
-  const allowDarkObjects = averageLuminance > 145;
-  const rawMask = new Uint8Array(pixelCount);
-
-  for (let pixel = 0; pixel < pixelCount; pixel += 1) {
-    const lum = luminance[pixel];
-    const sat = saturation[pixel];
-    const brightTablet = lum >= brightThreshold && sat <= 205;
-    const coloredTablet = lum >= colorThreshold && sat >= 28 && sat <= 225;
-    const darkTablet = allowDarkObjects && lum <= darkThreshold && sat >= 18 && sat <= 230;
-    rawMask[pixel] = brightTablet || coloredTablet || darkTablet ? 1 : 0;
-  }
-
-  const openedMask = dilateMask(erodeMask(rawMask, width, height), width, height);
-  let cleanedMask = openedMask;
-  for (let i = 0; i < preset.closeIterations; i += 1) {
-    cleanedMask = erodeMask(dilateMask(cleanedMask, width, height), width, height);
-  }
-
-  return connectedComponentMarkers(cleanedMask, width, height, pixelCount, preset);
-}
-
-function otsuThreshold(histogram, total) {
-  let sum = 0;
-  for (let i = 0; i < 256; i += 1) sum += i * histogram[i];
-
-  let sumBackground = 0;
-  let weightBackground = 0;
-  let maxVariance = 0;
-  let threshold = 128;
-
-  for (let i = 0; i < 256; i += 1) {
-    weightBackground += histogram[i];
-    if (weightBackground === 0) continue;
-
-    const weightForeground = total - weightBackground;
-    if (weightForeground === 0) break;
-
-    sumBackground += i * histogram[i];
-    const meanBackground = sumBackground / weightBackground;
-    const meanForeground = (sum - sumBackground) / weightForeground;
-    const variance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
-
-    if (variance > maxVariance) {
-      maxVariance = variance;
-      threshold = i;
-    }
-  }
-
-  return threshold;
-}
-
-function erodeMask(mask, width, height) {
-  const output = new Uint8Array(mask.length);
-
-  for (let y = 1; y < height - 1; y += 1) {
-    for (let x = 1; x < width - 1; x += 1) {
-      const index = y * width + x;
-      if (!mask[index]) continue;
-
-      let keep = 1;
-      for (let dy = -1; dy <= 1 && keep; dy += 1) {
-        for (let dx = -1; dx <= 1; dx += 1) {
-          if (!mask[index + dy * width + dx]) {
-            keep = 0;
-            break;
-          }
-        }
-      }
-      output[index] = keep;
-    }
-  }
-
-  return output;
-}
-
-function dilateMask(mask, width, height) {
-  const output = new Uint8Array(mask.length);
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const index = y * width + x;
-      if (!mask[index]) continue;
-
-      for (let dy = -1; dy <= 1; dy += 1) {
-        const nextY = y + dy;
-        if (nextY < 0 || nextY >= height) continue;
-        for (let dx = -1; dx <= 1; dx += 1) {
-          const nextX = x + dx;
-          if (nextX < 0 || nextX >= width) continue;
-          output[nextY * width + nextX] = 1;
-        }
-      }
-    }
-  }
-
-  return output;
-}
-
-function connectedComponentMarkers(mask, width, height, pixelCount, preset) {
-  const visited = new Uint8Array(pixelCount);
-  const stack = new Int32Array(pixelCount);
-  const candidates = [];
-  const minArea = Math.max(18, pixelCount * preset.minAreaFactor);
-  const maxArea = pixelCount * preset.maxAreaFactor;
-
-  for (let start = 0; start < pixelCount; start += 1) {
-    if (!mask[start] || visited[start]) continue;
-
-    let top = 0;
-    let area = 0;
-    let perimeter = 0;
-    let sumX = 0;
-    let sumY = 0;
-    let minX = width;
-    let minY = height;
-    let maxX = 0;
-    let maxY = 0;
-    let touchesEdge = false;
-
-    stack[top] = start;
-    top += 1;
-    visited[start] = 1;
-
-    while (top > 0) {
-      top -= 1;
-      const index = stack[top];
-      const x = index % width;
-      const y = Math.floor(index / width);
-
-      area += 1;
-      sumX += x;
-      sumY += y;
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-      if (x <= 1 || y <= 1 || x >= width - 2 || y >= height - 2) touchesEdge = true;
-
-      const left = index - 1;
-      const right = index + 1;
-      const up = index - width;
-      const down = index + width;
-
-      if (x === 0 || !mask[left]) perimeter += 1;
-      else if (!visited[left]) {
-        visited[left] = 1;
-        stack[top] = left;
-        top += 1;
-      }
-
-      if (x === width - 1 || !mask[right]) perimeter += 1;
-      else if (!visited[right]) {
-        visited[right] = 1;
-        stack[top] = right;
-        top += 1;
-      }
-
-      if (y === 0 || !mask[up]) perimeter += 1;
-      else if (!visited[up]) {
-        visited[up] = 1;
-        stack[top] = up;
-        top += 1;
-      }
-
-      if (y === height - 1 || !mask[down]) perimeter += 1;
-      else if (!visited[down]) {
-        visited[down] = 1;
-        stack[top] = down;
-        top += 1;
-      }
-    }
-
-    const boxWidth = maxX - minX + 1;
-    const boxHeight = maxY - minY + 1;
-    const boxArea = boxWidth * boxHeight;
-    const aspect = boxWidth / Math.max(boxHeight, 1);
-    const fill = area / Math.max(boxArea, 1);
-    const diameter = Math.max(boxWidth, boxHeight);
-    const circularity = perimeter > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0;
-    const isPillSized = area >= minArea && area <= maxArea && diameter >= preset.minDiameter;
-    const isPillShaped = aspect >= 0.42 && aspect <= 2.4 && fill >= preset.minFill && circularity >= preset.minCircularity;
-
-    if (!touchesEdge && isPillSized && isPillShaped) {
-      candidates.push({
-        id: `auto-${candidates.length}-${Date.now()}`,
-        x: (sumX / area / width) * 100,
-        y: (sumY / area / height) * 100,
-        source: "auto",
-        score: area * fill * Math.max(circularity, 0.01),
-      });
-    }
-  }
-
-  return mergeNearbyCandidates(candidates)
-    .slice(0, 100)
-    .sort((a, b) => a.y - b.y || a.x - b.x)
-    .map(({ score, ...marker }) => marker);
-}
-
-function mergeNearbyCandidates(candidates) {
-  const accepted = [];
-  const minDistancePercent = 2.2;
-
-  candidates
-    .sort((a, b) => b.score - a.score)
-    .forEach((candidate) => {
-      const duplicate = accepted.some((item) => {
-        const dx = item.x - candidate.x;
-        const dy = item.y - candidate.y;
-        return Math.sqrt(dx * dx + dy * dy) < minDistancePercent;
-      });
-      if (!duplicate) accepted.push(candidate);
-    });
-
-  return accepted;
 }
