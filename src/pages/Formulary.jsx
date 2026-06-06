@@ -83,9 +83,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [history, setHistory] = useState([]);
 
   const [checkingInteractions, setCheckingInteractions] = useState(false);
-  const [interactionDrugA, setInteractionDrugA] = useState("");
-  const [interactionDrugB, setInteractionDrugB] = useState("");
   const [interactionResults, setInteractionResults] = useState(null);
+  const [showInteractionModal, setShowInteractionModal] = useState(false);
 
   const panelClass = sectionClass(darkMode);
   const fieldClass = inputClass(darkMode);
@@ -100,6 +99,51 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   useEffect(() => {
     setVisibleCount(pageSize);
   }, [drugSearch, selectedLetter]);
+
+  // Track only the drug names to avoid re-triggering the check when a user merely adjusts a dose slider
+  const selectedCalcDrugNames = useMemo(() => {
+    return selectedCalcDrugs.map(d => d.name).sort().join(',');
+  }, [selectedCalcDrugs]);
+
+  // Automatic interaction check when selected calc drugs change
+  useEffect(() => {
+    if (selectedCalcDrugs.length < 2) {
+      setInteractionResults(null);
+      setCheckingInteractions(false);
+      return;
+    }
+
+    const checkInteractions = async () => {
+      setCheckingInteractions(true);
+      const names = selectedCalcDrugNames.split(',');
+      const orConditions = [];
+
+      for (let i = 0; i < names.length; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+          const nameA = names[i];
+          const nameB = names[j];
+          orConditions.push(`and(drug_name.ilike.%${nameA}%,interacting_drug.ilike.%${nameB}%)`);
+          orConditions.push(`and(drug_name.ilike.%${nameB}%,interacting_drug.ilike.%${nameA}%)`);
+        }
+      }
+
+      const queryStr = orConditions.join(",");
+      try {
+        const { data } = await supabase.from("drug_interactions").select("*").or(queryStr);
+        setInteractionResults(data || []);
+        if (data && data.length > 0) {
+          setShowInteractionModal(true); // Automatically pop up the modal if an interaction is found
+        }
+      } catch (error) {
+        toast.error("Failed to check interactions");
+        setInteractionResults([]);
+      } finally {
+        setCheckingInteractions(false);
+      }
+    };
+
+    checkInteractions();
+  }, [selectedCalcDrugNames]);
 
   const loadDatabase = async () => {
     setLoading(true);
@@ -352,26 +396,6 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     setShareOpen(false);
   };
 
-  const checkInteractions = async () => {
-    if (!interactionDrugA || !interactionDrugB) return toast.error("Select two drugs to check");
-    setCheckingInteractions(true);
-
-    const nameA = uniqueDrugsList.find((drug) => String(drug.id) === String(interactionDrugA))?.name || interactionDrugA;
-    const nameB = uniqueDrugsList.find((drug) => String(drug.id) === String(interactionDrugB))?.name || interactionDrugB;
-
-    try {
-      const { data } = await supabase
-        .from("drug_interactions")
-        .select("*")
-        .or(`and(drug_name.ilike.%${nameA}%,interacting_drug.ilike.%${nameB}%),and(drug_name.ilike.%${nameB}%,interacting_drug.ilike.%${nameA}%)`);
-      setInteractionResults(data || []);
-    } catch {
-      toast.error("Failed to check interactions");
-    } finally {
-      setCheckingInteractions(false);
-    }
-  };
-
   const saveDrug = async () => {
     if (!drugForm.name.trim()) return toast.error("Drug name required");
     const { error } = await supabase.from("drugs").insert({
@@ -545,13 +569,6 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               drugForm={drugForm}
               setDrugForm={setDrugForm}
               saveDrug={saveDrug}
-              interactionDrugA={interactionDrugA}
-              setInteractionDrugA={setInteractionDrugA}
-              interactionDrugB={interactionDrugB}
-              setInteractionDrugB={setInteractionDrugB}
-              checkingInteractions={checkingInteractions}
-              checkInteractions={checkInteractions}
-              interactionResults={interactionResults}
             />
           )}
 
@@ -569,6 +586,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               updateCalcDrugDose={updateCalcDrugDose}
               saveToHistory={saveToHistory}
               openMonograph={openMonograph}
+              checkingInteractions={checkingInteractions}
+              interactionResults={interactionResults}
+              showInteractionModal={showInteractionModal}
+              setShowInteractionModal={setShowInteractionModal}
             />
           )}
 
@@ -601,45 +622,20 @@ function LibraryTab(props) {
     setShowAddDrug,
     drugForm,
     setDrugForm,
-    saveDrug,
-    interactionDrugA,
-    setInteractionDrugA,
-    interactionDrugB,
-    setInteractionDrugB,
-    checkingInteractions,
-    checkInteractions,
-    interactionResults
+    saveDrug
   } = props;
 
   const noActiveFilter = !drugSearch.trim() && !selectedLetter;
 
   return (
     <div className="space-y-6">
-      <div className={panelClass}>
-        <h2 className="font-black mb-3 flex items-center gap-2"><RefreshCw size={18} /> Interaction Checker</h2>
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <select className={`${fieldClass} flex-1`} value={interactionDrugA} onChange={(event) => setInteractionDrugA(event.target.value)}>
-            <option value="">Select Drug A...</option>
-            {uniqueDrugsList.map((drug) => <option key={`a-${drug.id}`} value={drug.id}>{drug.name}</option>)}
-          </select>
-          <select className={`${fieldClass} flex-1`} value={interactionDrugB} onChange={(event) => setInteractionDrugB(event.target.value)}>
-            <option value="">Select Drug B...</option>
-            {uniqueDrugsList.map((drug) => <option key={`b-${drug.id}`} value={drug.id}>{drug.name}</option>)}
-          </select>
-          <button onClick={checkInteractions} disabled={checkingInteractions} className="bg-[#71CFC2] text-[#062F63] px-4 py-3 rounded-lg font-bold w-full sm:w-auto flex justify-center items-center gap-2">
-            {checkingInteractions ? <Loader2 size={16} className="animate-spin" /> : "Check"}
-          </button>
+      {noActiveFilter && (
+        <div className={`${panelClass} text-center`}>
+          <BookOpen className="mx-auto mb-3 text-[#0F8F83]" size={30} />
+          <h2 className="font-black text-xl mb-2">Find a drug quickly</h2>
+          <p className="text-sm opacity-65 leading-6">Start typing below, or pick a letter. The full formulary stays hidden until you ask for a specific search or alphabet section.</p>
         </div>
-        {interactionResults !== null && (
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 space-y-3">
-            {interactionResults.length === 0 ? (
-              <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">No known interactions found between these drugs in the database.</p>
-            ) : interactionResults.map((result, index) => (
-              <ClinicalItem key={index} item={result} darkMode={darkMode} />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
       <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
         <Search size={20} className={darkMode ? "text-slate-400" : "text-slate-500"} />
@@ -687,11 +683,6 @@ function LibraryTab(props) {
 
       {noActiveFilter && (
         <div className="space-y-4">
-          <div className={`${panelClass} text-center`}>
-            <BookOpen className="mx-auto mb-3 text-[#0F8F83]" size={30} />
-            <h2 className="font-black text-xl mb-2">Find a drug quickly</h2>
-            <p className="text-sm opacity-65 leading-6">Start typing above, or pick a letter. The full formulary stays hidden until you ask for a specific search or alphabet section.</p>
-          </div>
           <DrugChips title="Favourite Drugs" icon={<Star size={15} />} items={favourites} empty="Favourite drugs will appear here." onOpen={openMonograph} onRemove={handleToggleFav} darkMode={darkMode} />
           <DrugChips title="Recently Viewed" icon={<HistoryIcon size={15} />} items={recentlyViewed} empty="Opened monographs will appear here." onOpen={openMonograph} darkMode={darkMode} />
         </div>
@@ -961,7 +952,16 @@ function WarningGroup({ title, items, darkMode }) {
   );
 }
 
-function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcPatient, availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs, handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph }) {
+function CalculatorTab(props) {
+  const {
+    darkMode, panelClass, fieldClass,
+    calcPatient, setCalcPatient,
+    availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs,
+    handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph,
+    checkingInteractions, interactionResults,
+    showInteractionModal, setShowInteractionModal
+  } = props;
+
   const [calculatorSearch, setCalculatorSearch] = useState("");
   const filteredCalcDrugs = useMemo(() => {
     const q = normalise(calculatorSearch);
@@ -979,51 +979,59 @@ function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcP
 
   return (
     <div className="space-y-4">
+      {/* Interaction Warning Modal */}
+      <InteractionModal
+        open={showInteractionModal}
+        onClose={() => setShowInteractionModal(false)}
+        interactions={interactionResults || []}
+        darkMode={darkMode}
+      />
+
       <div className={panelClass}>
         <h2 className="font-black mb-4 flex items-center gap-2"><Syringe size={18} /> Patient Details</h2>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <input className={fieldClass} placeholder="Patient name" value={calcPatient.name} onChange={(event) => setCalcPatient({ ...calcPatient, name: event.target.value })} />
           <input className={fieldClass} type="number" placeholder="Weight kg" value={calcPatient.weight} onChange={(event) => setCalcPatient({ ...calcPatient, weight: event.target.value })} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-5">
           {["Dog", "Cat", "Rabbit"].map((species) => <button key={species} onClick={() => { setCalcPatient({ ...calcPatient, species }); setSelectedCalcDrugs([]); }} className={`flex-1 py-2 rounded-lg font-bold ${calcPatient.species === species ? "bg-[#71CFC2] text-[#071A24]" : darkMode ? "bg-white/10 text-slate-400" : "bg-slate-100 text-slate-500"}`}>{species}</button>)}
         </div>
-      </div>
 
-      <div className={panelClass}>
-        <h2 className="font-black mb-4 flex items-center gap-2"><Plus size={18} /> Add to Calculator</h2>
-        <div className="relative mb-3">
-          <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
-          <input
-            className={`${fieldClass} pl-10`}
-            placeholder="Search drugs by name..."
-            value={calculatorSearch}
-            onChange={(event) => setCalculatorSearch(event.target.value)}
-          />
-        </div>
-        {calculatorSearch.trim().length > 0 && (
-          <div className="space-y-2 mb-3">
-            {filteredCalcDrugs.length === 0 ? (
-              <p className="text-sm opacity-55">No matching drugs for {calcPatient.species}.</p>
-            ) : filteredCalcDrugs.map((drug) => (
-              <button
-                key={drug.id}
-                type="button"
-                onClick={() => addSearchDrug(drug)}
-                className={`w-full text-left rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-[#DCEDEA] bg-[#F9FCFB] hover:bg-[#F0F6F5]"}`}
-              >
-                <div className="font-black text-sm">{drug.name}</div>
-                <div className="text-xs opacity-60">
-                  {[drug.route || "General route", drug.dose_min || drug.dose_max ? `${drug.dose_min || drug.dose_max}${drug.dose_max && drug.dose_max !== drug.dose_min ? ` - ${drug.dose_max}` : ""} mg/kg` : "", drug.concentration ? `${drug.concentration} mg/ml` : ""].filter(Boolean).join(" | ")}
-                </div>
-              </button>
-            ))}
+        <div className="border-t border-slate-200 dark:border-white/10 pt-5 mt-5">
+          <h2 className="font-black mb-4 flex items-center gap-2"><Plus size={18} /> Add to Calculator</h2>
+          <div className="relative mb-3">
+            <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+            <input
+              className={`${fieldClass} pl-10`}
+              placeholder="Search drugs by name..."
+              value={calculatorSearch}
+              onChange={(event) => setCalculatorSearch(event.target.value)}
+            />
           </div>
-        )}
-        <select className={fieldClass} onChange={handleAddDrugToCalc} defaultValue="">
-          <option value="" disabled>Add single drug...</option>
-          {availableCalcDrugs.map((drug) => <option key={drug.id} value={drug.id}>{drug.name} ({drug.route || "General"})</option>)}
-        </select>
+          {calculatorSearch.trim().length > 0 && (
+            <div className="space-y-2 mb-3">
+              {filteredCalcDrugs.length === 0 ? (
+                <p className="text-sm opacity-55">No matching drugs for {calcPatient.species}.</p>
+              ) : filteredCalcDrugs.map((drug) => (
+                <button
+                  key={drug.id}
+                  type="button"
+                  onClick={() => addSearchDrug(drug)}
+                  className={`w-full text-left rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-[#DCEDEA] bg-[#F9FCFB] hover:bg-[#F0F6F5]"}`}
+                >
+                  <div className="font-black text-sm">{drug.name}</div>
+                  <div className="text-xs opacity-60">
+                    {[drug.route || "General route", drug.dose_min || drug.dose_max ? `${drug.dose_min || drug.dose_max}${drug.dose_max && drug.dose_max !== drug.dose_min ? ` - ${drug.dose_max}` : ""} mg/kg` : "", drug.concentration ? `${drug.concentration} mg/ml` : ""].filter(Boolean).join(" | ")}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          <select className={fieldClass} onChange={handleAddDrugToCalc} defaultValue="">
+            <option value="" disabled>Add single drug...</option>
+            {availableCalcDrugs.map((drug) => <option key={drug.id} value={drug.id}>{drug.name} ({drug.route || "General"})</option>)}
+          </select>
+        </div>
       </div>
 
       {selectedCalcDrugs.length > 0 && (
@@ -1058,6 +1066,60 @@ function CalculatorTab({ darkMode, panelClass, fieldClass, calcPatient, setCalcP
           <button onClick={saveToHistory} className="w-full mt-4 bg-[#71CFC2] text-[#062F63] rounded-lg p-3 font-bold flex justify-center items-center gap-2"><Save size={18} /> Log to History</button>
         </div>
       )}
+
+      {/* INTERACTION SECTION */}
+      <div className={panelClass}>
+        <h2 className="font-black mb-4 flex items-center gap-2"><AlertTriangle size={18} className="text-amber-500" /> Interaction Warnings</h2>
+        {selectedCalcDrugs.length < 2 ? (
+          <p className="text-sm opacity-55">Add more than one drug to check interactions.</p>
+        ) : checkingInteractions ? (
+          <div className="flex items-center gap-2 text-sm opacity-70"><Loader2 size={16} className="animate-spin" /> Checking interactions...</div>
+        ) : interactionResults && interactionResults.length > 0 ? (
+          <div className={`p-4 rounded-xl border ${darkMode ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+            <p className="text-amber-700 dark:text-amber-400 font-bold mb-3 flex items-center gap-2">
+              <AlertTriangle size={16} /> 
+              {interactionResults.length} known interaction{interactionResults.length > 1 ? 's' : ''} found between selected drugs.
+            </p>
+            <button
+              onClick={() => setShowInteractionModal(true)}
+              className="w-full bg-amber-200/50 hover:bg-amber-200 text-amber-800 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 dark:text-amber-300 transition rounded-lg p-3 font-bold text-sm"
+            >
+              View Interaction Details
+            </button>
+          </div>
+        ) : (
+          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">No known interactions found between these drugs in the database.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InteractionModal({ open, onClose, interactions, darkMode }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+      <div className={`w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl shadow-2xl relative ${darkMode ? "bg-[#0B242B] text-white" : "bg-[#F9FCFB] text-[#113247]"}`}>
+        <div className={`shrink-0 px-6 py-5 border-b flex justify-between items-center ${darkMode ? "border-white/10" : "border-slate-200"}`}>
+          <h3 className="font-black text-xl flex items-center gap-2 text-amber-500">
+            <AlertTriangle size={24} /> Interaction Warnings
+          </h3>
+          <button onClick={onClose} className={`p-2 rounded-full transition ${darkMode ? "bg-white/10 hover:bg-white/20" : "bg-slate-100 hover:bg-slate-200"}`}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-4">
+          {interactions.map((result, index) => (
+            <ClinicalItem key={index} item={result} darkMode={darkMode} />
+          ))}
+        </div>
+        <div className={`shrink-0 p-4 border-t ${darkMode ? "border-white/10" : "border-slate-200"}`}>
+          <button onClick={onClose} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] py-3 font-black">
+            Acknowledge & Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

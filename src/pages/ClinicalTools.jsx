@@ -11,7 +11,8 @@ import {
   HeartPulse,
   Search,
   ShieldAlert,
-  Syringe
+  Syringe,
+  AlertOctagon
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
@@ -28,6 +29,7 @@ const tabs = [
   { id: "transfusion", label: "Blood Transfusion", icon: HeartPulse },
   { id: "cri", label: "CRI Calculator", icon: Activity },
   { id: "toxicology", label: "Toxicology", icon: ShieldAlert },
+  { id: "interaction", label: "Interaction Checker", icon: AlertOctagon },
   { id: "history", label: "History 24h", icon: Clock }
 ];
 
@@ -83,7 +85,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   }, [user?.id]);
 
   const visibleTabs = useMemo(() => {
-    return tabs.filter((tab) => !["drug", "protocol"].includes(tab.id) || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
+    return tabs.filter((tab) => !["drug", "protocol", "interaction"].includes(tab.id) || canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess));
   }, [featureAccess, adminAccess]);
 
   useEffect(() => {
@@ -191,6 +193,7 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
           {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
           {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
+          {activeTab === "interaction" && <InteractionChecker darkMode={darkMode} user={user} />}
           {activeTab === "history" && <CalculationHistory rows={history} loading={historyLoading} darkMode={darkMode} onRefresh={loadCalculationHistory} />}
         </div>
       )}
@@ -382,6 +385,151 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
       )}
     </ToolShell>
   );
+}
+
+function InteractionChecker({ darkMode, user }) {
+    const [interactionDrugs, setInteractionDrugs] = useState([]);
+    const [interactionSearch, setInteractionSearch] = useState("");
+    const [interactionSearchResults, setInteractionSearchResults] = useState([]);
+    const [interactionLoading, setInteractionLoading] = useState(false);
+    const [interactionResults, setInteractionResults] = useState(null);
+    const [searchLoading, setSearchLoading] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        const query = interactionSearch.trim();
+
+        if (query.length < 2) {
+            setInteractionSearchResults([]);
+            setSearchLoading(false);
+            return undefined;
+        }
+
+        setSearchLoading(true);
+        const timer = window.setTimeout(async () => {
+            try {
+                const results = await drugService.searchCalculatorDrugs(query, user?.id);
+                if (!cancelled) setInteractionSearchResults(results);
+            } catch {
+                if (!cancelled) toast.error("Could not search drug database");
+            } finally {
+                if (!cancelled) setSearchLoading(false);
+            }
+        }, 250);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [interactionSearch, user?.id]);
+
+    useEffect(() => {
+        const checkInteractions = async () => {
+            if (interactionDrugs.length < 2) {
+                setInteractionResults(null);
+                return;
+            }
+            setInteractionLoading(true);
+            try {
+                const pairs = [];
+                for (let i = 0; i < interactionDrugs.length; i++) {
+                    for (let j = i + 1; j < interactionDrugs.length; j++) {
+                        pairs.push([interactionDrugs[i].name, interactionDrugs[j].name]);
+                    }
+                }
+
+                const orConditions = pairs.map(
+                    ([a, b]) => `and(drug_name.ilike.%${a}%,interacting_drug.ilike.%${b}%),and(drug_name.ilike.%${b}%,interacting_drug.ilike.%${a}%)`
+                ).join(",");
+
+                const { data, error } = await supabase
+                    .from("drug_interactions")
+                    .select("*")
+                    .or(orConditions);
+
+                if (error) throw error;
+                setInteractionResults(data || []);
+            } catch (err) {
+                console.error(err);
+                toast.error("Could not check interactions");
+            } finally {
+                setInteractionLoading(false);
+            }
+        };
+        checkInteractions();
+    }, [interactionDrugs]);
+
+    const addInteractionDrug = (drug) => {
+        if (!interactionDrugs.find((d) => d.id === drug.id)) {
+            setInteractionDrugs([...interactionDrugs, drug]);
+        }
+        setInteractionSearch("");
+        setInteractionSearchResults([]);
+    };
+
+    return (
+        <ToolShell
+            darkMode={darkMode}
+            title="Interaction Checker"
+            icon={<AlertOctagon size={20} />}
+            subtitle="Add two or more drugs to check for recorded interactions."
+        >
+            <div className="relative">
+                <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+                <input
+                    className={`${fieldClass(darkMode)} pl-10`}
+                    placeholder="Search drug to add to checker..."
+                    value={interactionSearch}
+                    onChange={(event) => setInteractionSearch(event.target.value)}
+                />
+                {(searchLoading || interactionSearchResults.length > 0) && (
+                    <div className={`absolute z-20 mt-2 w-full rounded-lg border overflow-hidden shadow-xl ${darkMode ? "bg-[#071A24] border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+                        {searchLoading && <div className="p-3 text-sm opacity-60">Searching...</div>}
+                        {!searchLoading && interactionSearchResults.map((drug) => (
+                            <button key={drug.id} type="button" onClick={() => addInteractionDrug(drug)} className={`w-full text-left p-3 border-b last:border-b-0 ${darkMode ? "border-white/10 hover:bg-white/10" : "border-[#DCEDEA] hover:bg-[#F0F6F5]"}`}>
+                                <div className="font-black text-sm">{drug.name}</div>
+                                <div className="text-xs opacity-60">
+                                    {[drug.species, drug.route, drug.category].filter(Boolean).join(" | ")}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {interactionDrugs.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                    {interactionDrugs.map((d) => (
+                        <span key={d.id} className={`px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                            {d.name} <button onClick={() => setInteractionDrugs(interactionDrugs.filter((i) => i.id !== d.id))} className="opacity-50 hover:opacity-100"><X size={14} /></button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/10">
+                <h3 className="font-black mb-4 flex items-center gap-2"><AlertTriangle className="text-amber-500" size={18} /> Interaction Warnings</h3>
+                
+                {interactionDrugs.length < 2 ? (
+                    <p className="text-sm opacity-60">Add another drug to check for interactions.</p>
+                ) : interactionLoading ? (
+                    <div className="flex items-center gap-2 text-sm opacity-70"><Loader2 size={16} className="animate-spin" /> Checking interactions...</div>
+                ) : interactionResults?.length > 0 ? (
+                    <div className="space-y-3">
+                        {interactionResults.map((warn, i) => (
+                            <div key={i} className={`p-4 rounded-lg border ${darkMode ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                                <p className="font-bold text-amber-700 dark:text-amber-400 mb-1">{warn.drug_name} + {warn.interacting_drug}</p>
+                                <p className="text-sm opacity-90">{warn.interaction || warn.mechanism || warn.recommendation || warn.notes}</p>
+                                {warn.severity && <p className="text-[10px] uppercase tracking-widest font-black text-amber-600 mt-2">Severity: {warn.severity}</p>}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No known interactions found between selected drugs.</p>
+                )}
+            </div>
+        </ToolShell>
+    );
 }
 
 function findCalculatorRowForDrug(rows, drug, species) {
