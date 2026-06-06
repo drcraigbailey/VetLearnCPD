@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, Crop, Crosshair, Loader2, RotateCcw, Search, Trash2, Undo2, Upload, X } from "lucide-react";
+import { AlertTriangle, Camera, Crop, Crosshair, Loader2, RotateCcw, Search, Trash2, Undo2, Upload, X, Plus, Minus } from "lucide-react";
 import { detectPillsFromImage } from "./pillCounterDetection";
 
 const buttonBase = "min-h-[44px] rounded-lg px-3 py-2 text-sm font-black transition flex items-center justify-center gap-2";
@@ -13,6 +13,7 @@ const detectionModes = [
 export default function PillCounter({ darkMode = false }) {
   const [imageUrl, setImageUrl] = useState("");
   const [markers, setMarkers] = useState([]);
+  const [numberCounted, setNumberCounted] = useState(0); // Replacing 'marked' concept
   const [detecting, setDetecting] = useState(false);
   const [detectionMode, setDetectionMode] = useState("normal");
   const [detectionMessage, setDetectionMessage] = useState("");
@@ -23,8 +24,14 @@ export default function PillCounter({ darkMode = false }) {
   const [cropStart, setCropStart] = useState(null);
   const [calibration, setCalibration] = useState(null);
   const [calibrationMode, setCalibrationMode] = useState(false);
+  
   const imageUrlRef = useRef("");
   const imageStageRef = useRef(null);
+
+  // Sync the external numberCounted state with the actual markers array length
+  useEffect(() => {
+    setNumberCounted(markers.length);
+  }, [markers]);
 
   useEffect(() => {
     imageUrlRef.current = imageUrl;
@@ -212,6 +219,10 @@ export default function PillCounter({ darkMode = false }) {
     setMarkers((current) => current.filter((marker) => marker.id !== markerId));
     setDetectionMessage("Marker removed. Tap the image to add another marker.");
   };
+  
+  // Fast Manual Override Handlers
+  const incrementCount = () => setNumberCounted(prev => prev + 1);
+  const decrementCount = () => setNumberCounted(prev => Math.max(0, prev - 1));
 
   const resetPhoto = () => {
     setImageUrl("");
@@ -230,12 +241,12 @@ export default function PillCounter({ darkMode = false }) {
       <div className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-[#0F8F83]">Tablet count</p>
+            <p className="text-xs font-black uppercase tracking-widest text-[#0F8F83]">Result</p>
             <p className="text-sm opacity-65 leading-6">Take a clear photo. VetLearn will mark likely tablets, then you can correct the count.</p>
           </div>
           <div className="text-center shrink-0">
-            <div className="text-5xl font-black text-[#00C978] leading-none">{markers.length}</div>
-            <div className="text-[11px] font-black uppercase tracking-widest opacity-55">Marked</div>
+            <div className="text-5xl font-black text-[#71CFC2] leading-none">{numberCounted}</div>
+            <div className="text-[11px] font-black uppercase tracking-widest opacity-55 text-[#0B3760] mt-1">Number Counted</div>
           </div>
         </div>
       </div>
@@ -252,6 +263,28 @@ export default function PillCounter({ darkMode = false }) {
           <input className="hidden" type="file" accept="image/*" onChange={handleImageSelection} />
         </label>
       </div>
+
+      {/* Manual Override Controls */}
+      {imageUrl && (
+        <div className="grid grid-cols-2 gap-2">
+           <button
+             type="button"
+             onClick={decrementCount}
+             className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+           >
+             <Minus size={16} />
+             Manual -1
+           </button>
+           <button
+             type="button"
+             onClick={incrementCount}
+             className={`${buttonBase} bg-[#71CFC2] text-[#062F63]`}
+           >
+             <Plus size={16} />
+             Manual +1
+           </button>
+        </div>
+      )}
 
       {imageUrl ? (
         <>
@@ -398,7 +431,7 @@ export default function PillCounter({ darkMode = false }) {
                 key={marker.id}
                 type="button"
                 onClick={(event) => removeMarker(event, marker.id)}
-                className={`absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white text-[#062F63] text-xs font-black shadow-[0_0_0_4px_rgba(0,201,120,0.25)] ${marker.source === "manual" ? "bg-[#71CFC2]" : marker.source === "auto-split" ? "bg-amber-300" : "bg-[#00C978]"}`}
+                className={`absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white text-[#062F63] text-xs font-black shadow-[0_0_0_4px_rgba(0,201,120,0.25)] ${marker.source === "manual" ? "bg-[#71CFC2]" : marker.source === "auto-split" ? "bg-amber-300" : "bg-[#71CFC2]"}`}
                 style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
                 aria-label={`Remove tablet marker ${index + 1}`}
               >
@@ -428,8 +461,8 @@ export default function PillCounter({ darkMode = false }) {
             </button>
             <button
               type="button"
-              onClick={() => { setMarkers([]); setDetectionMessage("Markers reset. Tap the image or run detection again."); }}
-              disabled={markers.length === 0}
+              onClick={() => { setMarkers([]); setDetectionMessage("Markers reset. Tap the image or run detection again."); setNumberCounted(0); }}
+              disabled={markers.length === 0 && numberCounted === 0}
               className={`${buttonBase} ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"} disabled:opacity-40`}
             >
               <RotateCcw size={16} />
