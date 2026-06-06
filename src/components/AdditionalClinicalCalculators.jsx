@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Syringe } from "lucide-react";
+import { ToolTile, ToolTileGrid } from "./VetLearnUI";
 
 const calculators = [
   { id: "energy", label: "Energy", icon: Flame },
@@ -74,26 +75,18 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {calculators.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => selectCalculator(item.id)}
-              className={`rounded-lg p-3 min-h-[76px] text-xs font-black flex flex-col items-center justify-center gap-2 transition ${
-                active === item.id
-                  ? "bg-[#71CFC2] text-[#062F63] shadow-md"
-                  : darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]"
-              }`}
-              aria-pressed={active === item.id}
-            >
-              <Icon size={18} />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+      <ToolTileGrid className="grid-cols-3">
+        {calculators.map((item) => (
+          <ToolTile
+            key={item.id}
+            icon={item.icon}
+            title={item.label}
+            active={active === item.id}
+            darkMode={darkMode}
+            onClick={() => selectCalculator(item.id)}
+          />
+        ))}
+      </ToolTileGrid>
 
       <div ref={resultRef} className={`scroll-mt-24 rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
         <div className="flex items-center gap-2 mb-4">

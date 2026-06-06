@@ -11,6 +11,7 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [setupMissing, setSetupMissing] = useState(false);
 
   const selectedUser = users.find(item => item.user_id === selectedUserId);
   const filteredUsers = useMemo(() => {
@@ -28,18 +29,33 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
   const loadAnalytics = async () => {
     setLoading(true);
     setError("");
+    setSetupMissing(false);
     const { data, error: rpcError } = await supabase.rpc("admin_activity_analytics", {
       target_user_id: selectedUserId || null
     });
 
     if (rpcError) {
-      setError("Run the updated admin activity analytics SQL to unlock full usage charts.");
-      setAnalytics(buildFallbackAnalytics(initialLogs, selectedUserId));
+      if (import.meta.env.DEV) console.error("admin_activity_analytics failed", rpcError);
+      const directResult = await loadDirectActivityFallback(selectedUserId, initialLogs);
+      if (directResult.error) {
+        if (import.meta.env.DEV) console.error("Direct site analytics fallback failed", directResult.error);
+        const missingSetup = isMissingAnalyticsSetup(directResult.error) || isMissingAnalyticsSetup(rpcError);
+        setSetupMissing(missingSetup);
+        setError(
+          missingSetup
+            ? "Site Analytics setup is incomplete. Run supabase/site_analytics_setup.sql in the Supabase SQL Editor, then reload this page."
+            : "Site Analytics could not be loaded. Check the browser console and Supabase logs for the admin analytics error."
+        );
+        setAnalytics(buildFallbackAnalytics(initialLogs, selectedUserId));
+      } else {
+        setError("The analytics RPC is unavailable, so page activity is being shown directly. Run supabase/site_analytics_setup.sql to restore all charts.");
+        setAnalytics(directResult.analytics);
+      }
       setLoading(false);
       return;
     }
 
-    setAnalytics(data || buildFallbackAnalytics(initialLogs, selectedUserId));
+    setAnalytics(normaliseAnalytics(data) || buildFallbackAnalytics(initialLogs, selectedUserId));
     setLoading(false);
   };
 
@@ -51,6 +67,10 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
   const pageVisits = analytics?.page_visits || [];
   const timeBySection = analytics?.time_by_section || [];
   const fileUploadsByContext = analytics?.file_uploads_by_context || [];
+  const hasRecordedAnalytics = Number(facts.page_visits || 0) > 0
+    || Number(facts.file_uploads || 0) > 0
+    || Number(facts.audit_events || 0) > 0
+    || sectionUsage.some(item => Number(item.value || 0) > 0);
 
   return (
     <div className="space-y-5">
@@ -95,9 +115,23 @@ export default function AdminActivityExplorer({ panelClass, darkMode, users = []
           </div>
         )}
 
-        {error && <p className="mt-3 text-xs font-bold text-orange-500">{error}</p>}
+        {error && (
+          <div className={`mt-3 rounded-lg border p-3 text-xs font-bold leading-5 ${setupMissing ? "border-orange-300/40 text-orange-500" : darkMode ? "border-white/10 bg-white/5 text-slate-200" : "border-[#DCEDEA] bg-[#F9FCFB] text-[#113247]"}`}>
+            {error}
+          </div>
+        )}
         {loading && <p className="mt-3 text-sm opacity-60">Loading analytics...</p>}
       </section>
+
+      {!loading && !error && !hasRecordedAnalytics && (
+        <section className={panelClass}>
+          <div className="py-8 text-center">
+            <Eye className="mx-auto mb-3 opacity-35" size={28} />
+            <h2 className="font-black text-lg">No site analytics recorded yet</h2>
+            <p className="mt-1 text-sm opacity-60 leading-6">Navigate around the app while signed in, then return here after a few page changes.</p>
+          </div>
+        </section>
+      )}
 
       <section className={panelClass}>
         <h2 className="text-xl font-black mb-4">Site Facts</h2>
@@ -280,6 +314,96 @@ function AuditDetails({ details, detailClass }) {
       ))}
     </div>
   );
+}
+
+async function loadDirectActivityFallback(selectedUserId, initialLogs) {
+  let activityQuery = supabase
+    .from("site_activity_events")
+    .select("user_id,path,title,section,duration_seconds,created_at")
+    .order("created_at", { ascending: false })
+    .limit(2000);
+  let uploadQuery = supabase
+    .from("file_upload_events")
+    .select("user_id,file_size,context,created_at")
+    .order("created_at", { ascending: false })
+    .limit(2000);
+
+  if (selectedUserId) {
+    activityQuery = activityQuery.eq("user_id", selectedUserId);
+    uploadQuery = uploadQuery.eq("user_id", selectedUserId);
+  }
+
+  const [activityResult, uploadResult] = await Promise.all([activityQuery, uploadQuery]);
+  if (activityResult.error) return { error: activityResult.error, analytics: null };
+  if (uploadResult.error && !isMissingAnalyticsSetup(uploadResult.error)) return { error: uploadResult.error, analytics: null };
+
+  const activityRows = activityResult.data || [];
+  const uploadRows = uploadResult.data || [];
+  const scopedLogs = selectedUserId
+    ? initialLogs.filter(log => log.target_user_id === selectedUserId || log.admin_user_id === selectedUserId)
+    : initialLogs;
+  const pageVisits = groupCounts(activityRows.map(row => row.title || row.path || "Unknown page"));
+  const timeBySection = groupSums(activityRows, row => row.section || "Other", row => Number(row.duration_seconds || 0));
+  const fileUploadsByContext = groupCounts(uploadRows.map(row => row.context || "General"));
+  const sectionUsage = groupCounts(activityRows.map(row => row.section || "Other"));
+
+  return {
+    error: null,
+    analytics: {
+      facts: {
+        page_visits: activityRows.length,
+        total_time_seconds: activityRows.reduce((sum, row) => sum + Number(row.duration_seconds || 0), 0),
+        file_uploads: uploadRows.length,
+        uploaded_bytes: uploadRows.reduce((sum, row) => sum + Number(row.file_size || 0), 0),
+        network_connections: 0,
+        messages: 0,
+        audit_events: scopedLogs.length
+      },
+      section_usage: sectionUsage,
+      calculator_usage: [],
+      audit_category_usage: groupCounts(scopedLogs.map(log => actionCategory(log.action))),
+      page_visits: pageVisits,
+      time_by_section: timeBySection,
+      file_uploads_by_context: fileUploadsByContext,
+      audit_logs: scopedLogs
+    }
+  };
+}
+
+function normaliseAnalytics(data) {
+  if (!data || typeof data !== "object") return null;
+  return {
+    facts: data.facts || {},
+    section_usage: Array.isArray(data.section_usage) ? data.section_usage : [],
+    calculator_usage: Array.isArray(data.calculator_usage) ? data.calculator_usage : [],
+    audit_category_usage: Array.isArray(data.audit_category_usage) ? data.audit_category_usage : [],
+    page_visits: Array.isArray(data.page_visits) ? data.page_visits : [],
+    time_by_section: Array.isArray(data.time_by_section) ? data.time_by_section : [],
+    file_uploads_by_context: Array.isArray(data.file_uploads_by_context) ? data.file_uploads_by_context : [],
+    audit_logs: Array.isArray(data.audit_logs) ? data.audit_logs : []
+  };
+}
+
+function isMissingAnalyticsSetup(error) {
+  const message = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
+  return message.includes("42p01")
+    || message.includes("42883")
+    || message.includes("pgrst202")
+    || message.includes("does not exist")
+    || message.includes("could not find the function")
+    || message.includes("schema cache");
+}
+
+function groupSums(rows, nameGetter, valueGetter) {
+  const totals = rows.reduce((acc, row) => {
+    const name = nameGetter(row) || "Other";
+    acc[name] = (acc[name] || 0) + Number(valueGetter(row) || 0);
+    return acc;
+  }, {});
+  return Object.entries(totals)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
 }
 
 function buildFallbackAnalytics(logs, selectedUserId) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Eye, EyeOff, KeyRound, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
@@ -18,6 +18,7 @@ export default function Vault({ user, darkMode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const formRef = useRef(null);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -27,8 +28,8 @@ export default function Vault({ user, darkMode }) {
     ? "bg-white/10 text-slate-100 hover:bg-white/15"
     : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]";
   const dangerButtonClass = darkMode
-    ? "bg-red-500/15 text-red-200 hover:bg-red-500/25"
-    : "bg-red-50 text-red-600 hover:bg-red-100";
+    ? "bg-transparent text-red-400 hover:bg-red-500/10"
+    : "bg-transparent text-red-600 hover:bg-red-50";
 
   useEffect(() => {
     if (user) loadEntries();
@@ -44,6 +45,12 @@ export default function Vault({ user, darkMode }) {
 
   const updateForm = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
+  const scrollToForm = () => {
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
@@ -54,6 +61,7 @@ export default function Vault({ user, darkMode }) {
     setForm(emptyForm);
     setEditingId(null);
     setFormOpen(true);
+    scrollToForm();
   };
 
   const saveEntry = async () => {
@@ -95,7 +103,7 @@ export default function Vault({ user, darkMode }) {
       category: entry.category || "Custom"
     });
     setFormOpen(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToForm();
   };
 
   const deleteEntry = async (id) => {
@@ -152,7 +160,7 @@ export default function Vault({ user, darkMode }) {
       </section>
 
       {formOpen && (
-        <section className={panelClass}>
+        <section ref={formRef} className={`${panelClass} scroll-mt-28`}>
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-black">{editingId ? "Edit Vault Entry" : "Add New Entry"}</h2>
@@ -200,8 +208,8 @@ export default function Vault({ user, darkMode }) {
                 <p className="text-xs opacity-60">{entry.category} | Updated {new Date(entry.updated_at || entry.created_at).toLocaleDateString()}</p>
               </div>
               <div className="flex gap-1 shrink-0">
-                <button onClick={() => editEntry(entry)} className={`p-2 rounded-lg ${quietButtonClass}`}><Pencil size={16} /></button>
-                <button onClick={() => deleteEntry(entry.id)} className={`p-2 rounded-lg ${dangerButtonClass}`}><Trash2 size={16} /></button>
+                <button onClick={() => editEntry(entry)} className={`p-2 rounded-lg ${quietButtonClass}`} aria-label="Edit"><Pencil size={16} /></button>
+                <button onClick={() => deleteEntry(entry.id)} className={`p-2 rounded-lg ${dangerButtonClass}`} aria-label="Delete"><Trash2 size={16} /></button>
               </div>
             </div>
 

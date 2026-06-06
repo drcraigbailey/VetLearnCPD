@@ -1,9 +1,9 @@
 import { supabase } from "../supabaseClient";
 
 export const logSiteActivity = async ({ userId, path, title, section, startedAt, endedAt, durationSeconds }) => {
-  if (!userId || !path) return;
+  if (!userId || !path) return { error: null };
 
-  await supabase.from("site_activity_events").insert({
+  const { error } = await supabase.from("site_activity_events").insert({
     user_id: userId,
     path,
     title: title || path,
@@ -12,18 +12,38 @@ export const logSiteActivity = async ({ userId, path, title, section, startedAt,
     ended_at: endedAt,
     duration_seconds: Math.max(0, Math.round(durationSeconds || 0)),
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null
-  }).then(() => {});
+  });
+
+  if (error && import.meta.env.DEV) {
+    console.warn("Site activity was not recorded", {
+      code: error.code,
+      message: error.message,
+      path
+    });
+  }
+
+  return { error };
 };
 
 export const logFileUpload = async ({ userId, file, context, storagePath }) => {
-  if (!userId || !file) return;
+  if (!userId || !file) return { error: null };
 
-  await supabase.from("file_upload_events").insert({
+  const { error } = await supabase.from("file_upload_events").insert({
     user_id: userId,
     file_name: file.name || "Uploaded file",
     file_type: file.type || null,
     file_size: file.size || null,
     context: context || "general",
     storage_path: storagePath || null
-  }).then(() => {});
+  });
+
+  if (error && import.meta.env.DEV) {
+    console.warn("File upload activity was not recorded", {
+      code: error.code,
+      message: error.message,
+      context
+    });
+  }
+
+  return { error };
 };
