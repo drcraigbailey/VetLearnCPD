@@ -115,9 +115,16 @@
   color: #123c3a !important;
 }
 
-/* Display the requested final menu label without changing its tab ID or behaviour. */
+/* Display the requested menu labels without changing tab IDs or behaviour. */
+.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide:has(.lucide-user-round):has(.lucide-sparkles) > button:has(.lucide-user-round),
 .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide:has(.lucide-user-round):has(.lucide-sparkles) > button:has(.lucide-file-text) {
   font-size: 0 !important;
+}
+
+.flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide:has(.lucide-user-round):has(.lucide-sparkles) > button:has(.lucide-user-round)::after {
+  content: "Profile & Contact Information";
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .flex.overflow-x-auto.gap-2.mb-6.pb-2.scrollbar-hide:has(.lucide-user-round):has(.lucide-sparkles) > button:has(.lucide-file-text)::after {
