@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Camera, Crop, Crosshair, Loader2, RotateCcw, Search, Trash2, Undo2, Upload, X, Plus, Minus } from "lucide-react";
-import { detectPillsFromImage } from "./pillCounterDetection";
+// Swapped the old pixel-based detector for the new YOLO-based vision engine
+import { detectPillsWithYOLO } from "./yoloDetection";
 
 const buttonBase = "min-h-[44px] rounded-lg px-3 py-2 text-sm font-black transition flex items-center justify-center gap-2";
 
@@ -49,15 +50,17 @@ export default function PillCounter({ darkMode = false }) {
     let cancelled = false;
     const runInitialDetection = async () => {
       setDetecting(true);
-      setDetectionMessage("Scanning image...");
+      setDetectionMessage("Initializing Vision Engine...");
       try {
-        const result = await detectPillsFromImage(imageUrl, detectionMode, crop, calibration);
+        // Wired to the new YOLO engine. Passing crop/calibration for future compatibility.
+        const result = await detectPillsWithYOLO(imageUrl, detectionMode, crop, calibration);
         if (cancelled || imageUrlRef.current !== imageUrl) return;
         setMarkers(result.markers);
-        setQualityWarnings(result.warnings);
+        setQualityWarnings(result.warnings || []);
         setDetectionMessage(formatDetectionMessage(result.markers.length, detectionMode));
       } catch (error) {
         if (!cancelled) setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
+        console.error(error);
       } finally {
         if (!cancelled) setDetecting(false);
       }
@@ -82,7 +85,7 @@ export default function PillCounter({ darkMode = false }) {
     setCropMode(false);
     setCalibration(null);
     setCalibrationMode(false);
-    setDetectionMessage("Scanning image...");
+    setDetectionMessage("Loading image...");
     event.target.value = "";
   };
 
@@ -90,15 +93,17 @@ export default function PillCounter({ darkMode = false }) {
     if (!imageUrl) return;
 
     setDetecting(true);
-    setDetectionMessage("Scanning image...");
+    setDetectionMessage("Running YOLO scan...");
     try {
-      const result = await detectPillsFromImage(imageUrl, detectionMode, crop, calibration);
+      // Wired to the new YOLO engine
+      const result = await detectPillsWithYOLO(imageUrl, detectionMode, crop, calibration);
       if (imageUrlRef.current !== imageUrl) return;
       setMarkers(result.markers);
-      setQualityWarnings(result.warnings);
+      setQualityWarnings(result.warnings || []);
       setDetectionMessage(formatDetectionMessage(result.markers.length, detectionMode));
     } catch (error) {
       setDetectionMessage("Could not auto-detect this image. Tap tablets to mark them manually.");
+      console.error(error);
     } finally {
       setDetecting(false);
     }
@@ -492,7 +497,7 @@ export default function PillCounter({ darkMode = false }) {
 
 function formatDetectionMessage(count, mode) {
   const modeLabel = detectionModes.find((item) => item.id === mode)?.label || "Normal";
-  if (count === 0) return `${modeLabel} scan found no clear tablets. Try Sensitive mode, a plainer background, or tap tablets manually.`;
+  if (count === 0) return `${modeLabel} scan found no clear tablets. Try a plainer background or tap tablets manually.`;
   if (count === 1) return `${modeLabel} scan found 1 likely tablet. Check the marker before relying on the count.`;
   return `${modeLabel} scan found ${count} likely tablets. Check the markers before relying on the count.`;
 }
