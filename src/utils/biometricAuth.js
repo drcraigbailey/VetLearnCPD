@@ -125,7 +125,6 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId, { relink
   if (userId) {
     localStorage.removeItem(enabledKey(userId));
     if (relink) {
-      localStorage.removeItem(loginEnabledKey);
       requestRelinkAfterPasswordLogin(userId);
     } else {
       clearLoginHint(userId);
@@ -134,6 +133,13 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId, { relink
     localStorage.removeItem(loginEnabledKey);
     localStorage.removeItem(lastUserKey);
   }
+};
+
+const markBiometricReady = (user) => {
+  localStorage.setItem(enabledKey(user.id), "true");
+  localStorage.removeItem(relinkAfterPasswordKey);
+  saveLoginHint(user);
+  window.dispatchEvent(new Event("biometricSettingsUpdated"));
 };
 
 const restoreSupabaseSession = async (biometricPlugin, credentials) => {
@@ -221,32 +227,41 @@ export const syncBiometricSession = async (user, session) => {
 
   try {
     await saveNativeSessionCredentials(biometricPlugin, user, session);
-    localStorage.setItem(enabledKey(user.id), "true");
-    localStorage.removeItem(relinkAfterPasswordKey);
-    saveLoginHint(user);
-    window.dispatchEvent(new Event("biometricSettingsUpdated"));
+    markBiometricReady(user);
   } catch {
     // The app can still run normally; re-enable biometric login in Settings if needed.
   }
 };
 
-export const registerBiometric = async (user) => {
+export const refreshBiometricAfterPasswordLogin = async (user, session) => {
+  if (!user?.id || !session?.access_token || !session?.refresh_token) return false;
+  if (localStorage.getItem(relinkAfterPasswordKey) !== String(user.id) && !isBiometricEnabled(user.id)) return false;
+
+  const biometricPlugin = loadNativeBiometric();
+  if (!biometricPlugin) return false;
+
+  const result = await biometricPlugin.isAvailable();
+  if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
+
+  await saveNativeSessionCredentials(biometricPlugin, user, session);
+  markBiometricReady(user);
+  return true;
+};
+
+export const registerBiometric = async (user, providedSession = null) => {
   const biometricPlugin = loadNativeBiometric();
   if (biometricPlugin) {
     const result = await biometricPlugin.isAvailable();
     if (!result?.isAvailable) throw new Error("Fingerprint or Face ID is not available on this device.");
 
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session;
+    const session = providedSession || (await supabase.auth.getSession()).data?.session;
     if (!session?.access_token || !session?.refresh_token) {
       throw new Error("Please sign in again before enabling fingerprint login.");
     }
 
     await verifyNativeIdentity(biometricPlugin);
     await saveNativeSessionCredentials(biometricPlugin, user, session);
-    localStorage.setItem(enabledKey(user.id), "true");
-    localStorage.removeItem(relinkAfterPasswordKey);
-    saveLoginHint(user);
+    markBiometricReady(user);
     return true;
   }
 
@@ -278,8 +293,7 @@ export const registerBiometric = async (user) => {
 
   if (!credential?.rawId) throw new Error("Fingerprint setup was cancelled.");
   localStorage.setItem(credentialKey(user.id), bufferToBase64Url(credential.rawId));
-  localStorage.setItem(enabledKey(user.id), "true");
-  saveLoginHint(user);
+  markBiometricReady(user);
   return true;
 };
 
