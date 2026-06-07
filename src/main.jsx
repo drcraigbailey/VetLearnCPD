@@ -1,13 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './privacyMode.css'
 import App from './App.jsx'
 import { registerPwaUpdates } from './pwaUpdate.js'
-import { initPrivacyModeRuntime } from './utils/privacyMode.js'
 
 registerPwaUpdates()
-initPrivacyModeRuntime()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
