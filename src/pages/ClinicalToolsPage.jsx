@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Calculator, ClipboardList, Pill } from "lucide-react";
+import { Calculator, ClipboardList, Pill } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
@@ -20,6 +20,13 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   // Ignores leaky fallbacks and guarantees it only shows if the payload explicitly says TRUE
   const canUsePillCount = featureAccess && featureAccess[featureKeys.pillCount] === true;
 
+  const scrollToAdditionalCalculators = () => {
+    setActiveSection("calculators");
+    window.setTimeout(() => {
+      additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
   // ACCESS PROTECTION
   useEffect(() => {
     if (!canUseProtocols && activeSection === "protocols") {
@@ -36,7 +43,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
     const refreshDoseControls = () => {
       enhanceDoseControls(root, darkMode);
-      syncCalculatorTileScrolling(root);
+      syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode);
     };
     refreshDoseControls();
 
@@ -52,25 +59,8 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
     };
   }, [darkMode]);
 
-  const scrollToAdditionalCalculators = () => {
-    setActiveSection("calculators");
-    window.setTimeout(() => {
-      additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-  };
-
-  const handleSectionChange = (sectionId) => {
-    if (sectionId === "additionalCalculators") {
-      scrollToAdditionalCalculators();
-      return;
-    }
-
-    setActiveSection(sectionId);
-  };
-
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
-    { id: "additionalCalculators", label: "Additional Calculators", icon: Activity },
     ...(canUsePillCount ? [{ id: "pillCounter", label: "Pill Count", icon: Pill }] : []),
     ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
   ];
@@ -84,7 +74,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
         badges={[{ label: "Clinical workspace", icon: <Calculator size={14} />, accent: true }]}
       />
 
-      <PageToolbar items={sectionTabs} activeId={activeSection} onChange={handleSectionChange} darkMode={darkMode} />
+      <PageToolbar items={sectionTabs} activeId={activeSection} onChange={setActiveSection} darkMode={darkMode} />
 
       {activeSection === "calculators" && (
         <>
@@ -114,11 +104,38 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   );
 }
 
-function syncCalculatorTileScrolling(root) {
+function syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode) {
   const calculatorTiles = root.querySelector(".flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide");
   if (!calculatorTiles || !calculatorTiles.querySelector(".lucide-syringe") || !calculatorTiles.querySelector(".lucide-droplets")) return;
 
+  let additionalShortcut = calculatorTiles.querySelector('[data-additional-calculator-shortcut="true"]');
+  if (!additionalShortcut) {
+    additionalShortcut = document.createElement("button");
+    additionalShortcut.type = "button";
+    additionalShortcut.dataset.additionalCalculatorShortcut = "true";
+    additionalShortcut.dataset.scrollEnhanced = "true";
+    additionalShortcut.setAttribute("aria-label", "Go to additional calculators");
+    calculatorTiles.appendChild(additionalShortcut);
+  }
+
+  additionalShortcut.className = `px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 shrink-0 ${darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`;
+  additionalShortcut.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2v20" />
+      <path d="M2 12h20" />
+      <path d="m19 5-3 3" />
+      <path d="m5 19 3-3" />
+    </svg>
+    <span>Additional Calculators</span>
+  `;
+
+  if (additionalShortcut.dataset.additionalClickBound !== "true") {
+    additionalShortcut.dataset.additionalClickBound = "true";
+    additionalShortcut.addEventListener("click", scrollToAdditionalCalculators);
+  }
+
   calculatorTiles.querySelectorAll("button").forEach((button) => {
+    if (button.dataset.additionalCalculatorShortcut === "true") return;
     if (button.dataset.scrollEnhanced === "true") return;
     button.dataset.scrollEnhanced = "true";
     button.addEventListener("click", () => {
