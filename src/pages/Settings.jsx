@@ -259,152 +259,100 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: user.id,
       avatar_url: avatarUrl,
-      email: profileForm.email || user.email,
       updated_at: new Date().toISOString()
-    }, { onConflict: "id" });
+    });
 
-    setUploadingAvatar(false);
-    if (profileError) {
-      toast.error("Image uploaded, but profile could not be updated");
-      return;
+    if (profileError) toast.error("Avatar uploaded but profile could not be updated");
+    else {
+      updateProfile("avatar_url", avatarUrl);
+      window.dispatchEvent(new Event("profileUpdated"));
+      toast.success("Profile image updated");
     }
-
-    updateProfile("avatar_url", avatarUrl);
-    window.dispatchEvent(new Event("profileUpdated"));
-    toast.success("Profile image uploaded");
+    setUploadingAvatar(false);
   };
 
   const saveProfile = async () => {
     setSaving(true);
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      ...profileForm,
-      email: profileForm.email || user.email,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "id" });
-
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...profileForm, updated_at: new Date().toISOString() });
     setSaving(false);
-    if (error) return toast.error("Could not save profile. Please run the latest Supabase SQL update.");
+    if (error) return toast.error("Could not save profile");
     window.dispatchEvent(new Event("profileUpdated"));
     toast.success("Profile saved");
   };
 
   const savePreferences = async () => {
-    const targetHours = Number(appPrefs.cpdTargetHours);
-    if (!Number.isFinite(targetHours) || targetHours <= 0 || targetHours > 1000) {
-      toast.error("Add a valid CPD target in hours");
-      return;
-    }
-
-    const cleanedAppPrefs = { ...appPrefs, cpdTargetHours: targetHours };
     setSaving(true);
-    const { error } = await persistPreferences(aiPrefs, cleanedAppPrefs);
-
+    const { error } = await persistPreferences();
     setSaving(false);
-    if (error) return toast.error("Could not save preferences. Please run the latest Supabase SQL update.");
-    setAppPrefs(cleanedAppPrefs);
+    if (error) return toast.error("Could not save preferences");
     toast.success("Preferences saved");
   };
 
   const tabs = [
     { id: "profile", label: "Profile", icon: UserRound },
-    { id: "professional", label: "Professional", icon: GraduationCap },
+    { id: "professional", label: "Professional", icon: Briefcase },
     { id: "ai", label: "AI", icon: Sparkles },
-    { id: "app", label: "App", icon: Shield },
-    { id: "docs", label: "Privacy and Settings", icon: FileText }
+    { id: "app", label: "App", icon: Lock },
+    { id: "docs", label: "Privacy", icon: FileText }
   ];
+
+  if (loading) return <div className="py-16 text-center font-bold opacity-60">Loading settings...</div>;
 
   return (
     <div className="pb-8">
-      <PageBanner title="Settings" subtitle="Manage your profile, professional details, AI preferences, documents and account settings." darkMode={darkMode} />
-
-      {aiApiPromptOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
-          <div className={`w-full max-w-md rounded-lg border p-5 shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-[#DCEDEA] bg-white text-[#0B3760]"}`}>
-            <div className="flex items-start gap-3">
-              <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} h-10 w-10 rounded-lg grid place-items-center shrink-0`}>
-                <KeyRound size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-black">Add your OpenAI API key</h3>
-                <p className="mt-1 text-sm opacity-70 leading-6">
-                  AI features use your own API key. It is saved for your account on this device, then AI can be enabled.
-                </p>
-              </div>
-            </div>
-            <input
-              className={fieldClass}
-              type="password"
-              placeholder="OpenAI API key"
-              value={aiApiKeyInput}
-              onChange={(event) => setAiApiKeyInput(event.target.value)}
-              autoFocus
-            />
-            <p className="text-xs opacity-60 leading-5 -mt-1">
-              {isAiApiKeyStoredSecurely() ? "This device supports secure credential storage." : "In this browser, the key is stored locally on this device."}
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={() => { setAiApiPromptOpen(false); setAiApiKeyInput(""); }} disabled={aiApiKeyBusy} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
-                Cancel
-              </button>
-              <button
-                onClick={() => saveAiApiKey({ enableAfterSave: true })}
-                disabled={aiApiKeyBusy || !aiApiKeyInput.trim()}
-                className="rounded-lg bg-[#71CFC2] p-3 text-sm font-black text-[#062F63] disabled:bg-slate-300 disabled:text-slate-500"
-              >
-                {aiApiKeyBusy ? "Saving..." : "Save and enable"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <PageBanner title="Settings" subtitle="Manage your profile, preferences and documents." darkMode={darkMode} />
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
         {tabs.map(tab => {
           const Icon = tab.icon;
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63] shadow-md" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm flex items-center gap-2 ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
               <Icon size={15} /> {tab.label}
             </button>
           );
         })}
       </div>
 
-      {loading ? <div className={panelClass}>Loading settings...</div> : (
+      {aiApiPromptOpen && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
+            <h3 className="text-xl font-black mb-2">Add your OpenAI API key</h3>
+            <p className="text-sm opacity-70 leading-6 mb-4">AI features use your own key. It is saved securely where supported, with local encrypted fallback on this device.</p>
+            <input className={fieldClass} type="password" placeholder="OpenAI API key" value={aiApiKeyInput} onChange={(e) => setAiApiKeyInput(e.target.value)} />
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button onClick={() => setAiApiPromptOpen(false)} disabled={aiApiKeyBusy} className={`rounded-lg p-3 font-black ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>Cancel</button>
+              <button onClick={() => saveAiApiKey({ enableAfterSave: true })} disabled={aiApiKeyBusy || !aiApiKeyInput.trim()} className="rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black disabled:opacity-50">
+                {aiApiKeyBusy ? "Saving..." : "Save & enable"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div>Loading...</div> : (
         <div className="space-y-5">
           {activeTab === "profile" && (
             <section className={panelClass}>
-              <SectionTitle icon={<UserRound size={20} />} title="Profile & Contact Information" subtitle="Shown on your dashboard, CPD records and shared professional areas." darkMode={darkMode} />
-              <div className="grid gap-3">
-                <div className={`rounded-lg p-4 flex items-center gap-4 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
-                  <div className="h-20 w-20 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center text-2xl font-black shrink-0 overflow-hidden">
-                    {profileForm.avatar_url ? <img src={profileForm.avatar_url} alt="Profile" className="h-full w-full object-cover" /> : <ImageIcon size={28} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm mb-1">Profile image</p>
-                    <p className="text-xs opacity-60 mb-3">Upload a small JPG, PNG, WebP or GIF under 2 MB.</p>
-                    <label className="inline-flex items-center gap-2 rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black cursor-pointer">
-                      {uploadingAvatar ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-                      {uploadingAvatar ? "Uploading..." : "Upload Image"}
-                      <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploadingAvatar} />
-                    </label>
-                  </div>
+              <SectionTitle icon={<UserRound size={20} />} title="Profile" subtitle="Your professional identity across VetLearn." darkMode={darkMode} />
+              <div className="flex items-center gap-4 mb-5">
+                <div className="h-20 w-20 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center overflow-hidden text-2xl font-black shrink-0">
+                  {profileForm.avatar_url ? <img src={profileForm.avatar_url} alt="Profile" className="h-full w-full object-cover" /> : (profileForm.full_name || user.email || "V").charAt(0).toUpperCase()}
                 </div>
-                <div className="grid grid-cols-[100px_1fr] gap-3">
-                  <input className={fieldClass} placeholder="Title" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} />
-                  <input className={fieldClass} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} />
-                </div>
-                <input className={fieldClass} placeholder="Practice / organisation" value={profileForm.practice_name} onChange={(e) => updateProfile("practice_name", e.target.value)} />
-                <InputWithIcon icon={<MapPin size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Location" value={profileForm.location} onChange={(e) => updateProfile("location", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Mail size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Email address" value={profileForm.email} onChange={(e) => updateProfile("email", e.target.value)} /></InputWithIcon>
-                <div className="grid grid-cols-2 gap-3">
-                  <InputWithIcon icon={<Phone size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Phone" value={profileForm.phone} onChange={(e) => updateProfile("phone", e.target.value)} /></InputWithIcon>
-                  <InputWithIcon icon={<Phone size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Mobile" value={profileForm.mobile} onChange={(e) => updateProfile("mobile", e.target.value)} /></InputWithIcon>
-                </div>
-                <InputWithIcon icon={<Globe size={16} />}><input className={`${fieldClass} pl-10`} placeholder="Website" value={profileForm.website} onChange={(e) => updateProfile("website", e.target.value)} /></InputWithIcon>
-                <textarea className={fieldClass} rows="3" placeholder="Biography / About me" value={profileForm.bio} onChange={(e) => updateProfile("bio", e.target.value)} />
-                <textarea className={fieldClass} rows="2" placeholder="Home address" value={profileForm.home_address} onChange={(e) => updateProfile("home_address", e.target.value)} />
-                <textarea className={fieldClass} rows="2" placeholder="Work / practice address" value={profileForm.work_address} onChange={(e) => updateProfile("work_address", e.target.value)} />
+                <label className={`rounded-lg px-4 py-3 text-sm font-black flex items-center gap-2 cursor-pointer ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                  {uploadingAvatar ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  Upload profile image
+                  <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploadingAvatar} />
+                </label>
+              </div>
+              <div className="space-y-3">
+                <InputWithIcon icon={<UserRound size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Title / role" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Practice name" value={profileForm.practice_name} onChange={(e) => updateProfile("practice_name", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<MapPin size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Location" value={profileForm.location} onChange={(e) => updateProfile("location", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Mail size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Email" value={profileForm.email} onChange={(e) => updateProfile("email", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Phone" value={profileForm.phone} onChange={(e) => updateProfile("phone", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Mobile" value={profileForm.mobile} onChange={(e) => updateProfile("mobile", e.target.value)} /></InputWithIcon>
+                <InputWithIcon icon={<Globe size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Website" value={profileForm.website} onChange={(e) => updateProfile("website", e.target.value)} /></InputWithIcon>
+                <textarea className={fieldClass} rows="4" placeholder="Bio" value={profileForm.bio} onChange={(e) => updateProfile("bio", e.target.value)} />
               </div>
               <SaveButton saving={saving} onClick={saveProfile} label="Save Profile" />
             </section>
@@ -412,11 +360,13 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
           {activeTab === "professional" && (
             <section className={panelClass}>
-              <SectionTitle icon={<Briefcase size={20} />} title="Professional Information" subtitle="Qualifications, memberships and clinical interests." darkMode={darkMode} />
-              <div className="grid gap-3">
-                <input className={fieldClass} placeholder="Qualifications" value={profileForm.qualifications} onChange={(e) => updateProfile("qualifications", e.target.value)} />
-                <input className={fieldClass} placeholder="Degrees" value={profileForm.degrees} onChange={(e) => updateProfile("degrees", e.target.value)} />
-                <input className={fieldClass} placeholder="Certifications" value={profileForm.certifications} onChange={(e) => updateProfile("certifications", e.target.value)} />
+              <SectionTitle icon={<GraduationCap size={20} />} title="Professional Information" subtitle="Credentials, addresses and interests for colleague sharing." darkMode={darkMode} />
+              <div className="space-y-3">
+                <textarea className={fieldClass} rows="3" placeholder="Qualifications" value={profileForm.qualifications} onChange={(e) => updateProfile("qualifications", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Degrees" value={profileForm.degrees} onChange={(e) => updateProfile("degrees", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Certifications" value={profileForm.certifications} onChange={(e) => updateProfile("certifications", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Home address" value={profileForm.home_address} onChange={(e) => updateProfile("home_address", e.target.value)} />
+                <textarea className={fieldClass} rows="3" placeholder="Work address" value={profileForm.work_address} onChange={(e) => updateProfile("work_address", e.target.value)} />
                 <input className={fieldClass} placeholder="RCVS number / information" value={profileForm.rcvs_number} onChange={(e) => updateProfile("rcvs_number", e.target.value)} />
                 <textarea className={fieldClass} rows="3" placeholder="Areas of interest" value={profileForm.areas_of_interest} onChange={(e) => updateProfile("areas_of_interest", e.target.value)} />
                 <textarea className={fieldClass} rows="3" placeholder="Professional memberships" value={profileForm.memberships} onChange={(e) => updateProfile("memberships", e.target.value)} />
@@ -517,6 +467,9 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
                 Uses this phone or browser's built-in biometric/passkey prompt when available. Turn it on once while signed in, then the login screen will show the fingerprint button on this device.
               </p>
               <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
+              <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
+                Hides your profile from Network search results, so new colleagues cannot find you by searching your name. Existing colleagues, requests and messages are unchanged.
+              </p>
               <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
               <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
             </section>
