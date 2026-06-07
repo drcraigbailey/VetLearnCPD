@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, refreshBiometricAfterPasswordLogin, signInWithBiometric } from "../utils/biometricAuth";
+import { 
+  getLastBiometricUser, 
+  isBiometricLoginEnabled, 
+  needsBiometricRelink, 
+  signInWithBiometric, 
+  syncBiometricSession 
+} from "../utils/biometricAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
+import { 
+  isNativeCredentialAvailable, 
+  signInWithCredentialManager, 
+  savePasswordCredential 
+} from "../utils/credentialManager";
 
 import {
   Loader2,
@@ -11,30 +22,35 @@ import {
   Eye,
   EyeOff,
   Fingerprint,
+  KeyRound,
   X
 } from "lucide-react";
 
 const CONSENT_VERSION = "2026-06-07";
 
-export default function AuthPage(){
+export default function AuthPage() {
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
+  const [rcvsNumber, setRcvsNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const [showFingerprintLogin, setShowFingerprintLogin] = useState(false);
+  const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded] = useState(false);
+  const [keepMeLoggedIn, setKeepMeLoggedInState] = useState(() => getKeepMeLoggedIn());
+  const [loading, setLoading] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  const [mode,setMode]=useState("login")
-  const [name,setName]=useState("")
-  const [rcvsNumber,setRcvsNumber]=useState("")
-  const [email,setEmail]=useState("")
-  const [password,setPassword]=useState("")
-  const [showPassword, setShowPassword]=useState(false)
-  const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
-  const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
-  const [keepMeLoggedIn, setKeepMeLoggedInState]=useState(() => getKeepMeLoggedIn())
-  const [acceptedTerms, setAcceptedTerms]=useState(false)
-  const [acceptedEmailPrivacy, setAcceptedEmailPrivacy]=useState(false)
-  const [marketingOptIn, setMarketingOptIn]=useState(false)
-  const [showTermsModal, setShowTermsModal]=useState(false)
-  const [showEmailPrivacyModal, setShowEmailPrivacyModal]=useState(false)
-  const [loading,setLoading]=useState(false)
+  // Consent states
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedEmailPrivacy, setAcceptedEmailPrivacy] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showEmailPrivacyModal, setShowEmailPrivacyModal] = useState(false);
 
-  const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
+  const fieldClass = "w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition";
+  const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy);
 
   const checkFingerprintLogin = async () => {
     const savedUser = getLastBiometricUser();
@@ -71,117 +87,211 @@ export default function AuthPage(){
     setKeepMeLoggedIn(value);
   };
 
-  const switchMode = (nextMode) => {
+  const setAuthMode = (nextMode) => {
     setMode(nextMode);
-    if (nextMode === "login") {
+    setResetEmailSent(false);
+    if (nextMode !== "forgot") setShowPassword(false);
+    
+    // Clear consents if switching away from signup
+    if (nextMode !== "signup") {
       setAcceptedTerms(false);
       setAcceptedEmailPrivacy(false);
       setMarketingOptIn(false);
     }
   };
 
-  const refreshFingerprintAfterPasswordLogin = async (signedInUser, signedInSession) => {
-    if (!needsBiometricRelink() || !signedInUser || !signedInSession) return;
+  const handleGoogleSignIn = async () => {
+    if (mode === "signup" && signupBlocked) {
+      toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.");
+      return;
+    }
 
-    try {
-      const refreshed = await refreshBiometricAfterPasswordLogin(signedInUser, signedInSession);
-      setFingerprintRefreshNeeded(false);
-      setShowFingerprintLogin(true);
-      if (refreshed) toast.success("Fingerprint login refreshed for this phone");
-    } catch (error) {
-      setFingerprintRefreshNeeded(true);
-      toast.error(error.message || "Could not refresh fingerprint login. You can turn it off and on again in Settings.");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      }
+    });
+
+    if (error) {
+      toast.error(error.message || "Could not start Google sign in");
+      setLoading(false);
     }
   };
 
-  const submit=async()=>{
-    const cleanEmail=email.trim().toLowerCase()
+  const handlePasswordReset = async () => {
+    const cleanEmail = email.trim().toLowerCase();
 
-    if(!cleanEmail||!password){
-      toast.error("Add your email and password")
-      return
+    if (!cleanEmail) {
+      toast.error("Add your email address");
+      return;
     }
 
-    if(mode==="signup" && (!acceptedTerms || !acceptedEmailPrivacy)){
-      toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.")
-      return
+    setLoading(true);
+    setResetEmailSent(false);
+
+    const redirectTo = `${window.location.origin}/`;
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
+
+    if (error) {
+      toast.error(error.message || "Could not send password reset email");
+      setLoading(false);
+      return;
     }
 
-    setLoading(true)
+    setEmail(cleanEmail);
+    setResetEmailSent(true);
+    toast.success("Password reset email sent");
+    setLoading(false);
+  };
 
-    if(mode==="login"){
-      setKeepMeLoggedIn(keepMeLoggedIn)
-      const { data, error }=await supabase.auth.signInWithPassword({
-        email:cleanEmail,
+  const handleNativeSignIn = async () => {
+    setLoading(true);
+    try {
+      const credential = await signInWithCredentialManager();
+      if (credential.email && credential.password) {
+        setKeepMeLoggedIn(keepMeLoggedIn);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: credential.email,
+          password: credential.password
+        });
+        
+        if (error) throw error;
+        
+        await syncBiometricSession(data.user, data.session);
+        setFingerprintRefreshNeeded(false);
+        setShowFingerprintLogin(await isBiometricLoginEnabled());
+        toast.success("Signed in securely");
+      }
+    } catch (err) {
+      console.warn("Native login cancelled or failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submit = async () => {
+    if (mode === "forgot") {
+      await handlePasswordReset();
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      toast.error("Add your email and password");
+      return;
+    }
+
+    if (mode === "signup" && signupBlocked) {
+      toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.");
+      return;
+    }
+
+    setLoading(true);
+
+    if (mode === "login") {
+      setKeepMeLoggedIn(keepMeLoggedIn);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
         password
-      })
+      });
 
-      if(error){
-        toast.error(error.message)
-        setLoading(false)
-        return
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
       }
 
-      await refreshFingerprintAfterPasswordLogin(data?.user, data?.session)
-    }else{
+      if (isNativeCredentialAvailable()) {
+        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
+      }
+
+      await syncBiometricSession(data.user, data.session);
+      setFingerprintRefreshNeeded(false);
+      setShowFingerprintLogin(await isBiometricLoginEnabled());
+    } else {
       const consentTimestamp = new Date().toISOString();
-      const {error}=await supabase.auth.signUp({
-        email:cleanEmail,
+      const { error } = await supabase.auth.signUp({
+        email: cleanEmail,
         password,
-        options:{
-          data:{
-            full_name:name.trim()||cleanEmail.split("@")[0],
-            rcvs_number:rcvsNumber.trim(),
-            accepted_terms:true,
-            accepted_terms_at:consentTimestamp,
-            accepted_terms_version:CONSENT_VERSION,
-            accepted_email_privacy:true,
-            accepted_email_privacy_at:consentTimestamp,
-            accepted_email_privacy_version:CONSENT_VERSION,
-            marketing_emails_opt_in:marketingOptIn,
-            marketing_emails_opt_in_at:marketingOptIn ? consentTimestamp : null,
-            marketing_emails_opt_in_version:CONSENT_VERSION
+        options: {
+          data: {
+            full_name: name.trim() || cleanEmail.split("@")[0],
+            rcvs_number: rcvsNumber.trim(),
+            accepted_terms: true,
+            accepted_terms_at: consentTimestamp,
+            accepted_terms_version: CONSENT_VERSION,
+            accepted_email_privacy: true,
+            accepted_email_privacy_at: consentTimestamp,
+            accepted_email_privacy_version: CONSENT_VERSION,
+            marketing_emails_opt_in: marketingOptIn,
+            marketing_emails_opt_in_at: marketingOptIn ? consentTimestamp : null,
+            marketing_emails_opt_in_version: CONSENT_VERSION
           }
         }
-      })
+      });
 
-      if(error){
-        toast.error(error.message)
-        setLoading(false)
-        return
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+      
+      if (isNativeCredentialAvailable()) {
+        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
       }
 
-      toast.success("Account created")
+      toast.success("Account created");
     }
 
-    setEmail(cleanEmail)
-    setLoading(false)
-  }
+    setEmail(cleanEmail);
+    setLoading(false);
+  };
 
   const handleFingerprintLogin = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await signInWithBiometric()
-      toast.success("Signed in successfully")
+      await signInWithBiometric();
+      toast.success("Signed in successfully");
     } catch (error) {
       const message = error.message || "Fingerprint login is not set up on this device.";
       if (message.includes("needs refreshing")) {
-        toast("Log in once with email and password to refresh fingerprint login.")
+        toast("Log in once with email and password to refresh fingerprint login.");
       } else {
-        toast.error(message)
+        toast.error(message);
       }
-      await checkFingerprintLogin()
+      await checkFingerprintLogin();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy)
-
-  return(
+  return (
     <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247] px-4 py-8">
-      {showTermsModal && <ConsentModal title="Terms of Service" onClose={()=>setShowTermsModal(false)} onAccept={()=>{ setAcceptedTerms(true); setShowTermsModal(false); }} acceptLabel="Accept Terms"><TermsContent /></ConsentModal>}
-      {showEmailPrivacyModal && <ConsentModal title="Email Privacy Notice" onClose={()=>setShowEmailPrivacyModal(false)} onAccept={()=>{ setAcceptedEmailPrivacy(true); setShowEmailPrivacyModal(false); }} acceptLabel="Accept Email Privacy Notice"><EmailPrivacyContent /></ConsentModal>}
+      {showTermsModal && (
+        <ConsentModal 
+          title="Terms of Service" 
+          onClose={() => setShowTermsModal(false)} 
+          onAccept={() => { setAcceptedTerms(true); setShowTermsModal(false); }} 
+          acceptLabel="Accept Terms"
+        >
+          <TermsContent />
+        </ConsentModal>
+      )}
+      
+      {showEmailPrivacyModal && (
+        <ConsentModal 
+          title="Email Privacy Notice" 
+          onClose={() => setShowEmailPrivacyModal(false)} 
+          onAccept={() => { setAcceptedEmailPrivacy(true); setShowEmailPrivacyModal(false); }} 
+          acceptLabel="Accept Email Privacy Notice"
+        >
+          <EmailPrivacyContent />
+        </ConsentModal>
+      )}
 
       <div className="max-w-md mx-auto">
         <div className="flex items-center gap-3 mb-8">
@@ -209,12 +319,14 @@ export default function AuthPage(){
           />
           <div className="relative">
             <h2 className="text-3xl font-black leading-tight tracking-normal mb-2">
-              {mode==="login"?"Welcome back":"Create profile"}
+              {mode === "login" ? "Welcome back" : mode === "forgot" ? "Reset password" : "Create profile"}
             </h2>
             <p className="text-sm text-slate-600 leading-6 max-w-[260px]">
-              {mode==="login"
-                ?"Sign in to see your own CPD records, case logs, and drug protocols."
-                :"Set up your own VetLearn profile with private saved data."}
+              {mode === "login"
+                ? "Sign in to see your own CPD records, case logs, and drug protocols."
+                : mode === "forgot"
+                  ? "Enter your email and VetLearn will send a secure password reset link."
+                  : "Set up your own VetLearn profile with private saved data."}
             </p>
           </div>
         </div>
@@ -222,43 +334,71 @@ export default function AuthPage(){
         <div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]">
           <div className="grid grid-cols-2 gap-2 mb-5 bg-[#F0F6F5] rounded-lg p-1">
             <button
-              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="login"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>switchMode("login")}
+              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode === "login" || mode === "forgot" ? "bg-white text-[#0B3760] shadow-sm" : "text-slate-500"}`}
+              onClick={() => setAuthMode("login")}
             >
               Login
             </button>
             <button
-              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="signup"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>switchMode("signup")}
+              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode === "signup" ? "bg-white text-[#0B3760] shadow-sm" : "text-slate-500"}`}
+              onClick={() => setAuthMode("signup")}
             >
               Register
             </button>
           </div>
 
-          {mode==="signup"&&(
+          {mode !== "forgot" && (
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="mb-4 w-full rounded-lg border-2 border-[#DCEDEA] bg-white p-4 font-black text-[#0B3760] disabled:opacity-50 flex items-center justify-center gap-3 hover:bg-[#F9FCFB] transition-colors"
+            >
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-lg font-black shadow-sm">G</span>
+              Continue with Google
+            </button>
+          )}
+
+          {mode !== "forgot" && (
+            <div className="mb-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+              <span className="h-px flex-1 bg-[#DCEDEA]" />
+              <span>Email</span>
+              <span className="h-px flex-1 bg-[#DCEDEA]" />
+            </div>
+          )}
+
+          {mode === "signup" && (
             <>
               <div className="mb-3">
                 <input
                   className={fieldClass}
                   placeholder="Full Name"
+                  autoComplete="name"
                   value={name}
-                  onChange={(e)=>setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="mb-3">
                 <input
                   className={fieldClass}
                   placeholder="RCVS Number (Optional)"
+                  autoComplete="off"
                   value={rcvsNumber}
-                  onChange={(e)=>setRcvsNumber(e.target.value)}
+                  onChange={(e) => setRcvsNumber(e.target.value)}
                 />
               </div>
             </>
           )}
 
-          {mode==="login" && fingerprintRefreshNeeded && (
+          {mode === "login" && fingerprintRefreshNeeded && (
             <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
               Fingerprint login needs refreshing. Please log in once with your email and password, then fingerprint login will be saved again on this phone.
+            </div>
+          )}
+
+          {mode === "forgot" && resetEmailSent && (
+            <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
+              Check your inbox for a password reset link. If it does not arrive, check spam/junk and confirm the email is the one used for VetLearn.
             </div>
           )}
 
@@ -269,32 +409,54 @@ export default function AuthPage(){
               type="email"
               inputMode="email"
               autoCapitalize="none"
-              autoComplete="email"
+              autoComplete={mode === "login" ? "username email" : "email"}
               spellCheck="false"
               value={email}
-              onChange={(e)=>setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
-          <div className="relative mb-3">
-            <input
-              className={`${fieldClass} pr-12`}
-              placeholder="Password"
-              type={showPassword ? "text" : "password"}
-              autoComplete={mode==="login"?"current-password":"new-password"}
-              value={password}
-              onChange={(e)=>setPassword(e.target.value)}
-            />
+          {mode !== "forgot" && (
+            <div className="relative mb-3">
+              <input
+                className={`${fieldClass} pr-12`}
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#71CFC2] transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          )}
+
+          {mode === "login" && (
             <button
               type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#71CFC2] transition-colors"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => setAuthMode("forgot")}
+              className="mb-4 text-sm font-black text-[#0F8F83] hover:underline"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              Forgot password?
             </button>
-          </div>
+          )}
 
-          {mode==="login" && (
+          {mode === "forgot" && (
+            <button
+              type="button"
+              onClick={() => setAuthMode("login")}
+              className="mb-4 text-sm font-black text-[#0F8F83] hover:underline"
+            >
+              Back to login
+            </button>
+          )}
+
+          {mode === "login" && (
             <label className="mb-4 flex items-start gap-3 rounded-lg border border-[#DCEDEA] bg-[#F9FCFB] p-3 text-sm text-slate-600">
               <input
                 type="checkbox"
@@ -309,13 +471,13 @@ export default function AuthPage(){
             </label>
           )}
 
-          {mode==="signup" && (
+          {mode === "signup" && (
             <div className="mb-4 space-y-3">
               <ConsentCheckbox checked={acceptedTerms} onChange={setAcceptedTerms} required>
-                I have read and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={()=>setShowTermsModal(true)}>Terms of Service</button>
+                I have read and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={() => setShowTermsModal(true)}>Terms of Service</button>
               </ConsentCheckbox>
               <ConsentCheckbox checked={acceptedEmailPrivacy} onChange={setAcceptedEmailPrivacy} required>
-                I understand and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={()=>setShowEmailPrivacyModal(true)}>Email Privacy Notice</button>
+                I understand and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={() => setShowEmailPrivacyModal(true)}>Email Privacy Notice</button>
               </ConsentCheckbox>
               <ConsentCheckbox checked={marketingOptIn} onChange={setMarketingOptIn}>
                 I would like to receive optional VetLearn updates, CPD reminders and marketing emails.
@@ -329,42 +491,59 @@ export default function AuthPage(){
             onClick={submit}
             disabled={loading || signupBlocked}
           >
-            {loading?(
+            {loading ? (
               <>
-                <Loader2 size={18} className="animate-spin"/>
+                <Loader2 size={18} className="animate-spin" />
                 Please wait...
               </>
-            ):mode==="login"?(
+            ) : mode === "login" ? (
               <>
-                <LogIn size={18}/>
+                <LogIn size={18} />
                 Login
               </>
-            ):(
+            ) : mode === "forgot" ? (
               <>
-                <UserPlus size={18}/>
+                <LogIn size={18} />
+                Send password reset
+              </>
+            ) : (
+              <>
+                <UserPlus size={18} />
                 Create Profile
               </>
             )}
           </button>
 
-          {mode==="signup" && signupBlocked && (
+          {mode === "signup" && signupBlocked && (
             <p className="mt-2 text-center text-xs font-bold text-orange-600">Please accept the required notices to create your profile.</p>
           )}
 
-          {mode==="login" && showFingerprintLogin && (
+          {mode === "login" && showFingerprintLogin && (
             <button
               className="w-full bg-transparent border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
               onClick={handleFingerprintLogin}
               disabled={loading}
             >
               <Fingerprint size={18} />
-              Fingerprint Login
+              Fingerprint Unlock
+            </button>
+          )}
+          
+          {mode === "login" && isNativeCredentialAvailable() && (
+            <button
+              type="button"
+              className="w-full bg-transparent border-2 border-[#71CFC2] text-[#0F8F83] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
+              onClick={handleNativeSignIn}
+              disabled={loading}
+            >
+              <KeyRound size={18} />
+              Saved Password or Passkey
             </button>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ConsentCheckbox({ checked, onChange, children, required = false }) {
@@ -374,14 +553,14 @@ function ConsentCheckbox({ checked, onChange, children, required = false }) {
         type="checkbox"
         className="mt-1 h-4 w-4 accent-[#71CFC2]"
         checked={checked}
-        onChange={(event)=>onChange(event.target.checked)}
+        onChange={(event) => onChange(event.target.checked)}
       />
       <span className="leading-5">
         {children}
         {required && <span className="ml-1 text-xs font-black text-orange-600">Required</span>}
       </span>
     </label>
-  )
+  );
 }
 
 function ConsentModal({ title, children, onClose, onAccept, acceptLabel }) {
@@ -403,7 +582,7 @@ function ConsentModal({ title, children, onClose, onAccept, acceptLabel }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function TermsContent() {
@@ -431,7 +610,7 @@ function TermsContent() {
       <p><strong>9. Contact Us</strong></p>
       <p>If you have any questions about these Terms, please contact us at: [Insert Contact Email/Details]</p>
     </>
-  )
+  );
 }
 
 function EmailPrivacyContent() {
@@ -451,5 +630,5 @@ function EmailPrivacyContent() {
       <p><strong>5. Contact</strong></p>
       <p>For questions about email privacy or data protection, contact: [Insert Contact Email/Details]</p>
     </>
-  )
+  );
 }
