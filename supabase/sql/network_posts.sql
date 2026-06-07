@@ -8,6 +8,7 @@ create table if not exists public.network_posts (
   shared_type text,
   shared_title text,
   shared_url text,
+  shared_payload jsonb,
   is_deleted boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -21,6 +22,9 @@ create table if not exists public.network_posts (
   )
 );
 
+alter table public.network_posts
+  add column if not exists shared_payload jsonb;
+
 create index if not exists network_posts_created_at_idx
   on public.network_posts(created_at desc)
   where is_deleted = false;
@@ -30,18 +34,21 @@ create index if not exists network_posts_author_id_idx
 
 alter table public.network_posts enable row level security;
 
+drop policy if exists "Network posts are readable by signed in users" on public.network_posts;
 create policy "Network posts are readable by signed in users"
   on public.network_posts
   for select
   to authenticated
   using (is_deleted = false);
 
+drop policy if exists "Users can create their own network posts" on public.network_posts;
 create policy "Users can create their own network posts"
   on public.network_posts
   for insert
   to authenticated
   with check (auth.uid() = author_id);
 
+drop policy if exists "Users can update their own network posts" on public.network_posts;
 create policy "Users can update their own network posts"
   on public.network_posts
   for update
@@ -49,6 +56,7 @@ create policy "Users can update their own network posts"
   using (auth.uid() = author_id)
   with check (auth.uid() = author_id);
 
+drop policy if exists "Users can delete their own network posts" on public.network_posts;
 create policy "Users can delete their own network posts"
   on public.network_posts
   for delete
