@@ -38,6 +38,7 @@ const adminTabs = [
   { id: "settings", label: "Settings", icon: Settings }
 ];
 
+// Added pill_counter explicitly mapped to "Pill Count"
 const featureLabels = {
   clinical_tools: "Clinical Tools",
   drug_calculator: "Drug Calculator",
@@ -50,7 +51,7 @@ const featureLabels = {
   cpd_tracker: "CPD Tracker",
   vault: "Vault",
   ai_assistant: "AI Assistant",
-  pill_counter: "Pill Counter" // Added Pill Counter feature here
+  pill_counter: "Pill Count" 
 };
 
 const userTypeOptions = ["free", "clinician", "professional", "premium", "admin", "super_admin"];
@@ -684,16 +685,11 @@ async function getAdminActionErrorMessage(error) {
         const suffix = [body.code, body.details, body.hint].filter(Boolean).join(" | ");
         return suffix ? `${body.error} (${suffix})` : body.error;
       }
-    } catch (_jsonError) {
-      // Fall back to text and then the Supabase client message.
-    }
-
+    } catch (_jsonError) {}
     try {
       const text = await response.clone().text();
       if (text) return text;
-    } catch (_textError) {
-      // Fall back to the Supabase client message.
-    }
+    } catch (_textError) {}
   }
 
   const message = error?.message || "";

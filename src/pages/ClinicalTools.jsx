@@ -24,6 +24,7 @@ import { supabase } from "../supabaseClient";
 import { drugService } from "../services/drugService";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
+// Renamed "Pill Counter" to "Pill Count" everywhere to match exact wording requirements
 const tabs = [
   { id: "drug", label: "Main Calculator", icon: Calculator },
   { id: "protocol", label: "Protocol Calculator", icon: ClipboardList },
@@ -33,7 +34,7 @@ const tabs = [
   { id: "cri", label: "CRI Calculator", icon: Activity },
   { id: "toxicology", label: "Toxicology", icon: ShieldAlert },
   { id: "interaction", label: "Interaction Checker", icon: AlertOctagon },
-  { id: "pill_counter", label: "Pill Counter", icon: Pill },
+  { id: "pill_counter", label: "Pill Count", icon: Pill },
   { id: "history", label: "History 24h", icon: Clock }
 ];
 
@@ -88,24 +89,42 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
     loadCalculationHistory();
   }, [user?.id]);
 
-  // THIS IS THE FIX: Explicitly checking the feature toggles for specific tabs
+  // STRICT ACCESS CONTROL: Safely deeply evaluates feature matrices to hide tabs 
+  // without breaking the app if user records lack the new database keys yet.
   const visibleTabs = useMemo(() => {
     return tabs.filter((tab) => {
-      // 1. Check Drug Calculators
       if (["drug", "protocol", "interaction"].includes(tab.id)) {
         return canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess);
       }
-      // 2. Check Pill Counter (Matches the feature key added to AdminDashboard)
+      
       if (tab.id === "pill_counter") {
-        return canUseFeature(featureAccess, featureKeys.pillCounter || "pill_counter", adminAccess);
+        if (adminAccess) return true; // Admins always get bypass access
+
+        // Deep evaluation of the object/array avoiding reliance on the `canUseFeature` blackbox fallback
+        if (Array.isArray(featureAccess)) {
+          const match = featureAccess.find(f => (f.feature_key || f.key) === "pill_counter");
+          if (match) return match.is_enabled === true;
+        } else if (featureAccess && typeof featureAccess === "object") {
+          if (featureAccess["pill_counter"] !== undefined) {
+            return featureAccess["pill_counter"] === true;
+          }
+        }
+        
+        // Final ultimate fallback in case of context structure differences
+        return canUseFeature(featureAccess, "pill_counter", adminAccess);
       }
-      // 3. Show all other tabs by default
+      
+      // Keep remaining tools
       return true;
     });
   }, [featureAccess, adminAccess]);
 
+  // ACCESS PROTECTION: Intercepts users deep-linking to / trying to navigate to disabled tabs
   useEffect(() => {
-    if (!visibleTabs.some((tab) => tab.id === activeTab)) setActiveTab(visibleTabs[0]?.id || "history");
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      // Redirects them to the primary "Calculator" tab if they shouldn't be here
+      setActiveTab(visibleTabs[0]?.id || "drug"); 
+    }
   }, [activeTab, visibleTabs]);
 
   const loadClinicalTools = async () => {
@@ -172,7 +191,8 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
           title="Clinical Tools"
           subtitle="Calculate doses, CRIs, fluids, transfusions and toxicology guidance."
           darkMode={darkMode}
-          badges={[{ label: "Clinical calculators", icon: <Calculator size={14} />, accent: true }]}
+          // Changed text from "Clinical calculators" to "Clinical calculator" to meet requirement 4
+          badges={[{ label: "Clinical calculator", icon: <Calculator size={14} />, accent: true }]}
         />
       )}
 
@@ -218,28 +238,21 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
   );
 }
 
-// --------------------------------------------------------------------------
-// Pill Counter Stub (Replace with your actual YOLOv8 ONNX component)
-// --------------------------------------------------------------------------
 function PillCounterTab({ darkMode }) {
   return (
     <ToolShell
       darkMode={darkMode}
-      title="AI Pill Counter"
+      title="AI Pill Count"
       icon={<Pill size={20} />}
       subtitle="Use your device camera and ONNX model to automatically count medication."
     >
       <div className={`p-10 text-center rounded-lg border-2 border-dashed ${darkMode ? "border-white/20 text-white/50" : "border-[#0B3760]/20 text-[#0B3760]/50"}`}>
-        <p className="font-black mb-2">Pill Counter Interface</p>
+        <p className="font-black mb-2">Pill Count Interface</p>
         <p className="text-sm">Integrate your YOLOv8 ONNX web component here.</p>
       </div>
     </ToolShell>
   );
 }
-
-// --------------------------------------------------------------------------
-// Existing Components Below
-// --------------------------------------------------------------------------
 
 function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user }) {
   const [species, setSpecies] = useState("Dog");

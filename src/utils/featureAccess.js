@@ -11,7 +11,8 @@ export const featureKeys = {
   messaging: "messaging",
   cpdTracker: "cpd_tracker",
   vault: "vault",
-  aiAssistant: "ai_assistant"
+  aiAssistant: "ai_assistant",
+  pillCount: "pill_counter" // FIXED: Perfectly matches your database
 };
 
 export const defaultFeatureAccess = Object.values(featureKeys).reduce((acc, key) => {

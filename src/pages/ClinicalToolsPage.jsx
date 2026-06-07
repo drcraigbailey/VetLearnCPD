@@ -12,13 +12,22 @@ import Protocols from "./Protocols";
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
+  
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
+  // PERFECTED STRICT ACCESS
+  // Ignores leaky fallbacks and guarantees it only shows if the payload explicitly says TRUE
+  const canUsePillCount = featureAccess && featureAccess[featureKeys.pillCount] === true;
+
+  // ACCESS PROTECTION
   useEffect(() => {
     if (!canUseProtocols && activeSection === "protocols") {
       setActiveSection("calculators");
     }
-  }, [activeSection, canUseProtocols]);
+    if (!canUsePillCount && activeSection === "pillCounter") {
+      setActiveSection("calculators");
+    }
+  }, [activeSection, canUseProtocols, canUsePillCount]);
 
   useEffect(() => {
     const root = pageRef.current;
@@ -44,7 +53,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
-    { id: "pillCounter", label: "Pill Count", icon: Pill },
+    ...(canUsePillCount ? [{ id: "pillCounter", label: "Pill Count", icon: Pill }] : []),
     ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
   ];
 
@@ -66,7 +75,13 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
         </>
       )}
 
-      {activeSection === "pillCounter" && <PillCounter darkMode={darkMode} />}
+      {activeSection === "pillCounter" && (
+        canUsePillCount ? (
+          <PillCounter darkMode={darkMode} />
+        ) : (
+          <FeatureUnavailable darkMode={darkMode} title="Pill Count" />
+        )
+      )}
 
       {activeSection === "protocols" && (
         canUseProtocols ? (
