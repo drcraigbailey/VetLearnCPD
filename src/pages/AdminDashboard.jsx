@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
-  UserCog,
   Users
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -74,6 +73,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [featureMatrix, setFeatureMatrix] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [adminMessages, setAdminMessages] = useState([]);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState({ title: "", body: "", audience: "all" });
   const [working, setWorking] = useState(false);
@@ -105,11 +105,17 @@ export default function AdminDashboard({ user, profile, darkMode }) {
 
     setAdminRole(roleRes.data.role);
 
-    const [statsRes, usersRes, auditRes, subRes] = await Promise.all([
+    const [statsRes, usersRes, auditRes, subRes, adminMessagesRes] = await Promise.all([
       supabase.rpc("admin_dashboard_stats"),
       supabase.from("admin_user_overview").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true })
+      supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
+      supabase
+        .from("notifications")
+        .select("id, title, message, type, is_read, created_at, related_id")
+        .eq("type", "admin_announcement")
+        .order("created_at", { ascending: false })
+        .limit(500)
     ]);
 
     const featureRes = await supabase
@@ -120,6 +126,8 @@ export default function AdminDashboard({ user, profile, darkMode }) {
     if (!statsRes.error) setStats(statsRes.data || {});
     if (!usersRes.error) setUsers(usersRes.data || []);
     if (!auditRes.error) setAuditLogs(auditRes.data || []);
+    if (!adminMessagesRes.error) setAdminMessages(groupAdminMessages(adminMessagesRes.data || []));
+    else setAdminMessages([]);
     if (!featureRes.error) {
       setFeatureMatrix(featureRes.data || []);
     } else {
@@ -238,9 +246,8 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       new_user_type: userType
     });
 
-    if (error) {
-      toast.error(isMissingRpcError(error) ? "Run admin_user_types_notifications.sql first" : error.message || "Could not update user type");
-    } else {
+    if (error) toast.error(isMissingRpcError(error) ? "Run admin_user_types_notifications.sql first" : error.message || "Could not update user type");
+    else {
       toast.success("User type updated");
       loadAdminData();
     }
@@ -253,9 +260,8 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       .from("user_type_feature_access")
       .upsert({ user_type: userType, feature_key: featureKey, is_enabled: enabled, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "user_type,feature_key" });
 
-    if (error) {
-      toast.error("Run admin_user_types_notifications.sql first");
-    } else {
+    if (error) toast.error("Run admin_user_types_notifications.sql first");
+    else {
       await audit("feature_access_changed", null, { userType, featureKey, enabled });
       toast.success("Feature access updated");
       loadAdminData();
@@ -277,6 +283,26 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       await audit("announcement_sent", null, message);
       toast.success("Announcement queued");
       setMessage({ title: "", body: "", audience: "all" });
+      loadAdminData();
+    }
+    setWorking(false);
+  };
+
+  const deleteAdminMessage = async (historyItem) => {
+    if (!historyItem?.ids?.length) return;
+    setWorking(true);
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .in("id", historyItem.ids);
+
+    if (error) toast.error(error.message || "Could not delete admin message");
+    else {
+      await audit("announcement_deleted", null, {
+        title: historyItem.title,
+        deleted_notifications: historyItem.ids.length
+      });
+      toast.success("Admin message deleted");
       loadAdminData();
     }
     setWorking(false);
@@ -348,7 +374,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
       {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
       {activeTab === "subscriptions" && <SubscriptionsPanel panelClass={panelClass} darkMode={darkMode} subscriptions={subscriptions} />}
-      {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} />}
+      {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} history={adminMessages} onDeleteHistory={deleteAdminMessage} />}
       {activeTab === "audit" && <AdminActivityExplorer darkMode={darkMode} />}
       {activeTab === "settings" && <AdminSettings panelClass={panelClass} />}
     </div>
@@ -416,13 +442,7 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button disabled={working || item.account_status === "active"} onClick={() => onStatus(item, "active")} className="rounded-lg bg-[#71CFC2] p-2 text-xs font-black text-[#062F63] disabled:opacity-40">Activate</button>
               <button disabled={working || item.account_status === "suspended"} onClick={() => onStatus(item, "suspended")} className="rounded-lg bg-orange-500 p-2 text-xs font-black text-white disabled:opacity-40">Suspend</button>
-              <button
-                disabled={working || !isSuperAdmin || item.user_id === currentUserId}
-                onClick={() => setDeleteCandidate(item)}
-                className="col-span-2 rounded-lg bg-red-600 p-2 text-xs font-black text-white disabled:opacity-40"
-              >
-                Delete user
-              </button>
+              <button disabled={working || !isSuperAdmin || item.user_id === currentUserId} onClick={() => setDeleteCandidate(item)} className="col-span-2 rounded-lg bg-red-600 p-2 text-xs font-black text-white disabled:opacity-40">Delete user</button>
             </div>
           </div>
         ))}
@@ -434,40 +454,13 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <h3 className="text-xl font-black">Delete this user?</h3>
-                <p className="mt-2 text-sm opacity-70 leading-6">
-                  This will permanently delete <span className="font-black">{deleteCandidate.email}</span> and linked app data. This cannot be undone.
-                </p>
+                <p className="mt-2 text-sm opacity-70 leading-6">This will permanently delete <span className="font-black">{deleteCandidate.email}</span> and linked app data. This cannot be undone.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDeleteCandidate(null)}
-                disabled={working}
-                className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}
-              >
-                <Trash2 size={16} />
-              </button>
+              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={working} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}><Trash2 size={16} /></button>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteCandidate(null)}
-                disabled={working}
-                className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={working}
-                onClick={async () => {
-                  const success = await onDelete(deleteCandidate);
-                  if (success) setDeleteCandidate(null);
-                }}
-                className="rounded-lg bg-red-600 p-3 text-sm font-black text-white disabled:bg-slate-300 disabled:text-slate-500"
-              >
-                Delete permanently
-              </button>
+              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={working} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}>Cancel</button>
+              <button type="button" disabled={working} onClick={async () => { const success = await onDelete(deleteCandidate); if (success) setDeleteCandidate(null); }} className="rounded-lg bg-red-600 p-3 text-sm font-black text-white disabled:bg-slate-300 disabled:text-slate-500">Delete permanently</button>
             </div>
           </div>
         </div>
@@ -503,21 +496,14 @@ function FeaturesPanel({ panelClass, darkMode, matrix, onToggle, working }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
-            <tr className="text-left opacity-60">
-              <th className="p-2">Feature</th>
-              {userTypeOptions.map(type => <th key={type} className="p-2">{userTypeLabels[type]}</th>)}
-            </tr>
+            <tr className="text-left opacity-60"><th className="p-2">Feature</th>{userTypeOptions.map(type => <th key={type} className="p-2">{userTypeLabels[type]}</th>)}</tr>
           </thead>
           <tbody>
             {Object.entries(featureLabels).map(([key, label]) => (
               <tr key={key} className={darkMode ? "border-t border-white/10" : "border-t border-[#DCEDEA]"}>
                 <td className="p-2 font-black">{label}</td>
                 {userTypeOptions.map(type => (
-                  <td key={type} className="p-2">
-                    <button disabled={working} onClick={() => onToggle(type, key, !lookup(type, key))} className={`rounded-full px-3 py-1 text-xs font-black ${lookup(type, key) ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>
-                      {lookup(type, key) ? "On" : "Off"}
-                    </button>
-                  </td>
+                  <td key={type} className="p-2"><button disabled={working} onClick={() => onToggle(type, key, !lookup(type, key))} className={`rounded-full px-3 py-1 text-xs font-black ${lookup(type, key) ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>{lookup(type, key) ? "On" : "Off"}</button></td>
                 ))}
               </tr>
             ))}
@@ -536,10 +522,7 @@ function SubscriptionsPanel({ panelClass, darkMode, subscriptions }) {
       <div className="space-y-3">
         {subscriptions.map(plan => (
           <div key={plan.tier} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="font-black capitalize">{plan.name}</h3>
-              <span className="text-xs font-black text-[#0F8F83]">{plan.tier}</span>
-            </div>
+            <div className="flex items-center justify-between gap-3"><h3 className="font-black capitalize">{plan.name}</h3><span className="text-xs font-black text-[#0F8F83]">{plan.tier}</span></div>
             <p className="text-sm opacity-65 mt-1">{plan.description || "No description yet."}</p>
           </div>
         ))}
@@ -548,29 +531,53 @@ function SubscriptionsPanel({ panelClass, darkMode, subscriptions }) {
   );
 }
 
-function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, working }) {
+function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, working, history, onDeleteHistory }) {
   return (
-    <section className={panelClass}>
-      <div className="flex items-start gap-3 mb-4">
-        <Mail className="text-[#0F8F83] shrink-0" />
-        <div>
-          <h2 className="text-xl font-black">Admin Messaging Centre</h2>
-          <p className="text-sm opacity-65">Send announcements, maintenance notices and release notes.</p>
+    <div className="space-y-5">
+      <section className={panelClass}>
+        <div className="flex items-start gap-3 mb-4">
+          <Mail className="text-[#0F8F83] shrink-0" />
+          <div><h2 className="text-xl font-black">Admin Messaging Centre</h2><p className="text-sm opacity-65">Send announcements, maintenance notices and release notes.</p></div>
         </div>
-      </div>
-      <div className="space-y-3">
-        <select value={message.audience} onChange={(event) => setMessage(prev => ({ ...prev, audience: event.target.value }))} className={`w-full rounded-lg p-3 ${darkMode ? "bg-[#071A24]" : "bg-[#F0F6F5]"}`}>
-          <option value="all">All users</option>
-          <option value="free">Free users</option>
-          <option value="clinician">Clinician users</option>
-          <option value="professional">Professional users</option>
-          <option value="premium">Premium users</option>
-        </select>
-        <input value={message.title} onChange={(event) => setMessage(prev => ({ ...prev, title: event.target.value }))} placeholder="Announcement title" className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
-        <textarea value={message.body} onChange={(event) => setMessage(prev => ({ ...prev, body: event.target.value }))} placeholder="Message" rows={5} className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
-        <button disabled={working} onClick={onSend} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-4 font-black flex items-center justify-center gap-2"><Send size={18} /> Send Announcement</button>
-      </div>
-    </section>
+        <div className="space-y-3">
+          <select value={message.audience} onChange={(event) => setMessage(prev => ({ ...prev, audience: event.target.value }))} className={`w-full rounded-lg p-3 ${darkMode ? "bg-[#071A24]" : "bg-[#F0F6F5]"}`}>
+            <option value="all">All users</option>
+            <option value="free">Free users</option>
+            <option value="clinician">Clinician users</option>
+            <option value="professional">Professional users</option>
+            <option value="premium">Premium users</option>
+          </select>
+          <input value={message.title} onChange={(event) => setMessage(prev => ({ ...prev, title: event.target.value }))} placeholder="Announcement title" className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
+          <textarea value={message.body} onChange={(event) => setMessage(prev => ({ ...prev, body: event.target.value }))} placeholder="Message" rows={5} className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
+          <button disabled={working} onClick={onSend} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-4 font-black flex items-center justify-center gap-2"><Send size={18} /> Send Announcement</button>
+        </div>
+      </section>
+
+      <section className={panelClass}>
+        <div className="flex items-start gap-3 mb-4">
+          <MessageSquare className="text-[#0F8F83] shrink-0" />
+          <div><h2 className="text-xl font-black">Message History</h2><p className="text-sm opacity-65">Delete removes the announcement notification rows from users' notification panels.</p></div>
+        </div>
+        {history.length === 0 ? (
+          <div className={`rounded-lg p-4 text-sm opacity-65 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>No admin messages found yet.</div>
+        ) : (
+          <div className="space-y-3">
+            {history.map(item => (
+              <div key={item.key} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-black truncate">{item.title || "Admin announcement"}</h3>
+                    <p className="mt-1 text-sm opacity-70 leading-6 whitespace-pre-wrap">{item.body}</p>
+                    <p className="mt-2 text-xs opacity-55">{new Date(item.createdAt).toLocaleString()} · {item.count} notification{item.count === 1 ? "" : "s"} · {item.unreadCount} unread</p>
+                  </div>
+                  <button disabled={working} onClick={() => onDeleteHistory(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -592,13 +599,26 @@ function MetricGrid({ metrics, darkMode }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       {metrics.map(([label, value]) => (
-        <div key={label} className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-          <div className="text-xl font-black text-[#0F8F83] truncate">{value ?? 0}</div>
-          <div className="text-xs font-bold opacity-65">{label}</div>
-        </div>
+        <div key={label} className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}><div className="text-xl font-black text-[#0F8F83] truncate">{value ?? 0}</div><div className="text-xs font-bold opacity-65">{label}</div></div>
       ))}
     </div>
   );
+}
+
+function groupAdminMessages(rows) {
+  const groups = new Map();
+  rows.forEach(row => {
+    const title = row.title || "Admin announcement";
+    const body = row.message || "";
+    const bucket = row.related_id || `${title}|${body}|${new Date(row.created_at).toISOString().slice(0, 16)}`;
+    const existing = groups.get(bucket) || { key: bucket, title, body, createdAt: row.created_at, count: 0, unreadCount: 0, ids: [] };
+    existing.count += 1;
+    if (!row.is_read) existing.unreadCount += 1;
+    existing.ids.push(row.id);
+    if (new Date(row.created_at) > new Date(existing.createdAt)) existing.createdAt = row.created_at;
+    groups.set(bucket, existing);
+  });
+  return [...groups.values()].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 function getUserType(item) {
@@ -640,11 +660,7 @@ async function getAdminActionErrorMessage(error) {
   }
 
   const message = error?.message || "";
-  if (/failed to send a request to the edge function/i.test(message)) {
-    return "Admin action service is unavailable. Deploy admin-user-actions in Supabase, then try again.";
-  }
-  if (/edge function returned a non-2xx status code/i.test(message)) {
-    return "The admin delete service returned an error. Check the admin-user-actions function logs in Supabase for the exact table or constraint, then try again.";
-  }
+  if (/failed to send a request to the edge function/i.test(message)) return "Admin action service is unavailable. Deploy admin-user-actions in Supabase, then try again.";
+  if (/edge function returned a non-2xx status code/i.test(message)) return "The admin delete service returned an error. Check the admin-user-actions function logs in Supabase for the exact table or constraint, then try again.";
   return message || "Could not complete admin action";
 }
