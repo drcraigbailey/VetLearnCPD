@@ -56,6 +56,12 @@ const requestRelinkAfterPasswordLogin = (userId) => {
   if (userId) localStorage.setItem(relinkAfterPasswordKey, String(userId));
 };
 
+const clearRelinkFlag = (userId) => {
+  if (!userId || localStorage.getItem(relinkAfterPasswordKey) === String(userId)) {
+    localStorage.removeItem(relinkAfterPasswordKey);
+  }
+};
+
 export const getLastBiometricUser = () => {
   try {
     return JSON.parse(localStorage.getItem(lastUserKey) || "null");
@@ -86,8 +92,17 @@ const buildTokenPayload = (user, session) => ({
   email: user.email || "",
   access_token: session.access_token,
   refresh_token: session.refresh_token,
+  expires_at: session.expires_at || null,
   saved_at: new Date().toISOString()
 });
+
+const hasUsableRefreshToken = (credentials) => Boolean(credentials?.refresh_token && credentials?.user_id);
+
+const hasFreshAccessToken = (credentials) => {
+  if (!credentials?.access_token || !credentials?.expires_at) return false;
+  const expiresAtMs = Number(credentials.expires_at) * 1000;
+  return Number.isFinite(expiresAtMs) && expiresAtMs - Date.now() > 60_000;
+};
 
 const saveNativeSessionCredentials = async (biometricPlugin, user, session) => {
   await biometricPlugin.setCredentials({
@@ -109,9 +124,16 @@ const getNativeCredentials = async (biometricPlugin) => {
   }
 
   try {
-    return JSON.parse(credentials.password);
-  } catch {
-    throw new Error("Please turn fingerprint login off and on again in Settings.");
+    const parsed = JSON.parse(credentials.password);
+    if (!hasUsableRefreshToken(parsed)) {
+      requestRelinkAfterPasswordLogin(parsed?.user_id || getLastBiometricUser()?.id);
+      throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.message?.includes("Fingerprint login needs refreshing")) throw error;
+    requestRelinkAfterPasswordLogin(getLastBiometricUser()?.id);
+    throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
   }
 };
 
@@ -128,30 +150,32 @@ const clearNativeBiometricCredentials = async (biometricPlugin, userId, { relink
       requestRelinkAfterPasswordLogin(userId);
     } else {
       clearLoginHint(userId);
+      clearRelinkFlag(userId);
     }
   } else {
     localStorage.removeItem(loginEnabledKey);
     localStorage.removeItem(lastUserKey);
+    localStorage.removeItem(relinkAfterPasswordKey);
   }
 };
 
 const markBiometricReady = (user) => {
   localStorage.setItem(enabledKey(user.id), "true");
-  localStorage.removeItem(relinkAfterPasswordKey);
+  clearRelinkFlag(user.id);
   saveLoginHint(user);
   window.dispatchEvent(new Event("biometricSettingsUpdated"));
 };
 
 const restoreSupabaseSession = async (biometricPlugin, credentials) => {
-  if (!credentials?.refresh_token) {
-    await clearNativeBiometricCredentials(biometricPlugin, credentials?.user_id, { relink: true });
+  if (!hasUsableRefreshToken(credentials)) {
+    requestRelinkAfterPasswordLogin(credentials?.user_id);
     throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
   }
 
   let restored = null;
   let restoreError = null;
 
-  if (credentials.access_token) {
+  if (hasFreshAccessToken(credentials)) {
     const { data, error } = await supabase.auth.setSession({
       access_token: credentials.access_token,
       refresh_token: credentials.refresh_token
@@ -167,11 +191,12 @@ const restoreSupabaseSession = async (biometricPlugin, credentials) => {
   }
 
   if (restoreError || !restored?.user) {
-    await clearNativeBiometricCredentials(biometricPlugin, credentials.user_id, { relink: true });
+    requestRelinkAfterPasswordLogin(credentials.user_id);
     throw new Error("Fingerprint login needs refreshing. Please log in with email and password once.");
   }
 
   await syncBiometricSession(restored.user, restored);
+  markBiometricReady(restored.user);
   return restored;
 };
 
@@ -205,7 +230,7 @@ export const isBiometricLoginEnabled = async () => {
 
   try {
     const credentials = await getNativeCredentials(biometricPlugin);
-    return Boolean(credentials?.refresh_token);
+    return hasUsableRefreshToken(credentials);
   } catch {
     return true;
   }
