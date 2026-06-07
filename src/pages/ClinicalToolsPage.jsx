@@ -114,24 +114,19 @@ function syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMo
     additionalShortcut.type = "button";
     additionalShortcut.dataset.additionalCalculatorShortcut = "true";
     additionalShortcut.dataset.scrollEnhanced = "true";
-    additionalShortcut.setAttribute("aria-label", "Go to additional calculators");
-    calculatorTiles.appendChild(additionalShortcut);
-  }
-
-  additionalShortcut.className = `px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 shrink-0 ${darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`;
-  additionalShortcut.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 2v20" />
-      <path d="M2 12h20" />
-      <path d="m19 5-3 3" />
-      <path d="m5 19 3-3" />
-    </svg>
-    <span>Additional Calculators</span>
-  `;
-
-  if (additionalShortcut.dataset.additionalClickBound !== "true") {
     additionalShortcut.dataset.additionalClickBound = "true";
+    additionalShortcut.setAttribute("aria-label", "Go to additional calculators");
+    additionalShortcut.className = `px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition flex items-center gap-2 shrink-0 ${darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`;
+    additionalShortcut.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect width="16" height="16" x="4" y="4" rx="2" />
+        <path d="M8 12h8" />
+        <path d="M12 8v8" />
+      </svg>
+      <span>Additional Calculators</span>
+    `;
     additionalShortcut.addEventListener("click", scrollToAdditionalCalculators);
+    calculatorTiles.appendChild(additionalShortcut);
   }
 
   calculatorTiles.querySelectorAll("button").forEach((button) => {
