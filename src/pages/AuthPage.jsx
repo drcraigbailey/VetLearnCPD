@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, refreshBiometricAfterPasswordLogin, signInWithBiometric } from "../utils/biometricAuth";
+import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
 
 import {
   Loader2,
@@ -22,6 +23,7 @@ export default function AuthPage(){
   const [showPassword, setShowPassword]=useState(false)
   const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
   const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
+  const [keepMeLoggedIn, setKeepMeLoggedInState]=useState(() => getKeepMeLoggedIn())
   const [loading,setLoading]=useState(false)
 
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
@@ -56,6 +58,11 @@ export default function AuthPage(){
     };
   }, []);
 
+  const updateKeepMeLoggedIn = (value) => {
+    setKeepMeLoggedInState(value);
+    setKeepMeLoggedIn(value);
+  };
+
   const refreshFingerprintAfterPasswordLogin = async (signedInUser, signedInSession) => {
     if (!needsBiometricRelink() || !signedInUser || !signedInSession) return;
 
@@ -81,6 +88,7 @@ export default function AuthPage(){
     setLoading(true)
 
     if(mode==="login"){
+      setKeepMeLoggedIn(keepMeLoggedIn)
       const { data, error }=await supabase.auth.signInWithPassword({
         email:cleanEmail,
         password
@@ -248,6 +256,21 @@ export default function AuthPage(){
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
+          {mode==="login" && (
+            <label className="mb-4 flex items-start gap-3 rounded-lg border border-[#DCEDEA] bg-[#F9FCFB] p-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-[#71CFC2]"
+                checked={keepMeLoggedIn}
+                onChange={(event) => updateKeepMeLoggedIn(event.target.checked)}
+              />
+              <span>
+                <span className="block font-black text-[#0B3760]">Keep me logged in</span>
+                <span className="block leading-5">Turn this off to log out after 30 minutes of inactivity or after reopening the app later.</span>
+              </span>
+            </label>
+          )}
 
           <button
             className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-4 font-black shadow-[0_12px_24px_rgba(15,143,131,0.16)] disabled:opacity-50 flex items-center justify-center gap-2 mt-2 transition-opacity hover:opacity-90"
