@@ -140,14 +140,15 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
   messageId?: string | null;
   conversationId?: string | null;
 }) {
+  const messageId = details.messageId ? String(details.messageId) : null;
   const payload = {
     user_id: details.recipientId,
     type: "message",
     title: details.title,
     message: details.body,
     sender_id: details.senderId,
-    related_record_id: details.messageId ? String(details.messageId) : null,
-    related_id: null,
+    related_record_id: messageId,
+    related_id: messageId,
     is_read: false,
     created_at: new Date().toISOString()
   };
@@ -161,6 +162,7 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
     user_id: details.recipientId,
     type: "message",
     message: details.body,
+    related_id: messageId,
     is_read: false
   };
 
