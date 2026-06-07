@@ -1,0 +1,45 @@
+body.privacy-mode .privacy-sensitive,
+body.privacy-mode .privacy-route-home section:first-of-type h2,
+body.privacy-mode .privacy-route-home section:first-of-type p,
+body.privacy-mode .privacy-route-home section:first-of-type img,
+body.privacy-mode .privacy-route-home section:first-of-type .h-16.w-16,
+body.privacy-mode .privacy-route-home section .text-sm.font-bold.opacity-80,
+body.privacy-mode .privacy-route-messages .text-lg.truncate,
+body.privacy-mode .privacy-route-messages .text-sm.truncate,
+body.privacy-mode .privacy-route-messages .whitespace-pre-wrap,
+body.privacy-mode .privacy-route-messages .max-w-\[80\%\],
+body.privacy-mode .privacy-route-messages .h-12.w-12,
+body.privacy-mode .privacy-route-messages .h-11.w-11,
+body.privacy-mode .privacy-route-network .text-lg,
+body.privacy-mode .privacy-route-network .text-sm,
+body.privacy-mode .privacy-route-cpd .text-sm.font-bold.opacity-80,
+body.privacy-mode .privacy-route-cpd h3,
+body.privacy-mode .privacy-route-cpd textarea:not(:focus),
+body.privacy-mode .privacy-route-caselogs h3,
+body.privacy-mode .privacy-route-caselogs .text-sm,
+body.privacy-mode .privacy-route-protocols h3,
+body.privacy-mode .privacy-route-protocols .text-sm,
+body.privacy-mode .privacy-route-vault h3,
+body.privacy-mode .privacy-route-vault .text-sm,
+body.privacy-mode .fixed.inset-y-0.right-0 .text-sm.opacity-80,
+body.privacy-mode .fixed.inset-y-0.right-0 .font-bold.text-sm,
+body.privacy-mode .sticky.top-0 p.text-sm {
+  filter: blur(5px) !important;
+  user-select: none !important;
+}
+
+body.privacy-mode input,
+body.privacy-mode textarea,
+body.privacy-mode select,
+body.privacy-mode button,
+body.privacy-mode a {
+  filter: none;
+}
+
+body.privacy-mode .privacy-mode-notice {
+  display: block !important;
+}
+
+.privacy-mode-notice {
+  display: none;
+}
