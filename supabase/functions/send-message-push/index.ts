@@ -25,14 +25,6 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Supabase environment variables" }, 500);
     }
 
-    if (!firebaseProjectId || !firebaseClientEmail || !firebasePrivateKey) {
-      return json({
-        sent: 0,
-        skipped: true,
-        reason: "Missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY secret"
-      });
-    }
-
     const authHeader = req.headers.get("Authorization") || "";
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } }
@@ -46,7 +38,18 @@ Deno.serve(async (req) => {
 
     const { recipient_id, title, body, message_id, conversation_id } = await req.json();
     if (!recipient_id) return json({ error: "recipient_id is required" }, 400);
-    if (recipient_id === authData.user.id) return json({ sent: 0, skipped: true, reason: "self" });
+    if (recipient_id === authData.user.id) return json({ sent: 0, notification_created: false, skipped: true, reason: "self" });
+
+    const messageTitle = title || "New message";
+    const messageBody = body || "You have a new VetLearn message.";
+
+    const notificationResult = await createInAppNotification(adminClient, {
+      recipientId: recipient_id,
+      title: messageTitle,
+      body: messageBody,
+      messageId: message_id,
+      conversationId: conversation_id
+    });
 
     const { data: prefs } = await adminClient
       .from("user_preferences")
@@ -55,7 +58,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (prefs?.app_preferences?.notifications === false) {
-      return json({ sent: 0, skipped: true, reason: "recipient disabled notifications" });
+      return json({ sent: 0, notification_created: notificationResult.created, skipped: true, reason: "recipient disabled phone notifications" });
+    }
+
+    if (!firebaseProjectId || !firebaseClientEmail || !firebasePrivateKey) {
+      return json({
+        sent: 0,
+        notification_created: notificationResult.created,
+        skipped: true,
+        reason: "Missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY secret"
+      });
     }
 
     const { data: tokens, error: tokenError } = await adminClient
@@ -63,18 +75,18 @@ Deno.serve(async (req) => {
       .select("token")
       .eq("user_id", recipient_id);
 
-    if (tokenError) return json({ error: tokenError.message }, 500);
+    if (tokenError) return json({ error: tokenError.message, notification_created: notificationResult.created }, 500);
 
     const uniqueTokens = [...new Set((tokens || []).map((row) => row.token).filter(Boolean))];
-    if (uniqueTokens.length === 0) return json({ sent: 0, skipped: true, reason: "no registered devices" });
+    if (uniqueTokens.length === 0) {
+      return json({ sent: 0, notification_created: notificationResult.created, skipped: true, reason: "no registered devices" });
+    }
 
     const accessToken = await getGoogleAccessToken({
       clientEmail: firebaseClientEmail,
       privateKey: firebasePrivateKey
     });
 
-    const messageTitle = title || "New VetLearn message";
-    const messageBody = body || "You have a new VetLearn message.";
     const messageData = {
       type: "message",
       message_id: message_id ? String(message_id) : "",
@@ -108,6 +120,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
+      notification_created: notificationResult.created,
       sent: detail.filter((item) => item.ok).length,
       failed: failedTokens.length,
       attempted: uniqueTokens.length
@@ -117,6 +130,45 @@ Deno.serve(async (req) => {
     return json({ error: error?.message || String(error) }, 400);
   }
 });
+
+async function createInAppNotification(adminClient: ReturnType<typeof createClient>, details: {
+  recipientId: string;
+  title: string;
+  body: string;
+  messageId?: string | null;
+  conversationId?: string | null;
+}) {
+  const payload = {
+    user_id: details.recipientId,
+    type: "message",
+    title: details.title,
+    message: details.body,
+    related_id: details.messageId ? String(details.messageId) : null,
+    is_read: false,
+    created_at: new Date().toISOString()
+  };
+
+  const { error } = await adminClient.from("notifications").insert(payload);
+  if (!error) return { created: true };
+
+  console.error("Could not create in-app notification", error);
+
+  const fallbackPayload = {
+    user_id: details.recipientId,
+    type: "message",
+    message: details.body,
+    related_id: details.messageId ? String(details.messageId) : null,
+    is_read: false
+  };
+
+  const fallback = await adminClient.from("notifications").insert(fallbackPayload);
+  if (fallback.error) {
+    console.error("Could not create fallback in-app notification", fallback.error);
+    return { created: false, error: fallback.error.message };
+  }
+
+  return { created: true };
+}
 
 async function sendFcmV1({ token, accessToken, projectId, title, body, data }: {
   token: string;
