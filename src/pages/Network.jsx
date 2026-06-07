@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Briefcase,
@@ -424,7 +424,7 @@ export default function Network({ user, darkMode = false }) {
   return (
     <div className="pb-8">
       {selectedColleague && <ColleagueProfileModal colleague={selectedColleague} loading={profileLoading} darkMode={darkMode} onClose={() => setSelectedColleague(null)} />}
-      {sharedViewer && <SharedAttachmentModal post={sharedViewer} darkMode={darkMode} onClose={() => setSharedViewer(null)} />}
+      {sharedViewer && <SharedAttachmentModal post={sharedViewer} user={user} darkMode={darkMode} onClose={() => setSharedViewer(null)} />}
 
       <PageBanner
         title="Professional Network"
@@ -602,7 +602,7 @@ function PostComposer({ title, subtitle, form, darkMode, panelClass, fieldClass,
           <Paperclip size={16} className="text-[#0F8F83] mt-0.5" />
           <div>
             <p className="font-black text-sm">Attach one of yours</p>
-            <p className="text-xs opacity-60 leading-5">This stores a shareable snapshot so other users can open it from the post.</p>
+            <p className="text-xs opacity-60 leading-5">This stores a shareable snapshot so other users can open and save it from the post.</p>
           </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -692,30 +692,70 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
 
       {(post.shared_title || post.shared_type) && (
         <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]"}`}>
-          <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={post.shared_payload ? onOpenShared : undefined}
+            disabled={!post.shared_payload && !sharedUrl}
+            className="w-full text-left flex items-start gap-3 disabled:cursor-default"
+          >
             <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} rounded-lg p-2 shrink-0`}><FileText size={16} /></div>
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-widest opacity-50">{shareLabel}</p>
               <p className="font-black text-sm truncate">{post.shared_title || "Shared resource"}</p>
               {post.shared_payload ? (
-                <button onClick={onOpenShared} className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">Open shared item</button>
+                <span className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">Open shared item</span>
               ) : sharedUrl ? (
                 <Link to={sharedUrl} className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">Open shared item</Link>
               ) : (
-                <p className="mt-1 text-xs opacity-55">This older attachment has no shareable preview. Ask the author to reattach it.</p>
+                <span className="mt-1 block text-xs opacity-55">This older attachment has no shareable preview. Ask the author to reattach it.</span>
               )}
             </div>
-          </div>
+          </button>
         </div>
       )}
     </article>
   );
 }
 
-function SharedAttachmentModal({ post, darkMode, onClose }) {
+function SharedAttachmentModal({ post, user, darkMode, onClose }) {
+  const [saving, setSaving] = useState(false);
   const payload = post.shared_payload || {};
   const modalClass = darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]";
   const softClass = darkMode ? "bg-white/10 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]";
+
+  const saveSharedItem = async () => {
+    if (!user?.id || saving) return;
+    setSaving(true);
+
+    const isCase = post.shared_type === "caselog";
+    const table = isCase ? "caselogs" : "protocols";
+    const payloadToInsert = isCase
+      ? {
+          user_id: user.id,
+          title: `${post.shared_title || payload.title || "Shared case"} (shared)`,
+          category: payload.category || "Other",
+          patient_name: null,
+          species: payload.species || null,
+          breed: payload.breed || null,
+          age: payload.age || null,
+          gender: payload.gender || null,
+          description: payload.description || null,
+          media_urls: []
+        }
+      : {
+          user_id: user.id,
+          name: `${post.shared_title || payload.name || "Shared protocol"} (shared)`,
+          indication: payload.indication || "",
+          drug_ids: Array.isArray(payload.drug_ids) ? payload.drug_ids : [],
+          drug_doses: payload.drug_doses && typeof payload.drug_doses === "object" ? payload.drug_doses : {}
+        };
+
+    const { error } = await supabase.from(table).insert(payloadToInsert);
+    setSaving(false);
+    if (error) return toast.error(`Could not save shared ${isCase ? "case" : "protocol"}`);
+    toast.success(`Saved to your ${isCase ? "case logs" : "protocols"}`);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
@@ -742,6 +782,17 @@ function SharedAttachmentModal({ post, darkMode, onClose }) {
           </div>
         ) : (
           <div className={`${softClass} rounded-lg border p-4 text-sm opacity-80`}>No preview is available for this shared item.</div>
+        )}
+
+        {(post.shared_type === "caselog" || post.shared_type === "protocol") && (
+          <button
+            onClick={saveSharedItem}
+            disabled={saving}
+            className="mt-5 w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
+            Save to my {post.shared_type === "caselog" ? "Case Logs" : "Protocols"}
+          </button>
         )}
       </div>
     </div>
