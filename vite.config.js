@@ -18,7 +18,13 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallbackDenylist: [/^\/api\//]
+        navigateFallbackDenylist: [/^\/api\//],
+
+        // Vite PWA / Workbox defaults to a 2 MiB precache limit.
+        // The main app bundle is currently just over that, so raise the limit enough
+        // for the JS bundle while excluding the large ONNX/WASM runtime from precache.
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
+        globIgnores: ['**/*.wasm']
       },
 
       manifest: {
