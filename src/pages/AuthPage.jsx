@@ -10,8 +10,11 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  Fingerprint
+  Fingerprint,
+  X
 } from "lucide-react";
+
+const CONSENT_VERSION = "2026-06-07";
 
 export default function AuthPage(){
 
@@ -24,6 +27,11 @@ export default function AuthPage(){
   const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
   const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
   const [keepMeLoggedIn, setKeepMeLoggedInState]=useState(() => getKeepMeLoggedIn())
+  const [acceptedTerms, setAcceptedTerms]=useState(false)
+  const [acceptedEmailPrivacy, setAcceptedEmailPrivacy]=useState(false)
+  const [marketingOptIn, setMarketingOptIn]=useState(false)
+  const [showTermsModal, setShowTermsModal]=useState(false)
+  const [showEmailPrivacyModal, setShowEmailPrivacyModal]=useState(false)
   const [loading,setLoading]=useState(false)
 
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
@@ -63,6 +71,15 @@ export default function AuthPage(){
     setKeepMeLoggedIn(value);
   };
 
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    if (nextMode === "login") {
+      setAcceptedTerms(false);
+      setAcceptedEmailPrivacy(false);
+      setMarketingOptIn(false);
+    }
+  };
+
   const refreshFingerprintAfterPasswordLogin = async (signedInUser, signedInSession) => {
     if (!needsBiometricRelink() || !signedInUser || !signedInSession) return;
 
@@ -85,6 +102,11 @@ export default function AuthPage(){
       return
     }
 
+    if(mode==="signup" && (!acceptedTerms || !acceptedEmailPrivacy)){
+      toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.")
+      return
+    }
+
     setLoading(true)
 
     if(mode==="login"){
@@ -102,13 +124,23 @@ export default function AuthPage(){
 
       await refreshFingerprintAfterPasswordLogin(data?.user, data?.session)
     }else{
+      const consentTimestamp = new Date().toISOString();
       const {error}=await supabase.auth.signUp({
         email:cleanEmail,
         password,
         options:{
           data:{
             full_name:name.trim()||cleanEmail.split("@")[0],
-            rcvs_number:rcvsNumber.trim()
+            rcvs_number:rcvsNumber.trim(),
+            accepted_terms:true,
+            accepted_terms_at:consentTimestamp,
+            accepted_terms_version:CONSENT_VERSION,
+            accepted_email_privacy:true,
+            accepted_email_privacy_at:consentTimestamp,
+            accepted_email_privacy_version:CONSENT_VERSION,
+            marketing_emails_opt_in:marketingOptIn,
+            marketing_emails_opt_in_at:marketingOptIn ? consentTimestamp : null,
+            marketing_emails_opt_in_version:CONSENT_VERSION
           }
         }
       })
@@ -144,8 +176,13 @@ export default function AuthPage(){
     }
   }
 
+  const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy)
+
   return(
     <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247] px-4 py-8">
+      {showTermsModal && <ConsentModal title="Terms of Service" onClose={()=>setShowTermsModal(false)} onAccept={()=>{ setAcceptedTerms(true); setShowTermsModal(false); }} acceptLabel="Accept Terms"><TermsContent /></ConsentModal>}
+      {showEmailPrivacyModal && <ConsentModal title="Email Privacy Notice" onClose={()=>setShowEmailPrivacyModal(false)} onAccept={()=>{ setAcceptedEmailPrivacy(true); setShowEmailPrivacyModal(false); }} acceptLabel="Accept Email Privacy Notice"><EmailPrivacyContent /></ConsentModal>}
+
       <div className="max-w-md mx-auto">
         <div className="flex items-center gap-3 mb-8">
           <img
@@ -186,13 +223,13 @@ export default function AuthPage(){
           <div className="grid grid-cols-2 gap-2 mb-5 bg-[#F0F6F5] rounded-lg p-1">
             <button
               className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="login"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>setMode("login")}
+              onClick={()=>switchMode("login")}
             >
               Login
             </button>
             <button
               className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="signup"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>setMode("signup")}
+              onClick={()=>switchMode("signup")}
             >
               Register
             </button>
@@ -272,10 +309,25 @@ export default function AuthPage(){
             </label>
           )}
 
+          {mode==="signup" && (
+            <div className="mb-4 space-y-3">
+              <ConsentCheckbox checked={acceptedTerms} onChange={setAcceptedTerms} required>
+                I have read and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={()=>setShowTermsModal(true)}>Terms of Service</button>
+              </ConsentCheckbox>
+              <ConsentCheckbox checked={acceptedEmailPrivacy} onChange={setAcceptedEmailPrivacy} required>
+                I understand and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={()=>setShowEmailPrivacyModal(true)}>Email Privacy Notice</button>
+              </ConsentCheckbox>
+              <ConsentCheckbox checked={marketingOptIn} onChange={setMarketingOptIn}>
+                I would like to receive optional VetLearn updates, CPD reminders and marketing emails.
+                <span className="block text-xs opacity-65 mt-1">You can unsubscribe from optional emails at any time.</span>
+              </ConsentCheckbox>
+            </div>
+          )}
+
           <button
             className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-4 font-black shadow-[0_12px_24px_rgba(15,143,131,0.16)] disabled:opacity-50 flex items-center justify-center gap-2 mt-2 transition-opacity hover:opacity-90"
             onClick={submit}
-            disabled={loading}
+            disabled={loading || signupBlocked}
           >
             {loading?(
               <>
@@ -295,6 +347,10 @@ export default function AuthPage(){
             )}
           </button>
 
+          {mode==="signup" && signupBlocked && (
+            <p className="mt-2 text-center text-xs font-bold text-orange-600">Please accept the required notices to create your profile.</p>
+          )}
+
           {mode==="login" && showFingerprintLogin && (
             <button
               className="w-full bg-transparent border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
@@ -308,5 +364,92 @@ export default function AuthPage(){
         </div>
       </div>
     </div>
+  )
+}
+
+function ConsentCheckbox({ checked, onChange, children, required = false }) {
+  return (
+    <label className="flex items-start gap-3 rounded-lg border border-[#DCEDEA] bg-[#F9FCFB] p-3 text-sm text-slate-600">
+      <input
+        type="checkbox"
+        className="mt-1 h-4 w-4 accent-[#71CFC2]"
+        checked={checked}
+        onChange={(event)=>onChange(event.target.checked)}
+      />
+      <span className="leading-5">
+        {children}
+        {required && <span className="ml-1 text-xs font-black text-orange-600">Required</span>}
+      </span>
+    </label>
+  )
+}
+
+function ConsentModal({ title, children, onClose, onAccept, acceptLabel }) {
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl border border-[#DCEDEA] bg-white text-[#113247] shadow-2xl max-h-[86vh] flex flex-col">
+        <div className="flex items-start justify-between gap-3 border-b border-[#DCEDEA] p-5">
+          <h3 className="text-xl font-black">{title}</h3>
+          <button type="button" onClick={onClose} className="rounded-full bg-[#F0F6F5] p-2 text-[#0B3760]" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-5 text-sm leading-6 text-slate-700 space-y-4">
+          {children}
+        </div>
+        <div className="grid grid-cols-2 gap-2 border-t border-[#DCEDEA] p-5">
+          <button type="button" onClick={onClose} className="rounded-lg bg-[#F0F6F5] p-3 text-sm font-black text-[#0B3760]">Close</button>
+          <button type="button" onClick={onAccept} className="rounded-lg bg-[#71CFC2] p-3 text-sm font-black text-[#062F63]">{acceptLabel}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TermsContent() {
+  return (
+    <>
+      <p><strong>Terms of Service for VetLearn</strong></p>
+      <p><strong>Last Updated:</strong> June 7, 2026</p>
+      <p><strong>1. Introduction</strong></p>
+      <p>Welcome to VetLearn. These Terms of Service constitute a legally binding agreement between you and [Insert Your Full Legal Name or Company Name] regarding your use of the VetLearn mobile application and associated web portals. By accessing or using the Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.</p>
+      <p><strong>2. Nature of the Service</strong></p>
+      <p>VetLearn is a professional tool designed to support veterinary practitioners in continuing professional development and clinical management. The content, calculators, and information provided through the Service are for educational and professional support purposes only. The Service does not replace clinical judgment. You are solely responsible for all veterinary decisions, diagnoses, and treatment plans. While we strive for accuracy, we do not warrant that all information is complete, current, or error-free. You should independently verify critical clinical data.</p>
+      <p><strong>3. User Obligations and Data Responsibility</strong></p>
+      <p>You are responsible for maintaining the confidentiality of your account credentials. By using the Service, you acknowledge that you are the Data Controller for any clinical or patient data you input or transmit. It is your sole responsibility to ensure that you have the necessary authority and consent to process any personal or sensitive information, that your use of the Service complies with UK GDPR and all applicable data protection laws, and that you do not upload prohibited or unlawful content.</p>
+      <p>You agree not to reverse-engineer, exploit, or use the Service in any way that harms our infrastructure or other users.</p>
+      <p><strong>4. Intellectual Property</strong></p>
+      <p>All content, features, and functionality of the Service, including software, design, text, and graphics, are the exclusive property of VetLearn and are protected by international copyright and trademark laws.</p>
+      <p><strong>5. Limitation of Liability</strong></p>
+      <p>To the maximum extent permitted by law, VetLearn and its developers shall not be liable for any indirect, incidental, or consequential damages resulting from your use of the Service, including errors in clinical calculations or data interpretation, loss of data or unauthorized access by third parties provided we have met industry-standard security practices, or professional liability arising from the use of the Service in a clinical setting.</p>
+      <p><strong>6. Termination</strong></p>
+      <p>We reserve the right to suspend or terminate your access to the Service at any time, without prior notice, if you breach these Terms or engage in conduct we deem harmful to the platform or other users.</p>
+      <p><strong>7. Changes to Terms</strong></p>
+      <p>We may update these Terms from time to time. We will notify you of significant changes via the app or email. Your continued use of the Service after such changes constitutes your acceptance of the updated Terms.</p>
+      <p><strong>8. Governing Law</strong></p>
+      <p>These Terms shall be governed by and construed in accordance with the laws of England and Wales. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+      <p><strong>9. Contact Us</strong></p>
+      <p>If you have any questions about these Terms, please contact us at: [Insert Contact Email/Details]</p>
+    </>
+  )
+}
+
+function EmailPrivacyContent() {
+  return (
+    <>
+      <p><strong>Email Privacy Notice for VetLearn</strong></p>
+      <p><strong>Last Updated:</strong> June 7, 2026</p>
+      <p>VetLearn uses your email address to create and manage your account, provide login and security functions, and send essential service communications.</p>
+      <p><strong>1. Essential Emails</strong></p>
+      <p>By creating an account, you agree that VetLearn may send you essential emails, including account verification emails, password reset emails, security alerts, important service updates, changes to Terms of Service or Privacy Policy, and account or subscription-related messages. These emails are necessary for the operation and security of your account.</p>
+      <p><strong>2. Optional Emails</strong></p>
+      <p>VetLearn may offer optional emails such as product updates, CPD reminders, newsletters, or marketing messages. These will only be sent where permitted by law and where you have consented or where there is another lawful basis. You can unsubscribe from optional marketing emails at any time.</p>
+      <p><strong>3. Email Privacy</strong></p>
+      <p>We will not sell your email address to third parties. We may use trusted service providers, such as authentication, hosting, email delivery, analytics, or infrastructure providers, to process emails on our behalf. These providers must process data only according to our instructions and applicable data protection laws.</p>
+      <p><strong>4. Your Responsibilities</strong></p>
+      <p>You are responsible for keeping your email account secure and ensuring that the email address linked to your VetLearn account is accurate and accessible.</p>
+      <p><strong>5. Contact</strong></p>
+      <p>For questions about email privacy or data protection, contact: [Insert Contact Email/Details]</p>
+    </>
   )
 }
