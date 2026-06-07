@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 export const featureKeys = {
   clinicalTools: "clinical_tools",
   drugCalculator: "drug_calculator",
+  additionalCalculators: "additional_calculators",
   clinicalProtocols: "clinical_protocols",
   drugDatabase: "drug_database",
   library: "library",
@@ -12,7 +13,7 @@ export const featureKeys = {
   cpdTracker: "cpd_tracker",
   vault: "vault",
   aiAssistant: "ai_assistant",
-  pillCount: "pill_counter" // FIXED: Perfectly matches your database
+  pillCount: "pill_counter"
 };
 
 export const defaultFeatureAccess = Object.values(featureKeys).reduce((acc, key) => {
