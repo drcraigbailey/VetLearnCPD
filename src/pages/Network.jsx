@@ -84,7 +84,7 @@ export default function Network({ user, darkMode = false }) {
 
   useEffect(() => {
     const delay = setTimeout(async () => {
-      if (searchQuery.trim().length < 3) {
+      if (!user?.id || searchQuery.trim().length < 3) {
         setSearchResults([]);
         return;
       }
@@ -101,7 +101,26 @@ export default function Network({ user, darkMode = false }) {
         toast.error("Search failed");
         setSearchResults([]);
       } else {
+        const candidateIds = (data || []).map(result => result.id);
+        let hiddenProfileIds = new Set();
+
+        if (candidateIds.length > 0) {
+          const { data: preferenceRows, error: preferenceError } = await supabase
+            .from("user_preferences")
+            .select("user_id, app_preferences")
+            .in("user_id", candidateIds);
+
+          if (!preferenceError) {
+            hiddenProfileIds = new Set(
+              (preferenceRows || [])
+                .filter(row => row.app_preferences?.privacyMode === true)
+                .map(row => row.user_id)
+            );
+          }
+        }
+
         const filtered = (data || []).filter(result =>
+          !hiddenProfileIds.has(result.id) &&
           !connections.some(connection => connection.colleague?.id === result.id) &&
           !requests.some(request => request.requester?.id === result.id)
         );
