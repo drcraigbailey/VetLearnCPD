@@ -13,21 +13,19 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   const pageRef = useRef(null);
   const additionalCalculatorsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
-  
-  const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
 
-  // PERFECTED STRICT ACCESS
-  // Ignores leaky fallbacks and guarantees it only shows if the payload explicitly says TRUE
+  const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
+  const canUseAdditionalCalculators = featureAccess && featureAccess[featureKeys.additionalCalculators] === true;
   const canUsePillCount = featureAccess && featureAccess[featureKeys.pillCount] === true;
 
   const scrollToAdditionalCalculators = () => {
+    if (!canUseAdditionalCalculators) return;
     setActiveSection("calculators");
     window.setTimeout(() => {
       additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
   };
 
-  // ACCESS PROTECTION
   useEffect(() => {
     if (!canUseProtocols && activeSection === "protocols") {
       setActiveSection("calculators");
@@ -43,7 +41,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
     const refreshDoseControls = () => {
       enhanceDoseControls(root, darkMode);
-      syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode);
+      syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode, canUseAdditionalCalculators);
     };
     refreshDoseControls();
 
@@ -57,7 +55,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       root.removeEventListener("input", refreshDoseControls);
       root.removeEventListener("change", refreshDoseControls);
     };
-  }, [darkMode]);
+  }, [darkMode, canUseAdditionalCalculators]);
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
@@ -79,9 +77,11 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       {activeSection === "calculators" && (
         <>
           <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <div ref={additionalCalculatorsRef} className="scroll-mt-24">
-            <AdditionalClinicalCalculators darkMode={darkMode} />
-          </div>
+          {canUseAdditionalCalculators && (
+            <div ref={additionalCalculatorsRef} className="scroll-mt-24">
+              <AdditionalClinicalCalculators darkMode={darkMode} />
+            </div>
+          )}
         </>
       )}
 
@@ -104,11 +104,17 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   );
 }
 
-function syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode) {
+function syncCalculatorTileScrolling(root, scrollToAdditionalCalculators, darkMode, canUseAdditionalCalculators) {
   const calculatorTiles = root.querySelector(".flex.overflow-x-auto.gap-2.pb-2.scrollbar-hide");
   if (!calculatorTiles || !calculatorTiles.querySelector(".lucide-syringe") || !calculatorTiles.querySelector(".lucide-droplets")) return;
 
-  let additionalShortcut = calculatorTiles.querySelector('[data-additional-calculator-shortcut="true"]');
+  const existingShortcut = calculatorTiles.querySelector('[data-additional-calculator-shortcut="true"]');
+  if (!canUseAdditionalCalculators) {
+    existingShortcut?.remove();
+    return;
+  }
+
+  let additionalShortcut = existingShortcut;
   if (!additionalShortcut) {
     additionalShortcut = document.createElement("button");
     additionalShortcut.type = "button";
