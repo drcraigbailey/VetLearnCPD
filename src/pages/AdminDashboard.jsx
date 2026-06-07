@@ -38,10 +38,10 @@ const adminTabs = [
   { id: "settings", label: "Settings", icon: Settings }
 ];
 
-// Added pill_counter explicitly mapped to "Pill Count"
 const featureLabels = {
   clinical_tools: "Clinical Tools",
   drug_calculator: "Drug Calculator",
+  additional_calculators: "Additional Calculators",
   clinical_protocols: "Clinical Protocols",
   drug_database: "Drug Database",
   library: "Library",
@@ -51,7 +51,7 @@ const featureLabels = {
   cpd_tracker: "CPD Tracker",
   vault: "Vault",
   ai_assistant: "AI Assistant",
-  pill_counter: "Pill Count" 
+  pill_counter: "Pill Count"
 };
 
 const userTypeOptions = ["free", "clinician", "professional", "premium", "admin", "super_admin"];
@@ -349,174 +349,121 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
       {activeTab === "subscriptions" && <SubscriptionsPanel panelClass={panelClass} darkMode={darkMode} subscriptions={subscriptions} />}
       {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} />}
-      {activeTab === "audit" && <AdminActivityExplorer panelClass={panelClass} darkMode={darkMode} users={users} initialLogs={auditLogs} />}
-      {activeTab === "settings" && <AdminSettings panelClass={panelClass} darkMode={darkMode} profile={profile} />}
+      {activeTab === "audit" && <AdminActivityExplorer darkMode={darkMode} />}
+      {activeTab === "settings" && <AdminSettings panelClass={panelClass} />}
     </div>
   );
 }
 
-function Overview({ stats = {}, panelClass, darkMode, onRefresh }) {
-  const userStats = stats?.users || {};
-  const learningStats = stats?.learning || {};
-  const systemStats = stats?.system || {};
-  const chartData = [
-    { name: "Users", value: userStats.total || 0 },
-    { name: "CPD", value: learningStats.cpd_entries || 0 },
-    { name: "Cases", value: learningStats.case_logs || 0 },
-    { name: "Protocols", value: learningStats.protocols || 0 },
-    { name: "Messages", value: systemStats.messages_sent || 0 }
+function Overview({ stats, panelClass, darkMode, onRefresh }) {
+  const metrics = [
+    ["Total users", stats?.total_users],
+    ["Active users", stats?.active_users],
+    ["CPD entries", stats?.cpd_entries],
+    ["Case logs", stats?.case_logs],
+    ["Messages", stats?.messages],
+    ["Connections", stats?.connections]
   ];
 
+  const chartData = metrics.map(([name, value]) => ({ name, value: value || 0 }));
+
   return (
-    <div className="space-y-5">
-      <div className="flex justify-end">
-        <button onClick={onRefresh} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-4 py-3 text-sm font-black flex items-center gap-2"><RefreshCw size={16} /> Refresh</button>
+    <section className={panelClass}>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="text-xl font-black">Overview</h2>
+        <button onClick={onRefresh} className={`rounded-lg px-3 py-2 text-sm font-bold flex items-center gap-2 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+          <RefreshCw size={15} /> Refresh
+        </button>
       </div>
-      <section className={panelClass}>
-        <h2 className="text-xl font-black mb-4">User Statistics</h2>
-        <MetricGrid metrics={[
-          ["Total users", userStats.total], ["Active", userStats.active], ["Today", userStats.new_today], ["This week", userStats.new_week],
-          ["This month", userStats.new_month], ["Clinicians", userStats.clinician], ["Premium", userStats.premium], ["Suspended", userStats.suspended], ["Admins", userStats.admins]
-        ]} darkMode={darkMode} />
-      </section>
-      <section className={panelClass}>
-        <h2 className="text-xl font-black mb-4">Learning Statistics</h2>
-        <MetricGrid metrics={[
-          ["CPD entries", learningStats.cpd_entries], ["Reading records", learningStats.reading_records], ["Case logs", learningStats.case_logs],
-          ["Protocols", learningStats.protocols], ["Calculations", learningStats.calculations], ["Most used tool", learningStats.most_used_tool || "None yet"]
-        ]} darkMode={darkMode} />
-      </section>
-      <section className={panelClass}>
-        <h2 className="text-xl font-black mb-4">System Snapshot</h2>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#0F8F83" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <MetricGrid metrics={[
-          ["Database records", systemStats.database_records], ["Notifications", systemStats.notifications_sent], ["Messages", systemStats.messages_sent],
-          ["Error logs", systemStats.error_logs], ["Last backup", systemStats.last_backup || "Not recorded"]
-        ]} darkMode={darkMode} />
-      </section>
-    </div>
+      <MetricGrid metrics={metrics} darkMode={darkMode} />
+      <div className="h-64 mt-5">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#71CFC2" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
   );
 }
 
 function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const canConfirmDelete = deleteConfirm.trim().toUpperCase() === "DELETE";
-
-  const closeDeleteWarning = () => {
-    setDeleteCandidate(null);
-    setDeleteConfirm("");
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteCandidate || !canConfirmDelete) return;
-    const deleted = await onDelete(deleteCandidate);
-    if (deleted) closeDeleteWarning();
-  };
 
   return (
     <section className={panelClass}>
-      <div className="flex items-start gap-3 mb-4">
-        <UserCog className="text-[#0F8F83] shrink-0" />
-        <div>
-          <h2 className="text-xl font-black">User Management</h2>
-          <p className="text-sm opacity-60">Search, suspend, reactivate and manage user type.</p>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <Search size={18} className="opacity-50" />
+        <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search users" className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
       </div>
-      <label className={`flex items-center gap-2 rounded-lg px-3 py-3 mb-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-        <Search size={18} className="opacity-55" />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users..." className="bg-transparent outline-none flex-1 text-sm" />
-      </label>
       <div className="space-y-3">
-        {users.map(item => {
-          const userType = getUserType(item);
-          const isInternal = internalAdminTypes.includes(userType);
-          const canChangeType = isSuperAdmin || !isInternal;
-          return (
-            <div key={item.user_id} className={`rounded-lg border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-[#DCEDEA] bg-white"}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="font-black truncate">{item.full_name || "Unnamed user"}</h3>
-                  <p className="text-sm opacity-65 truncate">{item.email}</p>
-                  <p className="text-xs opacity-50 mt-1">Joined {formatDate(item.created_at)} - Last login {formatDate(item.last_sign_in_at)}</p>
-                </div>
-                <span className={`rounded-full px-2 py-1 text-[10px] font-black ${item.account_status === "suspended" ? "bg-red-100 text-red-700" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>{item.account_status || "active"}</span>
+        {users.map(item => (
+          <div key={item.user_id} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-black">{item.full_name || item.email}</h3>
+                <p className="text-sm opacity-65">{item.email}</p>
+                <p className="text-xs font-bold mt-1 text-[#0F8F83]">{userTypeLabels[getUserType(item)] || getUserType(item)}</p>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <label className="block">
-                  <span className="text-[10px] font-black uppercase opacity-50">User type</span>
-                  <select value={userType} disabled={!canChangeType || working} onChange={(event) => onUserType(item, event.target.value)} className={`mt-1 w-full rounded-lg p-3 text-sm font-bold ${darkMode ? "bg-[#071A24]" : "bg-[#F0F6F5]"}`}>
-                    {userTypeOptions.map(option => (
-                      <option key={option} value={option} disabled={internalAdminTypes.includes(option) && !isSuperAdmin}>
-                        {userTypeLabels[option]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button disabled={working} onClick={() => onStatus(item, item.account_status === "suspended" ? "active" : "suspended")} className="self-end rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-3 text-sm font-black">
-                  {item.account_status === "suspended" ? "Reactivate" : "Suspend"}
-                </button>
-              </div>
-              {isInternal && !isSuperAdmin && <p className="mt-2 text-xs font-bold text-orange-500">Only Super Admins can change admin access.</p>}
+              <select disabled={working} value={getUserType(item)} onChange={event => onUserType(item, event.target.value)} className={`rounded-lg p-2 text-xs font-bold ${darkMode ? "bg-[#071A24]" : "bg-white"}`}>
+                {userTypeOptions.map(type => <option key={type} value={type}>{userTypeLabels[type]}</option>)}
+              </select>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button disabled={working || item.account_status === "active"} onClick={() => onStatus(item, "active")} className="rounded-lg bg-[#71CFC2] p-2 text-xs font-black text-[#062F63] disabled:opacity-40">Activate</button>
+              <button disabled={working || item.account_status === "suspended"} onClick={() => onStatus(item, "suspended")} className="rounded-lg bg-orange-500 p-2 text-xs font-black text-white disabled:opacity-40">Suspend</button>
               <button
                 disabled={working || !isSuperAdmin || item.user_id === currentUserId}
-                onClick={() => { setDeleteCandidate(item); setDeleteConfirm(""); }}
-                className={`mt-2 w-full rounded-lg px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${
-                  darkMode ? "bg-red-500/15 text-red-200 disabled:bg-white/5 disabled:text-slate-500" : "bg-red-50 text-red-600 disabled:bg-slate-100 disabled:text-slate-400"
-                }`}
+                onClick={() => setDeleteCandidate(item)}
+                className="col-span-2 rounded-lg bg-red-600 p-2 text-xs font-black text-white disabled:opacity-40"
               >
-                <Trash2 size={16} />
-                Delete user and data
+                Delete user
               </button>
             </div>
-          );
-        })}
-        {users.length === 0 && <p className="text-sm opacity-60">No users found.</p>}
+          </div>
+        ))}
       </div>
+
       {deleteCandidate && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
-          <div className={`w-full max-w-md rounded-lg border p-5 shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-red-100 bg-white text-[#0B3760]"}`}>
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-lg bg-red-100 text-red-600 grid place-items-center shrink-0">
-                <AlertTriangle size={20} />
-              </div>
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
+            <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-lg font-black">Delete this user?</h3>
-                <p className="mt-1 text-sm opacity-70 leading-6">
-                  This permanently deletes the user account and all app data linked to it. This cannot be undone.
+                <h3 className="text-xl font-black">Delete this user?</h3>
+                <p className="mt-2 text-sm opacity-70 leading-6">
+                  This will permanently delete <span className="font-black">{deleteCandidate.email}</span> and linked app data. This cannot be undone.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                disabled={working}
+                className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
-            <div className={`mt-4 rounded-lg p-3 text-sm ${darkMode ? "bg-white/10" : "bg-red-50"}`}>
-              <p className="font-black truncate">{deleteCandidate.full_name || "Unnamed user"}</p>
-              <p className="text-xs opacity-65 truncate">{deleteCandidate.email}</p>
-            </div>
-            <label className="mt-4 block">
-              <span className="text-xs font-black opacity-65">Type DELETE to confirm</span>
-              <input
-                value={deleteConfirm}
-                onChange={(event) => setDeleteConfirm(event.target.value)}
-                className={`mt-2 w-full rounded-lg p-3 outline-none text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}
-                autoFocus
-              />
-            </label>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={closeDeleteWarning} disabled={working} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-slate-100"}`}>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                disabled={working}
+                className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              >
                 Cancel
               </button>
               <button
-                onClick={confirmDelete}
-                disabled={working || !canConfirmDelete}
+                type="button"
+                disabled={working}
+                onClick={async () => {
+                  const success = await onDelete(deleteCandidate);
+                  if (success) setDeleteCandidate(null);
+                }}
                 className="rounded-lg bg-red-600 p-3 text-sm font-black text-white disabled:bg-slate-300 disabled:text-slate-500"
               >
                 Delete permanently
@@ -699,10 +646,5 @@ async function getAdminActionErrorMessage(error) {
   if (/edge function returned a non-2xx status code/i.test(message)) {
     return "The admin delete service returned an error. Check the admin-user-actions function logs in Supabase for the exact table or constraint, then try again.";
   }
-  return message || "Could not delete user";
-}
-
-function formatDate(value) {
-  if (!value) return "Never";
-  return new Date(value).toLocaleDateString();
+  return message || "Could not complete admin action";
 }
