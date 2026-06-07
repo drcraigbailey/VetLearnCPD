@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, Check, Globe, GraduationCap, Loader2, Mail, MapPin, MessageSquare, Phone, Search, Trash2, UserPlus, UserRound, Users, X } from "lucide-react";
+import { Briefcase, Check, FileText, Globe, GraduationCap, Loader2, Mail, MapPin, MessageSquare, Newspaper, Phone, Search, Send, Share2, Trash2, UserPlus, UserRound, Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { AppButton, IconButton, PageToolbar, SearchBox } from "../components/VetLearnUI";
 import { supabase } from "../supabaseClient";
+
+const postShareTypes = [
+  { value: "", label: "General post" },
+  { value: "caselog", label: "Case log" },
+  { value: "drug", label: "Drug" },
+  { value: "protocol", label: "Protocol" },
+  { value: "cpd", label: "CPD item" },
+  { value: "resource", label: "Other resource" }
+];
+
+const defaultPostForm = {
+  body: "",
+  shared_type: "",
+  shared_title: "",
+  shared_url: ""
+};
 
 export default function Network({ user, darkMode = false }) {
   const [activeTab, setActiveTab] = useState("colleagues");
@@ -15,6 +31,11 @@ export default function Network({ user, darkMode = false }) {
   const [sentRequestDetails, setSentRequestDetails] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [postForm, setPostForm] = useState(defaultPostForm);
+  const [postsAvailable, setPostsAvailable] = useState(true);
+  const [postLoading, setPostLoading] = useState(false);
+  const [postSaving, setPostSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -24,15 +45,22 @@ export default function Network({ user, darkMode = false }) {
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
     : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
+  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"}`;
 
   useEffect(() => {
-    if (user) loadNetworkData();
+    if (user) {
+      loadNetworkData();
+      loadPosts();
+    }
 
     const channel = supabase
       .channel(`network-${user?.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "connections" }, () => {
         loadNetworkData();
         window.dispatchEvent(new Event("networkUpdated"));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "network_posts" }, () => {
+        loadPosts();
       })
       .subscribe();
 
@@ -80,6 +108,31 @@ export default function Network({ user, darkMode = false }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPosts = async () => {
+    if (!user) return;
+    setPostLoading(true);
+
+    const { data, error } = await supabase
+      .from("network_posts")
+      .select(`
+        id, author_id, body, shared_type, shared_title, shared_url, created_at,
+        author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)
+      `)
+      .eq("is_deleted", false)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    if (error) {
+      setPosts([]);
+      setPostsAvailable(false);
+    } else {
+      setPosts(data || []);
+      setPostsAvailable(true);
+    }
+
+    setPostLoading(false);
   };
 
   useEffect(() => {
@@ -189,7 +242,63 @@ export default function Network({ user, darkMode = false }) {
     setBusyId(null);
   };
 
+  const updatePostForm = (field, value) => setPostForm(prev => ({ ...prev, [field]: value }));
+
+  const createPost = async () => {
+    if (!user?.id || postSaving) return;
+    const body = postForm.body.trim();
+    const sharedTitle = postForm.shared_title.trim();
+    const sharedUrl = postForm.shared_url.trim();
+
+    if (!body && !sharedTitle) {
+      toast.error("Write a post or add something to share");
+      return;
+    }
+
+    setPostSaving(true);
+    const { data, error } = await supabase
+      .from("network_posts")
+      .insert({
+        author_id: user.id,
+        body: body || null,
+        shared_type: postForm.shared_type || null,
+        shared_title: sharedTitle || null,
+        shared_url: sharedUrl || null
+      })
+      .select(`
+        id, author_id, body, shared_type, shared_title, shared_url, created_at,
+        author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)
+      `)
+      .single();
+
+    setPostSaving(false);
+
+    if (error) {
+      setPostsAvailable(false);
+      toast.error("Could not create post. Run the Network posts SQL first.");
+      return;
+    }
+
+    setPosts(prev => [data, ...prev]);
+    setPostForm(defaultPostForm);
+    setPostsAvailable(true);
+    toast.success("Post shared");
+  };
+
+  const deletePost = async (postId) => {
+    const { error } = await supabase
+      .from("network_posts")
+      .update({ is_deleted: true })
+      .eq("id", postId)
+      .eq("author_id", user.id);
+
+    if (error) return toast.error("Could not delete post");
+    setPosts(prev => prev.filter(post => post.id !== postId));
+    toast.success("Post deleted");
+  };
+
   const networkTabs = [
+    { id: "posts", label: "Posts", icon: Newspaper },
     { id: "colleagues", label: "Colleagues", icon: Users },
     { id: "search", label: "Find Colleagues", icon: Search },
   ];
@@ -216,12 +325,72 @@ export default function Network({ user, darkMode = false }) {
 
       <PageBanner
         title="Professional Network"
-        subtitle="Manage colleagues and professional connections."
+        subtitle="Manage colleagues, posts and professional connections."
         darkMode={darkMode}
         badges={[{ label: `${requests.length} pending`, icon: <UserPlus size={13} />, accent: true }]}
       />
 
       <PageToolbar items={networkTabs} activeId={activeTab} onChange={setActiveTab} darkMode={darkMode} className="mb-6" />
+
+      {activeTab === "posts" && (
+        <div className="space-y-4">
+          {!postsAvailable && (
+            <div className={`${panelClass} border-l-4 border-amber-400`}>
+              <h3 className="font-black mb-1">Posts need the Supabase SQL</h3>
+              <p className="text-sm opacity-70 leading-6">Run the network posts SQL file, then refresh this page to enable posting and the recent feed.</p>
+            </div>
+          )}
+
+          <section className={`${panelClass} space-y-3`}>
+            <div className="flex items-start gap-3">
+              <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+                <Share2 size={18} />
+              </div>
+              <div>
+                <h2 className="font-black text-lg">Share a post</h2>
+                <p className="text-sm opacity-60 leading-6">Post an update, case discussion, drug note, protocol or useful resource.</p>
+              </div>
+            </div>
+
+            <textarea
+              className={fieldClass}
+              rows="4"
+              placeholder="What would you like to share with the network?"
+              value={postForm.body}
+              onChange={(event) => updatePostForm("body", event.target.value)}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select className={fieldClass} value={postForm.shared_type} onChange={(event) => updatePostForm("shared_type", event.target.value)}>
+                {postShareTypes.map(type => <option key={type.value || "general"} value={type.value}>{type.label}</option>)}
+              </select>
+              <input className={fieldClass} placeholder="Shared item title, optional" value={postForm.shared_title} onChange={(event) => updatePostForm("shared_title", event.target.value)} />
+            </div>
+
+            <input className={fieldClass} placeholder="Optional link, such as /caselogs, /drugs or /protocols" value={postForm.shared_url} onChange={(event) => updatePostForm("shared_url", event.target.value)} />
+
+            <button
+              onClick={createPost}
+              disabled={postSaving || !postsAvailable}
+              className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {postSaving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              Share post
+            </button>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><Newspaper size={16}/> Recent Posts</h3>
+            {postLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#71CFC2]" size={28} /></div>
+            ) : posts.length === 0 ? (
+              <div className={`${panelClass} text-center opacity-60 py-8`}>No posts yet. Start the first conversation.</div>
+            ) : (
+              posts.map(post => <NetworkPost key={post.id} post={post} user={user} darkMode={darkMode} panelClass={panelClass} onDelete={deletePost} />)
+            )}
+          </section>
+        </div>
+      )}
 
       {activeTab === "colleagues" && (
         <div className="space-y-6">
@@ -364,6 +533,66 @@ export default function Network({ user, darkMode = false }) {
       )}
     </div>
   );
+}
+
+function NetworkPost({ post, user, darkMode, panelClass, onDelete }) {
+  const authorName = post.author?.full_name || "VetLearn user";
+  const initials = authorName.charAt(0).toUpperCase();
+  const shareLabel = postShareTypes.find(type => type.value === post.shared_type)?.label || "Shared item";
+  const sharedUrl = normaliseSharedUrl(post.shared_url);
+
+  return (
+    <article className={`${panelClass} space-y-3`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-11 w-11 rounded-full bg-[#E8F8F5] text-[#0F8F83] grid place-items-center shrink-0 overflow-hidden font-black">
+            {post.author?.avatar_url ? <img src={post.author.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
+          </div>
+          <div className="min-w-0">
+            <div className="font-black truncate">{authorName}</div>
+            <div className="text-xs opacity-60 truncate">{post.author?.title || "Veterinary Professional"} · {formatDate(post.created_at)}</div>
+          </div>
+        </div>
+        {post.author_id === user?.id && (
+          <button onClick={() => onDelete(post.id)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`} aria-label="Delete post">
+            <Trash2 size={15} />
+          </button>
+        )}
+      </div>
+
+      {post.body && <p className="text-sm leading-6 whitespace-pre-wrap opacity-85">{post.body}</p>}
+
+      {(post.shared_title || post.shared_type) && (
+        <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]"}`}>
+          <div className="flex items-start gap-3">
+            <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} rounded-lg p-2 shrink-0`}>
+              <FileText size={16} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-50">{shareLabel}</p>
+              <p className="font-black text-sm truncate">{post.shared_title || "Shared resource"}</p>
+              {sharedUrl && (
+                <Link to={sharedUrl} className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">
+                  Open shared item
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function normaliseSharedUrl(url = "") {
+  const trimmed = String(url || "").trim();
+  if (!trimmed.startsWith("/")) return "";
+  return trimmed;
+}
+
+function formatDate(value) {
+  if (!value) return "Just now";
+  return new Date(value).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function ColleagueProfileModal({ colleague, loading, darkMode, onClose }) {
