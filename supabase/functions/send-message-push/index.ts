@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
 
     const notificationResult = await createInAppNotification(adminClient, {
       recipientId: recipient_id,
+      senderId: authData.user.id,
       title: messageTitle,
       body: messageBody,
       messageId: message_id,
@@ -133,6 +134,7 @@ Deno.serve(async (req) => {
 
 async function createInAppNotification(adminClient: ReturnType<typeof createClient>, details: {
   recipientId: string;
+  senderId: string;
   title: string;
   body: string;
   messageId?: string | null;
@@ -143,7 +145,9 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
     type: "message",
     title: details.title,
     message: details.body,
-    related_id: details.messageId ? String(details.messageId) : null,
+    sender_id: details.senderId,
+    related_record_id: details.messageId ? String(details.messageId) : null,
+    related_id: null,
     is_read: false,
     created_at: new Date().toISOString()
   };
@@ -157,7 +161,6 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
     user_id: details.recipientId,
     type: "message",
     message: details.body,
-    related_id: details.messageId ? String(details.messageId) : null,
     is_read: false
   };
 
