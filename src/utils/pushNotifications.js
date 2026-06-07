@@ -3,6 +3,8 @@ import { supabase } from "../supabaseClient";
 let activeRegistrationUserId = null;
 let setupPromise = null;
 let listenerUserId = null;
+let settingsListenerUserId = null;
+let lastPushContext = null;
 
 const logPush = (...parts) => console.log("[VetLearn Push]", ...parts);
 
@@ -47,10 +49,39 @@ const ensureAndroidChannel = async (PushNotifications, platform) => {
   }
 };
 
+const isPromptState = (receive) => String(receive || "").startsWith("prompt");
+
+export const getPushNotificationPreference = async (userId) => {
+  if (!userId) return false;
+
+  try {
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("app_preferences")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Could not read notification preference:", error.message);
+      return false;
+    }
+
+    return data?.app_preferences?.notifications === true;
+  } catch (error) {
+    console.warn("Could not read notification preference:", error?.message || error);
+    return false;
+  }
+};
+
 const attachPushListeners = async (PushNotifications, user, platform) => {
   if (listenerUserId === user.id) return;
 
-  await PushNotifications.removeAllListeners();
+  try {
+    await PushNotifications.removeAllListeners();
+  } catch (error) {
+    console.warn("Could not reset push listeners:", error?.message || error);
+  }
+
   listenerUserId = user.id;
 
   await PushNotifications.addListener("registration", async (token) => {
@@ -90,19 +121,69 @@ const attachPushListeners = async (PushNotifications, user, platform) => {
   });
 };
 
+export const disablePushNotifications = async (userId) => {
+  setupPromise = null;
+  activeRegistrationUserId = null;
+  listenerUserId = null;
+
+  try {
+    const native = await getNativeContext();
+    if (native.available) await native.PushNotifications.removeAllListeners();
+  } catch (error) {
+    console.warn("Could not remove push listeners:", error?.message || error);
+  }
+
+  if (userId) {
+    try {
+      const { error } = await supabase.from("device_push_tokens").delete().eq("user_id", userId);
+      if (error) console.warn("Could not remove push tokens:", error.message);
+    } catch (error) {
+      console.warn("Could not remove push tokens:", error?.message || error);
+    }
+  }
+
+  logPush("Phone notifications disabled");
+  return { available: true, granted: false, reason: "disabled" };
+};
+
+const ensureSettingsListener = (user) => {
+  if (!user?.id || settingsListenerUserId === user.id || typeof window === "undefined") return;
+  settingsListenerUserId = user.id;
+
+  window.addEventListener("settingsUpdated", async () => {
+    setupPromise = null;
+    activeRegistrationUserId = null;
+
+    const enabled = await getPushNotificationPreference(user.id);
+    if (!enabled) {
+      await disablePushNotifications(user.id);
+      return;
+    }
+
+    await setupPushNotifications(user, { force: true });
+  });
+};
+
 const runPushSetup = async (user) => {
   if (!user?.id) return { available: false, reason: "no_user" };
+
+  const enabled = await getPushNotificationPreference(user.id);
+  if (!enabled) {
+    await disablePushNotifications(user.id);
+    return { available: true, granted: false, reason: "disabled" };
+  }
 
   const native = await getNativeContext();
   if (!native.available) return native;
 
   const { PushNotifications, platform } = native;
+  lastPushContext = native;
 
   try {
     logPush("Checking notification permission");
     let permissions = await PushNotifications.checkPermissions();
 
-    if (permissions.receive === "prompt") {
+    if (isPromptState(permissions.receive)) {
       logPush("Requesting notification permission");
       permissions = await PushNotifications.requestPermissions();
     }
@@ -127,13 +208,17 @@ const runPushSetup = async (user) => {
   }
 };
 
-export const setupPushNotifications = async (user) => {
+export const setupPushNotifications = async (user, options = {}) => {
   if (!user?.id) return { available: false, reason: "no_user" };
-  if (activeRegistrationUserId === user.id && setupPromise) return setupPromise;
+  ensureSettingsListener(user);
+
+  if (!options.force && activeRegistrationUserId === user.id && setupPromise) return setupPromise;
 
   setupPromise = runPushSetup(user);
   return setupPromise;
 };
+
+export const getLastPushContext = () => lastPushContext;
 
 export const sendMessagePushNotification = async ({ recipientId, title, body, messageId, conversationId }) => {
   if (!recipientId) return;
