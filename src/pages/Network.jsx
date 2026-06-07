@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, Check, FileText, Globe, GraduationCap, Loader2, Mail, MapPin, MessageSquare, Newspaper, Phone, Search, Send, Share2, Trash2, UserPlus, UserRound, Users, X } from "lucide-react";
+import { Briefcase, Check, Edit3, FileText, Globe, GraduationCap, Loader2, Mail, MapPin, MessageSquare, Newspaper, Paperclip, Phone, PlusCircle, Search, Send, Share2, Trash2, UserPlus, UserRound, Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
@@ -24,7 +24,7 @@ const defaultPostForm = {
 };
 
 export default function Network({ user, darkMode = false }) {
-  const [activeTab, setActiveTab] = useState("colleagues");
+  const [activeTab, setActiveTab] = useState("posts");
   const [connections, setConnections] = useState([]);
   const [requests, setRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
@@ -33,9 +33,16 @@ export default function Network({ user, darkMode = false }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [posts, setPosts] = useState([]);
   const [postForm, setPostForm] = useState(defaultPostForm);
+  const [editForm, setEditForm] = useState(defaultPostForm);
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [postSearchQuery, setPostSearchQuery] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [shareableCases, setShareableCases] = useState([]);
+  const [shareableProtocols, setShareableProtocols] = useState([]);
   const [postsAvailable, setPostsAvailable] = useState(true);
   const [postLoading, setPostLoading] = useState(false);
   const [postSaving, setPostSaving] = useState(false);
+  const [postUpdating, setPostUpdating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -51,6 +58,7 @@ export default function Network({ user, darkMode = false }) {
     if (user) {
       loadNetworkData();
       loadPosts();
+      loadShareableItems();
     }
 
     const channel = supabase
@@ -60,12 +68,18 @@ export default function Network({ user, darkMode = false }) {
         window.dispatchEvent(new Event("networkUpdated"));
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "network_posts" }, () => {
-        loadPosts();
+        loadPosts(postSearchQuery);
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   }, [user]);
+
+  useEffect(() => {
+    if (!user || activeTab !== "posts") return;
+    const delay = window.setTimeout(() => loadPosts(postSearchQuery), 350);
+    return () => window.clearTimeout(delay);
+  }, [postSearchQuery, activeTab, user?.id]);
 
   const loadNetworkData = async () => {
     if (!user) return;
@@ -110,19 +124,26 @@ export default function Network({ user, darkMode = false }) {
     }
   };
 
-  const loadPosts = async () => {
+  const loadPosts = async (term = "") => {
     if (!user) return;
     setPostLoading(true);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("network_posts")
       .select(`
-        id, author_id, body, shared_type, shared_title, shared_url, created_at,
+        id, author_id, body, shared_type, shared_title, shared_url, created_at, updated_at,
         author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)
       `)
       .eq("is_deleted", false)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(term.trim() ? 100 : 30);
+
+    const cleanedTerm = term.trim().replace(/[%,]/g, " ").trim();
+    if (cleanedTerm.length >= 2) {
+      query = query.or(`body.ilike.%${cleanedTerm}%,shared_title.ilike.%${cleanedTerm}%`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       setPosts([]);
@@ -133,6 +154,18 @@ export default function Network({ user, darkMode = false }) {
     }
 
     setPostLoading(false);
+  };
+
+  const loadShareableItems = async () => {
+    if (!user?.id) return;
+
+    const [casesRes, protocolsRes] = await Promise.all([
+      supabase.from("caselogs").select("id, title, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
+      supabase.from("protocols").select("id, name, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30)
+    ]);
+
+    if (!casesRes.error) setShareableCases(casesRes.data || []);
+    if (!protocolsRes.error) setShareableProtocols(protocolsRes.data || []);
   };
 
   useEffect(() => {
@@ -243,6 +276,28 @@ export default function Network({ user, darkMode = false }) {
   };
 
   const updatePostForm = (field, value) => setPostForm(prev => ({ ...prev, [field]: value }));
+  const updateEditForm = (field, value) => setEditForm(prev => ({ ...prev, [field]: value }));
+
+  const attachOwnItem = (kind, id, isEditing = false) => {
+    const source = kind === "caselog" ? shareableCases : shareableProtocols;
+    const item = source.find(entry => String(entry.id) === String(id));
+    if (!item) return;
+
+    const nextAttachment = {
+      shared_type: kind,
+      shared_title: kind === "caselog" ? item.title : item.name,
+      shared_url: kind === "caselog" ? "/caselogs" : "/protocols"
+    };
+
+    if (isEditing) setEditForm(prev => ({ ...prev, ...nextAttachment }));
+    else setPostForm(prev => ({ ...prev, ...nextAttachment }));
+  };
+
+  const clearAttachment = (isEditing = false) => {
+    const blank = { shared_type: "", shared_title: "", shared_url: "" };
+    if (isEditing) setEditForm(prev => ({ ...prev, ...blank }));
+    else setPostForm(prev => ({ ...prev, ...blank }));
+  };
 
   const createPost = async () => {
     if (!user?.id || postSaving) return;
@@ -266,7 +321,7 @@ export default function Network({ user, darkMode = false }) {
         shared_url: sharedUrl || null
       })
       .select(`
-        id, author_id, body, shared_type, shared_title, shared_url, created_at,
+        id, author_id, body, shared_type, shared_title, shared_url, created_at, updated_at,
         author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)
       `)
       .single();
@@ -281,8 +336,61 @@ export default function Network({ user, darkMode = false }) {
 
     setPosts(prev => [data, ...prev]);
     setPostForm(defaultPostForm);
+    setComposerOpen(false);
     setPostsAvailable(true);
     toast.success("Post shared");
+  };
+
+  const startEditingPost = (post) => {
+    setEditingPostId(post.id);
+    setEditForm({
+      body: post.body || "",
+      shared_type: post.shared_type || "",
+      shared_title: post.shared_title || "",
+      shared_url: post.shared_url || ""
+    });
+  };
+
+  const cancelEditingPost = () => {
+    setEditingPostId(null);
+    setEditForm(defaultPostForm);
+  };
+
+  const updatePost = async (postId) => {
+    if (postUpdating) return;
+    const body = editForm.body.trim();
+    const sharedTitle = editForm.shared_title.trim();
+    const sharedUrl = editForm.shared_url.trim();
+
+    if (!body && !sharedTitle) {
+      toast.error("Keep some post text or an attachment");
+      return;
+    }
+
+    setPostUpdating(true);
+    const { data, error } = await supabase
+      .from("network_posts")
+      .update({
+        body: body || null,
+        shared_type: editForm.shared_type || null,
+        shared_title: sharedTitle || null,
+        shared_url: sharedUrl || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", postId)
+      .eq("author_id", user.id)
+      .select(`
+        id, author_id, body, shared_type, shared_title, shared_url, created_at, updated_at,
+        author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)
+      `)
+      .single();
+
+    setPostUpdating(false);
+
+    if (error) return toast.error("Could not update post");
+    setPosts(prev => prev.map(post => post.id === postId ? data : post));
+    cancelEditingPost();
+    toast.success("Post updated");
   };
 
   const deletePost = async (postId) => {
@@ -341,52 +449,73 @@ export default function Network({ user, darkMode = false }) {
             </div>
           )}
 
-          <section className={`${panelClass} space-y-3`}>
-            <div className="flex items-start gap-3">
-              <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
-                <Share2 size={18} />
-              </div>
-              <div>
-                <h2 className="font-black text-lg">Share a post</h2>
-                <p className="text-sm opacity-60 leading-6">Post an update, case discussion, drug note, protocol or useful resource.</p>
-              </div>
+          <div className="flex gap-2">
+            <div className={`flex-1 flex items-center px-4 py-3 rounded-lg border ${darkMode ? "bg-white/10 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+              <Search size={17} className="opacity-50 mr-2 shrink-0" />
+              <input
+                className="w-full bg-transparent border-none outline-none text-sm"
+                placeholder="Search all posts..."
+                value={postSearchQuery}
+                onChange={(event) => setPostSearchQuery(event.target.value)}
+              />
             </div>
-
-            <textarea
-              className={fieldClass}
-              rows="4"
-              placeholder="What would you like to share with the network?"
-              value={postForm.body}
-              onChange={(event) => updatePostForm("body", event.target.value)}
-            />
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <select className={fieldClass} value={postForm.shared_type} onChange={(event) => updatePostForm("shared_type", event.target.value)}>
-                {postShareTypes.map(type => <option key={type.value || "general"} value={type.value}>{type.label}</option>)}
-              </select>
-              <input className={fieldClass} placeholder="Shared item title, optional" value={postForm.shared_title} onChange={(event) => updatePostForm("shared_title", event.target.value)} />
-            </div>
-
-            <input className={fieldClass} placeholder="Optional link, such as /caselogs, /drugs or /protocols" value={postForm.shared_url} onChange={(event) => updatePostForm("shared_url", event.target.value)} />
-
             <button
-              onClick={createPost}
-              disabled={postSaving || !postsAvailable}
-              className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={() => setComposerOpen(prev => !prev)}
+              className="rounded-lg bg-[#71CFC2] text-[#062F63] px-4 py-3 font-black flex items-center gap-2 shrink-0"
             >
-              {postSaving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              Share post
+              {composerOpen ? <X size={17} /> : <PlusCircle size={17} />}
+              {composerOpen ? "Close" : "Post"}
             </button>
-          </section>
+          </div>
+
+          {composerOpen && (
+            <PostComposer
+              title="Share a post"
+              subtitle="Post an update, case discussion, drug note, protocol or useful resource."
+              form={postForm}
+              darkMode={darkMode}
+              panelClass={panelClass}
+              fieldClass={fieldClass}
+              shareableCases={shareableCases}
+              shareableProtocols={shareableProtocols}
+              saving={postSaving}
+              saveLabel="Share post"
+              onChange={updatePostForm}
+              onAttach={attachOwnItem}
+              onClearAttachment={() => clearAttachment(false)}
+              onSave={createPost}
+            />
+          )}
 
           <section className="space-y-3">
-            <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><Newspaper size={16}/> Recent Posts</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><Newspaper size={16}/> {postSearchQuery.trim() ? "Search Results" : "Recent Posts"}</h3>
             {postLoading ? (
               <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#71CFC2]" size={28} /></div>
             ) : posts.length === 0 ? (
-              <div className={`${panelClass} text-center opacity-60 py-8`}>No posts yet. Start the first conversation.</div>
+              <div className={`${panelClass} text-center opacity-60 py-8`}>{postSearchQuery.trim() ? "No posts matched your search." : "No posts yet. Start the first conversation."}</div>
             ) : (
-              posts.map(post => <NetworkPost key={post.id} post={post} user={user} darkMode={darkMode} panelClass={panelClass} onDelete={deletePost} />)
+              posts.map(post => (
+                <NetworkPost
+                  key={post.id}
+                  post={post}
+                  user={user}
+                  darkMode={darkMode}
+                  panelClass={panelClass}
+                  fieldClass={fieldClass}
+                  editForm={editForm}
+                  editing={editingPostId === post.id}
+                  postUpdating={postUpdating}
+                  shareableCases={shareableCases}
+                  shareableProtocols={shareableProtocols}
+                  onEdit={() => startEditingPost(post)}
+                  onCancelEdit={cancelEditingPost}
+                  onEditChange={updateEditForm}
+                  onAttachEdit={(kind, id) => attachOwnItem(kind, id, true)}
+                  onClearEditAttachment={() => clearAttachment(true)}
+                  onUpdate={() => updatePost(post.id)}
+                  onDelete={deletePost}
+                />
+              ))
             )}
           </section>
         </div>
@@ -535,11 +664,101 @@ export default function Network({ user, darkMode = false }) {
   );
 }
 
-function NetworkPost({ post, user, darkMode, panelClass, onDelete }) {
+function PostComposer({ title, subtitle, form, darkMode, panelClass, fieldClass, shareableCases, shareableProtocols, saving, saveLabel, onChange, onAttach, onClearAttachment, onSave }) {
+  return (
+    <section className={`${panelClass} space-y-3`}>
+      <div className="flex items-start gap-3">
+        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+          <Share2 size={18} />
+        </div>
+        <div>
+          <h2 className="font-black text-lg">{title}</h2>
+          {subtitle && <p className="text-sm opacity-60 leading-6">{subtitle}</p>}
+        </div>
+      </div>
+
+      <textarea
+        className={fieldClass}
+        rows="4"
+        placeholder="What would you like to share with the network?"
+        value={form.body}
+        onChange={(event) => onChange("body", event.target.value)}
+      />
+
+      <div className={`rounded-lg border p-3 space-y-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+        <div className="flex items-start gap-2">
+          <Paperclip size={16} className="text-[#0F8F83] mt-0.5" />
+          <div>
+            <p className="font-black text-sm">Attach one of yours</p>
+            <p className="text-xs opacity-60 leading-5">Choose one of your case logs or protocols, or manually add another shared item below.</p>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select className={fieldClass} defaultValue="" onChange={(event) => { onAttach("caselog", event.target.value); event.target.value = ""; }}>
+            <option value="">Attach case log</option>
+            {shareableCases.map(item => <option key={item.id} value={item.id}>{item.title || "Untitled case"}</option>)}
+          </select>
+          <select className={fieldClass} defaultValue="" onChange={(event) => { onAttach("protocol", event.target.value); event.target.value = ""; }}>
+            <option value="">Attach protocol</option>
+            {shareableProtocols.map(item => <option key={item.id} value={item.id}>{item.name || "Untitled protocol"}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <select className={fieldClass} value={form.shared_type} onChange={(event) => onChange("shared_type", event.target.value)}>
+          {postShareTypes.map(type => <option key={type.value || "general"} value={type.value}>{type.label}</option>)}
+        </select>
+        <input className={fieldClass} placeholder="Shared item title, optional" value={form.shared_title} onChange={(event) => onChange("shared_title", event.target.value)} />
+      </div>
+
+      <input className={fieldClass} placeholder="Optional link, such as /caselogs, /drugs or /protocols" value={form.shared_url} onChange={(event) => onChange("shared_url", event.target.value)} />
+
+      {(form.shared_title || form.shared_type || form.shared_url) && (
+        <button type="button" onClick={onClearAttachment} className={`rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+          <X size={14} /> Remove attachment
+        </button>
+      )}
+
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        {saveLabel}
+      </button>
+    </section>
+  );
+}
+
+function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, editing, postUpdating, shareableCases, shareableProtocols, onEdit, onCancelEdit, onEditChange, onAttachEdit, onClearEditAttachment, onUpdate, onDelete }) {
   const authorName = post.author?.full_name || "VetLearn user";
   const initials = authorName.charAt(0).toUpperCase();
   const shareLabel = postShareTypes.find(type => type.value === post.shared_type)?.label || "Shared item";
   const sharedUrl = normaliseSharedUrl(post.shared_url);
+  const isAuthor = post.author_id === user?.id;
+  const edited = post.updated_at && post.created_at && new Date(post.updated_at).getTime() - new Date(post.created_at).getTime() > 2000;
+
+  if (editing) {
+    return (
+      <PostComposer
+        title="Edit post"
+        form={editForm}
+        darkMode={darkMode}
+        panelClass={panelClass}
+        fieldClass={fieldClass}
+        shareableCases={shareableCases}
+        shareableProtocols={shareableProtocols}
+        saving={postUpdating}
+        saveLabel="Save changes"
+        onChange={onEditChange}
+        onAttach={onAttachEdit}
+        onClearAttachment={onClearEditAttachment}
+        onSave={onUpdate}
+      />
+    );
+  }
 
   return (
     <article className={`${panelClass} space-y-3`}>
@@ -550,13 +769,18 @@ function NetworkPost({ post, user, darkMode, panelClass, onDelete }) {
           </div>
           <div className="min-w-0">
             <div className="font-black truncate">{authorName}</div>
-            <div className="text-xs opacity-60 truncate">{post.author?.title || "Veterinary Professional"} · {formatDate(post.created_at)}</div>
+            <div className="text-xs opacity-60 truncate">{post.author?.title || "Veterinary Professional"} · {formatDate(post.created_at)}{edited ? " · edited" : ""}</div>
           </div>
         </div>
-        {post.author_id === user?.id && (
-          <button onClick={() => onDelete(post.id)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`} aria-label="Delete post">
-            <Trash2 size={15} />
-          </button>
+        {isAuthor && (
+          <div className="flex gap-2 shrink-0">
+            <button onClick={onEdit} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Edit post">
+              <Edit3 size={15} />
+            </button>
+            <button onClick={() => onDelete(post.id)} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`} aria-label="Delete post">
+              <Trash2 size={15} />
+            </button>
+          </div>
         )}
       </div>
 
