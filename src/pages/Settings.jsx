@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Bell, Briefcase, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Target, Trash2, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
+import LoadingState from "../components/LoadingState";
 import SettingsLegalDocuments from "../components/SettingsLegalDocuments";
 import { supabase } from "../supabaseClient";
 import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
@@ -296,7 +297,9 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     { id: "docs", label: "Privacy", icon: FileText }
   ];
 
-  if (loading) return <div className="py-16 text-center font-bold opacity-60">Loading settings...</div>;
+  if (loading) {
+    return <LoadingState label="Loading settings..." darkMode={darkMode} />;
+  }
 
   return (
     <div className="pb-8">
@@ -328,156 +331,154 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
         </div>
       )}
 
-      {loading ? <div>Loading...</div> : (
-        <div className="space-y-5">
-          {activeTab === "profile" && (
-            <section className={panelClass}>
-              <SectionTitle icon={<UserRound size={20} />} title="Profile" subtitle="Your professional identity across VetLearn." darkMode={darkMode} />
-              <div className="flex items-center gap-4 mb-5">
-                <div className="h-20 w-20 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center overflow-hidden text-2xl font-black shrink-0">
-                  {profileForm.avatar_url ? <img src={profileForm.avatar_url} alt="Profile" className="h-full w-full object-cover" /> : (profileForm.full_name || user.email || "V").charAt(0).toUpperCase()}
-                </div>
-                <label className={`rounded-lg px-4 py-3 text-sm font-black flex items-center gap-2 cursor-pointer ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
-                  {uploadingAvatar ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                  Upload profile image
-                  <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploadingAvatar} />
-                </label>
+      <div className="space-y-5">
+        {activeTab === "profile" && (
+          <section className={panelClass}>
+            <SectionTitle icon={<UserRound size={20} />} title="Profile" subtitle="Your professional identity across VetLearn." darkMode={darkMode} />
+            <div className="flex items-center gap-4 mb-5">
+              <div className="h-20 w-20 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center overflow-hidden text-2xl font-black shrink-0">
+                {profileForm.avatar_url ? <img src={profileForm.avatar_url} alt="Profile" className="h-full w-full object-cover" /> : (profileForm.full_name || user.email || "V").charAt(0).toUpperCase()}
               </div>
-              <div className="space-y-3">
-                <InputWithIcon icon={<UserRound size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Title / role" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Practice name" value={profileForm.practice_name} onChange={(e) => updateProfile("practice_name", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<MapPin size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Location" value={profileForm.location} onChange={(e) => updateProfile("location", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Mail size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Email" value={profileForm.email} onChange={(e) => updateProfile("email", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Phone" value={profileForm.phone} onChange={(e) => updateProfile("phone", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Mobile" value={profileForm.mobile} onChange={(e) => updateProfile("mobile", e.target.value)} /></InputWithIcon>
-                <InputWithIcon icon={<Globe size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Website" value={profileForm.website} onChange={(e) => updateProfile("website", e.target.value)} /></InputWithIcon>
-                <textarea className={fieldClass} rows="4" placeholder="Bio" value={profileForm.bio} onChange={(e) => updateProfile("bio", e.target.value)} />
-              </div>
-              <SaveButton saving={saving} onClick={saveProfile} label="Save Profile" />
-            </section>
-          )}
+              <label className={`rounded-lg px-4 py-3 text-sm font-black flex items-center gap-2 cursor-pointer ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                {uploadingAvatar ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                Upload profile image
+                <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploadingAvatar} />
+              </label>
+            </div>
+            <div className="space-y-3">
+              <InputWithIcon icon={<UserRound size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Full name" value={profileForm.full_name} onChange={(e) => updateProfile("full_name", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Title / role" value={profileForm.title} onChange={(e) => updateProfile("title", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Briefcase size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Practice name" value={profileForm.practice_name} onChange={(e) => updateProfile("practice_name", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<MapPin size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Location" value={profileForm.location} onChange={(e) => updateProfile("location", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Mail size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Email" value={profileForm.email} onChange={(e) => updateProfile("email", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Phone" value={profileForm.phone} onChange={(e) => updateProfile("phone", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Phone size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Mobile" value={profileForm.mobile} onChange={(e) => updateProfile("mobile", e.target.value)} /></InputWithIcon>
+              <InputWithIcon icon={<Globe size={17} />}><input className={`${fieldClass} pl-10`} placeholder="Website" value={profileForm.website} onChange={(e) => updateProfile("website", e.target.value)} /></InputWithIcon>
+              <textarea className={fieldClass} rows="4" placeholder="Bio" value={profileForm.bio} onChange={(e) => updateProfile("bio", e.target.value)} />
+            </div>
+            <SaveButton saving={saving} onClick={saveProfile} label="Save Profile" />
+          </section>
+        )}
 
-          {activeTab === "professional" && (
-            <section className={panelClass}>
-              <SectionTitle icon={<GraduationCap size={20} />} title="Professional Information" subtitle="Credentials, addresses and interests for colleague sharing." darkMode={darkMode} />
-              <div className="space-y-3">
-                <textarea className={fieldClass} rows="3" placeholder="Qualifications" value={profileForm.qualifications} onChange={(e) => updateProfile("qualifications", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Degrees" value={profileForm.degrees} onChange={(e) => updateProfile("degrees", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Certifications" value={profileForm.certifications} onChange={(e) => updateProfile("certifications", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Home address" value={profileForm.home_address} onChange={(e) => updateProfile("home_address", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Work address" value={profileForm.work_address} onChange={(e) => updateProfile("work_address", e.target.value)} />
-                <input className={fieldClass} placeholder="RCVS number / information" value={profileForm.rcvs_number} onChange={(e) => updateProfile("rcvs_number", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Areas of interest" value={profileForm.areas_of_interest} onChange={(e) => updateProfile("areas_of_interest", e.target.value)} />
-                <textarea className={fieldClass} rows="3" placeholder="Professional memberships" value={profileForm.memberships} onChange={(e) => updateProfile("memberships", e.target.value)} />
-              </div>
-              <SaveButton saving={saving} onClick={saveProfile} label="Save Professional Information" />
-            </section>
-          )}
+        {activeTab === "professional" && (
+          <section className={panelClass}>
+            <SectionTitle icon={<GraduationCap size={20} />} title="Professional Information" subtitle="Credentials, addresses and interests for colleague sharing." darkMode={darkMode} />
+            <div className="space-y-3">
+              <textarea className={fieldClass} rows="3" placeholder="Qualifications" value={profileForm.qualifications} onChange={(e) => updateProfile("qualifications", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Degrees" value={profileForm.degrees} onChange={(e) => updateProfile("degrees", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Certifications" value={profileForm.certifications} onChange={(e) => updateProfile("certifications", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Home address" value={profileForm.home_address} onChange={(e) => updateProfile("home_address", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Work address" value={profileForm.work_address} onChange={(e) => updateProfile("work_address", e.target.value)} />
+              <input className={fieldClass} placeholder="RCVS number / information" value={profileForm.rcvs_number} onChange={(e) => updateProfile("rcvs_number", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Areas of interest" value={profileForm.areas_of_interest} onChange={(e) => updateProfile("areas_of_interest", e.target.value)} />
+              <textarea className={fieldClass} rows="3" placeholder="Professional memberships" value={profileForm.memberships} onChange={(e) => updateProfile("memberships", e.target.value)} />
+            </div>
+            <SaveButton saving={saving} onClick={saveProfile} label="Save Professional Information" />
+          </section>
+        )}
 
-          {activeTab === "ai" && (
-            <section className={panelClass}>
-              <SectionTitle icon={<Sparkles size={20} />} title="AI Preferences" subtitle="Control how VetLearn assists with learning, CPD and clinical support." darkMode={darkMode} />
-              <Toggle checked={aiPrefs.enabled} onChange={updateAiEnabled} label="Enable AI features" darkMode={darkMode} />
-              <div className={`mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-sm">OpenAI API key</p>
-                    <p className="text-xs opacity-60 mt-1 leading-5">
-                      {aiApiKeySaved ? "An API key is saved for AI features." : "Add your own API key before turning AI on."}
-                    </p>
-                  </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-black ${aiApiKeySaved ? "bg-[#E8F8F5] text-[#0F8F83]" : "bg-orange-100 text-orange-700"}`}>
-                    {aiApiKeySaved ? "Saved" : "Required"}
-                  </span>
+        {activeTab === "ai" && (
+          <section className={panelClass}>
+            <SectionTitle icon={<Sparkles size={20} />} title="AI Preferences" subtitle="Control how VetLearn assists with learning, CPD and clinical support." darkMode={darkMode} />
+            <Toggle checked={aiPrefs.enabled} onChange={updateAiEnabled} label="Enable AI features" darkMode={darkMode} />
+            <div className={`mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-black text-sm">OpenAI API key</p>
+                  <p className="text-xs opacity-60 mt-1 leading-5">
+                    {aiApiKeySaved ? "An API key is saved for AI features." : "Add your own API key before turning AI on."}
+                  </p>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <input
-                    className={fieldClass}
-                    type="password"
-                    placeholder={aiApiKeySaved ? "Enter a new key to replace it" : "OpenAI API key"}
-                    value={aiApiKeyInput}
-                    onChange={(e) => setAiApiKeyInput(e.target.value)}
-                  />
-                  <button
-                    onClick={() => saveAiApiKey()}
-                    disabled={aiApiKeyBusy || !aiApiKeyInput.trim()}
-                    className="rounded-lg bg-[#71CFC2] text-[#062F63] px-4 py-3 text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {aiApiKeyBusy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
-                    Save key
-                  </button>
-                </div>
-                {aiApiKeySaved && (
-                  <button
-                    onClick={removeAiApiKey}
-                    disabled={aiApiKeyBusy}
-                    className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-transparent text-slate-200 hover:bg-red-500/10" : "bg-transparent text-[#0B3760] hover:bg-red-50"}`}
-                    aria-label="Remove"
-                  >
-                    <Trash2 size={14} className="text-red-500" />
-                    Remove key and disable AI
-                  </button>
-                )}
+                <span className={`rounded-full px-2 py-1 text-[10px] font-black ${aiApiKeySaved ? "bg-[#E8F8F5] text-[#0F8F83]" : "bg-orange-100 text-orange-700"}`}>
+                  {aiApiKeySaved ? "Saved" : "Required"}
+                </span>
               </div>
-              <input className={fieldClass} placeholder="AI response style" value={aiPrefs.responseStyle} onChange={(e) => updateAi("responseStyle", e.target.value)} />
-              <input className={fieldClass} placeholder="Assistant preferences" value={aiPrefs.assistantPreference} onChange={(e) => updateAi("assistantPreference", e.target.value)} />
-              <textarea className={fieldClass} rows="3" placeholder="Default AI tools" value={aiPrefs.defaultTools} onChange={(e) => updateAi("defaultTools", e.target.value)} />
-              <Toggle checked={aiPrefs.clinicalAssistance} onChange={(value) => updateAi("clinicalAssistance", value)} label="Clinical assistance" darkMode={darkMode} />
-              <Toggle checked={aiPrefs.cpdAssistance} onChange={(value) => updateAi("cpdAssistance", value)} label="CPD assistance" darkMode={darkMode} />
-              <Toggle checked={aiPrefs.learningRecommendations} onChange={(value) => updateAi("learningRecommendations", value)} label="Learning recommendations" darkMode={darkMode} />
-              <SaveButton saving={saving} onClick={savePreferences} label="Save AI Preferences" />
-            </section>
-          )}
-
-          {activeTab === "app" && (
-            <section className={panelClass}>
-              <SectionTitle icon={<Lock size={20} />} title="Application Settings" subtitle="Theme, notifications, privacy and account management." darkMode={darkMode} />
-              <Toggle checked={darkMode} onChange={(value) => { setDarkMode?.(value); updateApp("theme", value ? "dark" : "light"); }} label="Dark mode" darkMode={darkMode} />
-              <Toggle checked={appPrefs.notifications} onChange={(value) => updateApp("notifications", value)} label="Notifications" darkMode={darkMode} />
-              <div id="cpd-target" ref={cpdTargetRef} className={`scroll-mt-28 mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-                <div className="flex items-start gap-3 mb-3">
-                  <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} h-10 w-10 rounded-lg grid place-items-center shrink-0`}>
-                    <Target size={18} />
-                  </div>
-                  <div>
-                    <label className="font-black text-sm" htmlFor="cpd-target-hours">CPD target hours</label>
-                    <p className="text-xs opacity-60 leading-5">Shown on your CPD dashboard and used for annual progress.</p>
-                  </div>
-                </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <input
-                  id="cpd-target-hours"
                   className={fieldClass}
-                  type="number"
-                  min="0.25"
-                  max="1000"
-                  step="0.25"
-                  value={appPrefs.cpdTargetHours ?? DEFAULT_CPD_TARGET_HOURS}
-                  onChange={(event) => updateApp("cpdTargetHours", event.target.value)}
+                  type="password"
+                  placeholder={aiApiKeySaved ? "Enter a new key to replace it" : "OpenAI API key"}
+                  value={aiApiKeyInput}
+                  onChange={(e) => setAiApiKeyInput(e.target.value)}
                 />
+                <button
+                  onClick={() => saveAiApiKey()}
+                  disabled={aiApiKeyBusy || !aiApiKeyInput.trim()}
+                  className="rounded-lg bg-[#71CFC2] text-[#062F63] px-4 py-3 text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {aiApiKeyBusy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                  Save key
+                </button>
               </div>
-              <Toggle
-                checked={biometricEnabled}
-                onChange={toggleBiometricUnlock}
-                label={biometricAvailable ? "Fingerprint / Face login on this device" : "Fingerprint / Face login unavailable"}
-                darkMode={darkMode}
-                disabled={!biometricAvailable || biometricBusy}
-              />
-              <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
-                Uses this phone or browser's built-in biometric/passkey prompt when available. Turn it on once while signed in, then the login screen will show the fingerprint button on this device.
-              </p>
-              <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
-              <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
-                Hides your profile from Network search results, so new colleagues cannot find you by searching your name. Existing colleagues, requests and messages are unchanged.
-              </p>
-              <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
-              <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
-            </section>
-          )}
+              {aiApiKeySaved && (
+                <button
+                  onClick={removeAiApiKey}
+                  disabled={aiApiKeyBusy}
+                  className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-transparent text-slate-200 hover:bg-red-500/10" : "bg-transparent text-[#0B3760] hover:bg-red-50"}`}
+                  aria-label="Remove"
+                >
+                  <Trash2 size={14} className="text-red-500" />
+                  Remove key and disable AI
+                </button>
+              )}
+            </div>
+            <input className={fieldClass} placeholder="AI response style" value={aiPrefs.responseStyle} onChange={(e) => updateAi("responseStyle", e.target.value)} />
+            <input className={fieldClass} placeholder="Assistant preferences" value={aiPrefs.assistantPreference} onChange={(e) => updateAi("assistantPreference", e.target.value)} />
+            <textarea className={fieldClass} rows="3" placeholder="Default AI tools" value={aiPrefs.defaultTools} onChange={(e) => updateAi("defaultTools", e.target.value)} />
+            <Toggle checked={aiPrefs.clinicalAssistance} onChange={(value) => updateAi("clinicalAssistance", value)} label="Clinical assistance" darkMode={darkMode} />
+            <Toggle checked={aiPrefs.cpdAssistance} onChange={(value) => updateAi("cpdAssistance", value)} label="CPD assistance" darkMode={darkMode} />
+            <Toggle checked={aiPrefs.learningRecommendations} onChange={(value) => updateAi("learningRecommendations", value)} label="Learning recommendations" darkMode={darkMode} />
+            <SaveButton saving={saving} onClick={savePreferences} label="Save AI Preferences" />
+          </section>
+        )}
 
-          {activeTab === "docs" && <SettingsLegalDocuments darkMode={darkMode} />}
-        </div>
-      )}
+        {activeTab === "app" && (
+          <section className={panelClass}>
+            <SectionTitle icon={<Lock size={20} />} title="Application Settings" subtitle="Theme, notifications, privacy and account management." darkMode={darkMode} />
+            <Toggle checked={darkMode} onChange={(value) => { setDarkMode?.(value); updateApp("theme", value ? "dark" : "light"); }} label="Dark mode" darkMode={darkMode} />
+            <Toggle checked={appPrefs.notifications} onChange={(value) => updateApp("notifications", value)} label="Notifications" darkMode={darkMode} />
+            <div id="cpd-target" ref={cpdTargetRef} className={`scroll-mt-28 mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} h-10 w-10 rounded-lg grid place-items-center shrink-0`}>
+                  <Target size={18} />
+                </div>
+                <div>
+                  <label className="font-black text-sm" htmlFor="cpd-target-hours">CPD target hours</label>
+                  <p className="text-xs opacity-60 leading-5">Shown on your CPD dashboard and used for annual progress.</p>
+                </div>
+              </div>
+              <input
+                id="cpd-target-hours"
+                className={fieldClass}
+                type="number"
+                min="0.25"
+                max="1000"
+                step="0.25"
+                value={appPrefs.cpdTargetHours ?? DEFAULT_CPD_TARGET_HOURS}
+                onChange={(event) => updateApp("cpdTargetHours", event.target.value)}
+              />
+            </div>
+            <Toggle
+              checked={biometricEnabled}
+              onChange={toggleBiometricUnlock}
+              label={biometricAvailable ? "Fingerprint / Face login on this device" : "Fingerprint / Face login unavailable"}
+              darkMode={darkMode}
+              disabled={!biometricAvailable || biometricBusy}
+            />
+            <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
+              Uses this phone or browser's built-in biometric/passkey prompt when available. Turn it on once while signed in, then the login screen will show the fingerprint button on this device.
+            </p>
+            <Toggle checked={appPrefs.privacyMode} onChange={(value) => updateApp("privacyMode", value)} label="Privacy mode" darkMode={darkMode} />
+            <p className="text-xs opacity-60 -mt-2 mb-4 leading-5">
+              Hides your profile from Network search results, so new colleagues cannot find you by searching your name. Existing colleagues, requests and messages are unchanged.
+            </p>
+            <div className={`${darkMode ? "bg-black/20" : "bg-[#F0F6F5]"} rounded-lg p-4 text-sm opacity-80`}>Security and account deletion controls can be connected to Supabase Auth when you are ready.</div>
+            <SaveButton saving={saving} onClick={savePreferences} label="Save Application Settings" />
+          </section>
+        )}
+
+        {activeTab === "docs" && <SettingsLegalDocuments darkMode={darkMode} />}
+      </div>
     </div>
   );
 }
