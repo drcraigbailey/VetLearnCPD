@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Calculator, ClipboardList, Pill } from "lucide-react";
+import { Activity, Calculator, ClipboardList, Pill } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
@@ -11,6 +11,7 @@ import Protocols from "./Protocols";
 
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const pageRef = useRef(null);
+  const additionalCalculatorsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
   
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
@@ -51,8 +52,25 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
     };
   }, [darkMode]);
 
+  const scrollToAdditionalCalculators = () => {
+    setActiveSection("calculators");
+    window.setTimeout(() => {
+      additionalCalculatorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
+  const handleSectionChange = (sectionId) => {
+    if (sectionId === "additionalCalculators") {
+      scrollToAdditionalCalculators();
+      return;
+    }
+
+    setActiveSection(sectionId);
+  };
+
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
+    { id: "additionalCalculators", label: "Additional Calculators", icon: Activity },
     ...(canUsePillCount ? [{ id: "pillCounter", label: "Pill Count", icon: Pill }] : []),
     ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
   ];
@@ -66,12 +84,14 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
         badges={[{ label: "Clinical workspace", icon: <Calculator size={14} />, accent: true }]}
       />
 
-      <PageToolbar items={sectionTabs} activeId={activeSection} onChange={setActiveSection} darkMode={darkMode} />
+      <PageToolbar items={sectionTabs} activeId={activeSection} onChange={handleSectionChange} darkMode={darkMode} />
 
       {activeSection === "calculators" && (
         <>
           <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
-          <AdditionalClinicalCalculators darkMode={darkMode} />
+          <div ref={additionalCalculatorsRef} className="scroll-mt-24">
+            <AdditionalClinicalCalculators darkMode={darkMode} />
+          </div>
         </>
       )}
 
