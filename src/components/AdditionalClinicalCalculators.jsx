@@ -64,43 +64,53 @@ export default function AdditionalClinicalCalculators({ darkMode = false }) {
   };
 
   return (
-    <section className={`${panelClass(darkMode)} space-y-4`}>
-      <div className="flex items-start gap-3">
-        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
-          <Activity size={20} />
+    <div className="space-y-6">
+      <section className={`${panelClass(darkMode)} space-y-4`}>
+        <div className="flex items-start gap-3">
+          <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+            <Activity size={20} />
+          </div>
+          <div>
+            <h2 className="font-black text-xl leading-tight">Additional Calculators</h2>
+            <p className="text-sm opacity-60 leading-6">Common quick calculators for small animal clinical work.</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-black text-xl leading-tight">Additional Calculators</h2>
-          <p className="text-sm opacity-60 leading-6">Common quick calculators for small animal clinical work.</p>
-        </div>
-      </div>
 
-      <ToolTileGrid className="grid-cols-3">
-        {calculators.map((item) => (
-          <AdditionalCalculatorTile
-            key={item.id}
-            icon={item.icon}
-            title={item.label}
-            active={active === item.id}
-            darkMode={darkMode}
-            onClick={() => selectCalculator(item.id)}
-          />
-        ))}
-      </ToolTileGrid>
+        <ToolTileGrid className="grid-cols-3">
+          {calculators.map((item) => (
+            <AdditionalCalculatorTile
+              key={item.id}
+              icon={item.icon}
+              title={item.label}
+              active={active === item.id}
+              darkMode={darkMode}
+              onClick={() => selectCalculator(item.id)}
+            />
+          ))}
+        </ToolTileGrid>
+      </section>
 
-      <div ref={resultRef} className={`scroll-mt-24 rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
-        <div className="flex items-center gap-2 mb-4">
-          <ActiveIcon size={18} className="text-[#0F8F83]" />
-          <h3 className="font-black">{activeCalculator.label}</h3>
+      <section ref={resultRef} className={`${panelClass(darkMode)} scroll-mt-24 space-y-4`}>
+        <div className="flex items-start gap-3">
+          <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+            <ActiveIcon size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest opacity-45">Additional calculator</p>
+            <h2 className="font-black text-xl leading-tight">{activeCalculator.label}</h2>
+          </div>
         </div>
-        {active === "energy" && <EnergyCalculator darkMode={darkMode} />}
-        {active === "convert" && <UnitConversion darkMode={darkMode} />}
-        {active === "dextrose" && <DextroseCalculator darkMode={darkMode} />}
-        {active === "potassium" && <PotassiumCalculator darkMode={darkMode} />}
-        {active === "sodium" && <SodiumCalculator darkMode={darkMode} />}
-        {active === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
-      </div>
-    </section>
+
+        <div className={`rounded-lg border p-4 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>
+          {active === "energy" && <EnergyCalculator darkMode={darkMode} />}
+          {active === "convert" && <UnitConversion darkMode={darkMode} />}
+          {active === "dextrose" && <DextroseCalculator darkMode={darkMode} />}
+          {active === "potassium" && <PotassiumCalculator darkMode={darkMode} />}
+          {active === "sodium" && <SodiumCalculator darkMode={darkMode} />}
+          {active === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
+        </div>
+      </section>
+    </div>
   );
 }
 
