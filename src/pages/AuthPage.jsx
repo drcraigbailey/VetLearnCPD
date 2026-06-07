@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, registerBiometric, signInWithBiometric } from "../utils/biometricAuth";
+import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, refreshBiometricAfterPasswordLogin, signInWithBiometric } from "../utils/biometricAuth";
 
 import {
   Loader2,
@@ -56,14 +56,14 @@ export default function AuthPage(){
     };
   }, []);
 
-  const refreshFingerprintAfterPasswordLogin = async (signedInUser) => {
-    if (!needsBiometricRelink() || !signedInUser) return;
+  const refreshFingerprintAfterPasswordLogin = async (signedInUser, signedInSession) => {
+    if (!needsBiometricRelink() || !signedInUser || !signedInSession) return;
 
     try {
-      await registerBiometric(signedInUser);
+      const refreshed = await refreshBiometricAfterPasswordLogin(signedInUser, signedInSession);
       setFingerprintRefreshNeeded(false);
       setShowFingerprintLogin(true);
-      toast.success("Fingerprint login refreshed for this phone");
+      if (refreshed) toast.success("Fingerprint login refreshed for this phone");
     } catch (error) {
       setFingerprintRefreshNeeded(true);
       toast.error(error.message || "Could not refresh fingerprint login. You can turn it off and on again in Settings.");
@@ -92,7 +92,7 @@ export default function AuthPage(){
         return
       }
 
-      await refreshFingerprintAfterPasswordLogin(data?.user)
+      await refreshFingerprintAfterPasswordLogin(data?.user, data?.session)
     }else{
       const {error}=await supabase.auth.signUp({
         email:cleanEmail,
