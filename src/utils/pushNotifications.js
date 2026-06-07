@@ -92,6 +92,12 @@ const attachPushListeners = async (PushNotifications, user, platform) => {
 
     logPush("FCM token registered", token.value);
 
+    await supabase
+      .from("device_push_tokens")
+      .delete()
+      .eq("token", token.value)
+      .neq("user_id", user.id);
+
     const { error } = await supabase.from("device_push_tokens").upsert(
       {
         user_id: user.id,
@@ -112,6 +118,8 @@ const attachPushListeners = async (PushNotifications, user, platform) => {
 
   await PushNotifications.addListener("pushNotificationReceived", (notification) => {
     logPush("Foreground notification received", notification?.title || notification?.data);
+    window.dispatchEvent(new Event("notificationsUpdated"));
+    window.dispatchEvent(new Event("messagesUpdated"));
   });
 
   await PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
