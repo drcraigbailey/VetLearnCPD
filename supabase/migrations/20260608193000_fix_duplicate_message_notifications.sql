@@ -1,4 +1,4 @@
--- Fix stale duplicate message notifications.
--- Older triggers can create conversation-level message notifications where related_id is null and related_record_id is conversation_id.
--- The Edge Function creates message-level notifications where related_id is message_id.
--- This cleanup marks stale conversation-level duplicates as read when there are
+-- Placeholder only.
+-- Do not run this migration for notification cleanup.
+-- Use the SQL supplied in chat instead.
+select 1;
