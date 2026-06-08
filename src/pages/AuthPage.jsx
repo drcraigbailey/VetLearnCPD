@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, refreshBiometricAfterPasswordLogin, signInWithBiometric } from "../utils/biometricAuth";
+import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric, syncBiometricSession } from "../utils/biometricAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
+import { isNativeCredentialAvailable, signInWithCredentialManager, savePasswordCredential } from "../utils/credentialManager";
 
 import {
   Loader2,
@@ -11,11 +12,11 @@ import {
   Eye,
   EyeOff,
   Fingerprint,
+  KeyRound,
   X
 } from "lucide-react";
 
 const CONSENT_VERSION = "2026-06-07";
-const SHOW_GOOGLE_LOGIN = true;
 
 export default function AuthPage(){
 
@@ -28,14 +29,29 @@ export default function AuthPage(){
   const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
   const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
   const [keepMeLoggedIn, setKeepMeLoggedInState]=useState(() => getKeepMeLoggedIn())
+  const [loading,setLoading]=useState(false)
+  const [resetEmailSent,setResetEmailSent]=useState(false)
+
   const [acceptedTerms, setAcceptedTerms]=useState(false)
   const [acceptedEmailPrivacy, setAcceptedEmailPrivacy]=useState(false)
   const [marketingOptIn, setMarketingOptIn]=useState(false)
   const [showTermsModal, setShowTermsModal]=useState(false)
   const [showEmailPrivacyModal, setShowEmailPrivacyModal]=useState(false)
-  const [loading,setLoading]=useState(false)
 
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
+
+  const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy)
+
+  const setAuthMode = (nextMode) => {
+    setMode(nextMode)
+    setResetEmailSent(false)
+    if(nextMode!=="forgot") setShowPassword(false)
+    if(nextMode!=="signup") {
+      setAcceptedTerms(false)
+      setAcceptedEmailPrivacy(false)
+      setMarketingOptIn(false)
+    }
+  }
 
   const checkFingerprintLogin = async () => {
     const savedUser = getLastBiometricUser();
@@ -72,30 +88,85 @@ export default function AuthPage(){
     setKeepMeLoggedIn(value);
   };
 
-  const switchMode = (nextMode) => {
-    setMode(nextMode);
-    if (nextMode === "login") {
-      setAcceptedTerms(false);
-      setAcceptedEmailPrivacy(false);
-      setMarketingOptIn(false);
+  const handleGoogleSignIn = async () => {
+    if(mode==="signup" && signupBlocked){
+      toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.")
+      return
     }
-  };
 
-  const refreshFingerprintAfterPasswordLogin = async (signedInUser, signedInSession) => {
-    if (!needsBiometricRelink() || !signedInUser || !signedInSession) return;
+    setLoading(true)
 
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`
+      }
+    })
+
+    if(error){
+      toast.error(error.message || "Could not start Google sign in")
+      setLoading(false)
+    }
+  }
+
+  const handlePasswordReset=async()=>{
+    const cleanEmail=email.trim().toLowerCase()
+
+    if(!cleanEmail){
+      toast.error("Add your email address")
+      return
+    }
+
+    setLoading(true)
+    setResetEmailSent(false)
+
+    const redirectTo = `${window.location.origin}/`
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo })
+
+    if(error){
+      toast.error(error.message || "Could not send password reset email")
+      setLoading(false)
+      return
+    }
+
+    setEmail(cleanEmail)
+    setResetEmailSent(true)
+    toast.success("Password reset email sent")
+    setLoading(false)
+  }
+
+  const handleNativeSignIn = async () => {
+    setLoading(true);
     try {
-      const refreshed = await refreshBiometricAfterPasswordLogin(signedInUser, signedInSession);
-      setFingerprintRefreshNeeded(false);
-      setShowFingerprintLogin(true);
-      if (refreshed) toast.success("Fingerprint login refreshed for this phone");
-    } catch (error) {
-      setFingerprintRefreshNeeded(true);
-      toast.error(error.message || "Could not refresh fingerprint login. You can turn it off and on again in Settings.");
+      const credential = await signInWithCredentialManager();
+      if (credential.email && credential.password) {
+        setKeepMeLoggedIn(keepMeLoggedIn);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: credential.email,
+          password: credential.password
+        });
+        
+        if (error) throw error;
+        
+        await syncBiometricSession(data.user, data.session);
+        setFingerprintRefreshNeeded(false);
+        setShowFingerprintLogin(await isBiometricLoginEnabled());
+        toast.success("Signed in securely");
+      }
+    } catch (err) {
+      console.warn("Native login cancelled or failed:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const submit=async()=>{
+    if(mode==="forgot"){
+      await handlePasswordReset()
+      return
+    }
+
     const cleanEmail=email.trim().toLowerCase()
 
     if(!cleanEmail||!password){
@@ -103,7 +174,7 @@ export default function AuthPage(){
       return
     }
 
-    if(mode==="signup" && (!acceptedTerms || !acceptedEmailPrivacy)){
+    if(mode==="signup" && signupBlocked){
       toast.error("Please accept the Terms of Service and Email Privacy Notice to continue.")
       return
     }
@@ -123,7 +194,13 @@ export default function AuthPage(){
         return
       }
 
-      await refreshFingerprintAfterPasswordLogin(data?.user, data?.session)
+      if (isNativeCredentialAvailable()) {
+        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
+      }
+
+      await syncBiometricSession(data.user, data.session)
+      setFingerprintRefreshNeeded(false)
+      setShowFingerprintLogin(await isBiometricLoginEnabled())
     }else{
       const consentTimestamp = new Date().toISOString();
       const {error}=await supabase.auth.signUp({
@@ -151,32 +228,16 @@ export default function AuthPage(){
         setLoading(false)
         return
       }
+      
+      if (isNativeCredentialAvailable()) {
+        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
+      }
 
       toast.success("Account created")
     }
 
     setEmail(cleanEmail)
     setLoading(false)
-  }
-
-  const handleGoogleLogin = async () => {
-    if (!SHOW_GOOGLE_LOGIN) {
-      toast.error("Google login is currently unavailable")
-      return
-    }
-
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin
-      }
-    })
-
-    if (error) {
-      toast.error(error.message)
-      setLoading(false)
-    }
   }
 
   const handleFingerprintLogin = async () => {
@@ -196,8 +257,6 @@ export default function AuthPage(){
       setLoading(false)
     }
   }
-
-  const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy)
 
   return(
     <div className="min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247] px-4 py-8">
@@ -230,12 +289,14 @@ export default function AuthPage(){
           />
           <div className="relative">
             <h2 className="text-3xl font-black leading-tight tracking-normal mb-2">
-              {mode==="login"?"Welcome back":"Create profile"}
+              {mode==="login"?"Welcome back":mode==="forgot"?"Reset password":"Create profile"}
             </h2>
             <p className="text-sm text-slate-600 leading-6 max-w-[260px]">
               {mode==="login"
                 ?"Sign in to see your own CPD records, case logs, and drug protocols."
-                :"Set up your own VetLearn profile with private saved data."}
+                :mode==="forgot"
+                  ?"Enter your email and VetLearn will send a secure password reset link."
+                  :"Set up your own VetLearn profile with private saved data."}
             </p>
           </div>
         </div>
@@ -243,18 +304,38 @@ export default function AuthPage(){
         <div className="bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]">
           <div className="grid grid-cols-2 gap-2 mb-5 bg-[#F0F6F5] rounded-lg p-1">
             <button
-              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="login"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>switchMode("login")}
+              className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="login"||mode==="forgot"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
+              onClick={()=>setAuthMode("login")}
             >
               Login
             </button>
             <button
               className={`rounded-lg p-3 text-sm font-black transition-colors ${mode==="signup"?"bg-white text-[#0B3760] shadow-sm":"text-slate-500"}`}
-              onClick={()=>switchMode("signup")}
+              onClick={()=>setAuthMode("signup")}
             >
               Register
             </button>
           </div>
+
+          {mode!=="forgot" && (
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="mb-4 w-full rounded-lg border-2 border-[#DCEDEA] bg-white p-4 font-black text-[#0B3760] flex items-center justify-center gap-3 hover:bg-[#F9FCFB] transition-colors"
+            >
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-lg font-black shadow-sm">G</span>
+              Continue with Google
+            </button>
+          )}
+
+          {mode!=="forgot" && (
+            <div className="mb-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+              <span className="h-px flex-1 bg-[#DCEDEA]" />
+              <span>Email</span>
+              <span className="h-px flex-1 bg-[#DCEDEA]" />
+            </div>
+          )}
 
           {mode==="signup"&&(
             <>
@@ -262,6 +343,7 @@ export default function AuthPage(){
                 <input
                   className={fieldClass}
                   placeholder="Full Name"
+                  autoComplete="name"
                   value={name}
                   onChange={(e)=>setName(e.target.value)}
                 />
@@ -270,6 +352,7 @@ export default function AuthPage(){
                 <input
                   className={fieldClass}
                   placeholder="RCVS Number (Optional)"
+                  autoComplete="off"
                   value={rcvsNumber}
                   onChange={(e)=>setRcvsNumber(e.target.value)}
                 />
@@ -283,6 +366,12 @@ export default function AuthPage(){
             </div>
           )}
 
+          {mode==="forgot" && resetEmailSent && (
+            <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
+              Check your inbox for a password reset link. If it does not arrive, check spam/junk and confirm the email is the one used for VetLearn.
+            </div>
+          )}
+
           <div className="mb-3">
             <input
               className={fieldClass}
@@ -290,30 +379,52 @@ export default function AuthPage(){
               type="email"
               inputMode="email"
               autoCapitalize="none"
-              autoComplete="email"
+              autoComplete={mode === "login" ? "username email" : "email"}
               spellCheck="false"
               value={email}
               onChange={(e)=>setEmail(e.target.value)}
             />
           </div>
 
-          <div className="relative mb-3">
-            <input
-              className={`${fieldClass} pr-12`}
-              placeholder="Password"
-              type={showPassword ? "text" : "password"}
-              autoComplete={mode==="login"?"current-password":"new-password"}
-              value={password}
-              onChange={(e)=>setPassword(e.target.value)}
-            />
+          {mode!=="forgot" && (
+            <div className="relative mb-3">
+              <input
+                className={`${fieldClass} pr-12`}
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode==="login"?"current-password":"new-password"}
+                value={password}
+                onChange={(e)=>setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#71CFC2] transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          )}
+
+          {mode==="login" && (
             <button
               type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#71CFC2] transition-colors"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={()=>setAuthMode("forgot")}
+              className="mb-4 text-sm font-black text-[#0F8F83] hover:underline"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              Forgot password?
             </button>
-          </div>
+          )}
+
+          {mode==="forgot" && (
+            <button
+              type="button"
+              onClick={()=>setAuthMode("login")}
+              className="mb-4 text-sm font-black text-[#0F8F83] hover:underline"
+            >
+              Back to login
+            </button>
+          )}
 
           {mode==="login" && (
             <label className="mb-4 flex items-start gap-3 rounded-lg border border-[#DCEDEA] bg-[#F9FCFB] p-3 text-sm text-slate-600">
@@ -360,6 +471,11 @@ export default function AuthPage(){
                 <LogIn size={18}/>
                 Login
               </>
+            ):mode==="forgot"?(
+              <>
+                <LogIn size={18}/>
+                Send password reset
+              </>
             ):(
               <>
                 <UserPlus size={18}/>
@@ -372,18 +488,6 @@ export default function AuthPage(){
             <p className="mt-2 text-center text-xs font-bold text-orange-600">Please accept the required notices to create your profile.</p>
           )}
 
-          {mode==="login" && SHOW_GOOGLE_LOGIN && (
-            <button
-              className="w-full bg-white border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-3 mt-3 hover:bg-[#F0F6F5] transition-colors"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              type="button"
-            >
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-base font-black text-[#4285F4] shadow-sm">G</span>
-              Continue with Google
-            </button>
-          )}
-
           {mode==="login" && showFingerprintLogin && (
             <button
               className="w-full bg-transparent border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
@@ -391,7 +495,19 @@ export default function AuthPage(){
               disabled={loading}
             >
               <Fingerprint size={18} />
-              Fingerprint Login
+              Fingerprint Unlock
+            </button>
+          )}
+          
+          {mode==="login" && isNativeCredentialAvailable() && (
+            <button
+              type="button"
+              className="w-full bg-transparent border-2 border-[#71CFC2] text-[#0F8F83] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
+              onClick={handleNativeSignIn}
+              disabled={loading}
+            >
+              <KeyRound size={18} />
+              Saved Password or Passkey
             </button>
           )}
         </div>
