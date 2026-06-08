@@ -4,6 +4,13 @@
 --   related_record_id = conversation_id
 -- The Edge Function creates message-level notifications where:
 --   related_id = message_id
--- This clears both once messages in that conversation have been read.
+-- This cleanup marks stale conversation-level duplicates as read when there are
+-- no unread incoming messages left in that conversation for that notification user.
 
-update notifications
+update notifications n
+set
+  is_read = true,
+  read_at = coalesce(n.read_at, now())
+where n.type = 'message'
+  and n.is_read = false
+  and
