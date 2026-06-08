@@ -412,6 +412,49 @@ export default function Network({ user, darkMode = false }) {
     toast.success("Post deleted");
   };
 
+  const openSharedPost = async (post) => {
+    if (!post) return;
+
+    if (post.shared_payload) {
+      setSharedViewer(post);
+      return;
+    }
+
+    const rawUrl = String(post.shared_url || "").trim();
+    const sharedMatch = rawUrl.match(/^shared:\/\/(caselog|protocol)\/([^/?#]+)/);
+    const kind = sharedMatch?.[1] || post.shared_type;
+    const sharedId = sharedMatch?.[2] || post.shared_payload?.id;
+
+    if (!["caselog", "protocol"].includes(kind) || !sharedId) {
+      toast.error("This shared item has no popup preview. Ask the author to reattach it.");
+      return;
+    }
+
+    const table = kind === "caselog" ? "caselogs" : "protocols";
+    const selectFields = kind === "caselog"
+      ? "id, title, category, patient_name, species, breed, age, gender, description, created_at"
+      : "id, name, indication, drug_ids, drug_doses, created_at";
+
+    const { data, error } = await supabase
+      .from(table)
+      .select(selectFields)
+      .eq("id", sharedId)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error(`Could not open shared ${kind === "caselog" ? "case log" : "protocol"}`);
+      return;
+    }
+
+    setSharedViewer({
+      ...post,
+      shared_type: kind,
+      shared_title: post.shared_title || data.title || data.name || "Shared item",
+      shared_url: rawUrl,
+      shared_payload: buildSharedPayload(kind, data)
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -464,7 +507,7 @@ export default function Network({ user, darkMode = false }) {
           updateEditForm={updateEditForm}
           updatePost={updatePost}
           deletePost={deletePost}
-          setSharedViewer={setSharedViewer}
+          setSharedViewer={openSharedPost}
         />
       )}
 
@@ -647,6 +690,20 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   const sharedUrl = normaliseSharedUrl(post.shared_url);
   const isAuthor = post.author_id === user?.id;
   const edited = post.updated_at && post.created_at && new Date(post.updated_at).getTime() - new Date(post.created_at).getTime() > 2000;
+  
+  const opensSharedModal = ["caselog", "protocol"].includes(post.shared_type);
+
+  const handlePostClick = () => {
+    if (opensSharedModal) onOpenShared();
+  };
+
+  const handlePostKeyDown = (event) => {
+    if (!opensSharedModal) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenShared();
+    }
+  };
 
   if (editing) {
     return (
@@ -669,7 +726,13 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   }
 
   return (
-    <article className={`${panelClass} space-y-3`}>
+    <article
+      onClick={handlePostClick}
+      onKeyDown={handlePostKeyDown}
+      role={opensSharedModal ? "button" : undefined}
+      tabIndex={opensSharedModal ? 0 : undefined}
+      className={`${panelClass} space-y-3 ${opensSharedModal ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-xl" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-full bg-[#E8F8F5] text-[#0F8F83] grid place-items-center shrink-0 overflow-hidden font-black">
@@ -682,8 +745,26 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
         </div>
         {isAuthor && (
           <div className="flex gap-2 shrink-0">
-            <button onClick={onEdit} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Edit post"><Edit3 size={15} /></button>
-            <button onClick={() => onDelete(post.id)} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`} aria-label="Delete post"><Trash2 size={15} /></button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              aria-label="Edit post"
+            >
+              <Edit3 size={15} />
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(post.id);
+              }}
+              className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`}
+              aria-label="Delete post"
+            >
+              <Trash2 size={15} />
+            </button>
           </div>
         )}
       </div>
@@ -694,20 +775,33 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
         <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]"}`}>
           <button
             type="button"
-            onClick={post.shared_payload ? onOpenShared : undefined}
-            disabled={!post.shared_payload && !sharedUrl}
-            className="w-full text-left flex items-start gap-3 disabled:cursor-default"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (opensSharedModal) onOpenShared();
+            }}
+            disabled={!opensSharedModal && !sharedUrl}
+            className={`w-full text-left flex items-start gap-3 disabled:cursor-default ${opensSharedModal || sharedUrl ? "cursor-pointer" : ""}`}
           >
             <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-white text-[#0F8F83]"} rounded-lg p-2 shrink-0`}><FileText size={16} /></div>
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-widest opacity-50">{shareLabel}</p>
               <p className="font-black text-sm truncate">{post.shared_title || "Shared resource"}</p>
-              {post.shared_payload ? (
-                <span className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">Open shared item</span>
+              {opensSharedModal ? (
+                <span className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">
+                  Open shared item
+                </span>
               ) : sharedUrl ? (
-                <Link to={sharedUrl} className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]">Open shared item</Link>
+                <Link
+                  to={sharedUrl}
+                  onClick={(event) => event.stopPropagation()}
+                  className="mt-1 inline-block text-xs font-black text-[#0F8F83] dark:text-[#71CFC2]"
+                >
+                  Open shared item
+                </Link>
               ) : (
-                <span className="mt-1 block text-xs opacity-55">This older attachment has no shareable preview. Ask the author to reattach it.</span>
+                <span className="mt-1 block text-xs opacity-55">
+                  This older attachment has no shareable preview. Ask the author to reattach it.
+                </span>
               )}
             </div>
           </button>
@@ -791,7 +885,7 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
             className="mt-5 w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
-            Save to my {post.shared_type === "caselog" ? "Case Logs" : "Protocols"}
+            {post.shared_type === "caselog" ? "Add to my Case Logs" : "Save to my Protocols"}
           </button>
         )}
       </div>
