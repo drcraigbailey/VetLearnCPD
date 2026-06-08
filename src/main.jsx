@@ -8,6 +8,20 @@ import { startSessionSecurity } from './utils/sessionSecurity.js'
 registerPwaUpdates()
 startSessionSecurity()
 
+window.addEventListener('click', (event) => {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  if (target.closest('button, a, input, textarea, select, label')) return
+
+  const postCard = target.closest('article')
+  if (!postCard) return
+
+  const sharedButton = postCard.querySelector('button.w-full.text-left:not(:disabled)')
+  if (!sharedButton) return
+
+  sharedButton.click()
+})
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
