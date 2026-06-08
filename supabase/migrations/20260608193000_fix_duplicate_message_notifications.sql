@@ -4,4 +4,4 @@
 -- The app sends message notifications through the send-message-push Edge Function.
 -- Some databases also still have an older messages-table trigger creating a second
 -- message notification with related_id = null and related_record_id = conversation_id.
--- Those conversation-level rows do not get cleared by the normal
+-- Those conversation-level rows do not get cleared by the normal message
