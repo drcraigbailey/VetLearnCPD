@@ -26,4 +26,5 @@ dist-ssr
 .vercel
 .env
 .env.local
-.npm-cache
+.npm-cachefirebase-service-account.json
+supabase/.temp/
