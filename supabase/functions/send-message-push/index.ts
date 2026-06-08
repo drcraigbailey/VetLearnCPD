@@ -141,6 +141,20 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
   conversationId?: string | null;
 }) {
   const messageId = details.messageId ? String(details.messageId) : null;
+  const conversationId = details.conversationId ? String(details.conversationId) : null;
+
+  if (messageId) {
+    const { data: message, error: messageError } = await adminClient
+      .from("messages")
+      .select("id, is_read")
+      .eq("id", messageId)
+      .maybeSingle();
+
+    if (!messageError && message?.is_read) {
+      return { created: false, skipped: true, reason: "message already read" };
+    }
+  }
+
   const payload = {
     user_id: details.recipientId,
     type: "message",
@@ -149,6 +163,10 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
     sender_id: details.senderId,
     related_record_id: messageId,
     related_id: messageId,
+    metadata: {
+      message_id: messageId,
+      conversation_id: conversationId
+    },
     is_read: false,
     created_at: new Date().toISOString()
   };
@@ -274,7 +292,7 @@ function base64UrlEncode(value: string | ArrayBuffer) {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : new Uint8Array(value);
   let binary = "";
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function json(body: unknown, status = 200) {
