@@ -32,8 +32,32 @@ const profileDefaults = {
   memberships: ""
 };
 
+const providerModels = {
+  openai: [
+    { value: "gpt-4o-mini", label: "GPT-4o mini" },
+    { value: "gpt-4.1-mini", label: "GPT-4.1 mini" }
+  ],
+  gemini: [
+    { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+    { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" }
+  ],
+  openrouter: [
+    { value: "openrouter/auto", label: "OpenRouter Auto" },
+    { value: "google/gemini-flash-1.5", label: "Gemini Flash via OpenRouter" },
+    { value: "meta-llama/llama-3.1-8b-instruct:free", label: "Llama free model" }
+  ]
+};
+
+const providerLabels = {
+  openai: "OpenAI",
+  gemini: "Google Gemini",
+  openrouter: "OpenRouter"
+};
+
 const aiDefaults = {
   enabled: false,
+  provider: "openai",
+  model: "gpt-4o-mini",
   responseStyle: "Clear and practical",
   assistantPreference: "Concise clinical support",
   defaultTools: "CPD reflections, protocol drafting, clinical summaries",
@@ -109,9 +133,27 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     if (!prefsRes.error && prefsRes.data) {
       const nextAiPrefs = { ...aiDefaults, ...(prefsRes.data.ai_preferences || {}) };
       nextAiPrefs.enabled = nextAiPrefs.enabled && Boolean(savedAiKey);
+
+      if (!providerModels[nextAiPrefs.provider]) {
+        nextAiPrefs.provider = "openai";
+      }
+
+      if (!providerModels[nextAiPrefs.provider].some(option => option.value === nextAiPrefs.model)) {
+        nextAiPrefs.model = providerModels[nextAiPrefs.provider][0].value;
+      }
+
       setAiPrefs(nextAiPrefs);
-      localStorage.setItem("vetlearn-ai-enabled", String(nextAiPrefs.enabled));
-      setAppPrefs({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", cpdTargetHours: DEFAULT_CPD_TARGET_HOURS, ...(prefsRes.data.app_preferences || {}) });
+      storeAiPreferencesLocally(nextAiPrefs);
+      setAppPrefs({ 
+        notifications: true, 
+        privacyMode: false, 
+        biometricUnlock: false, 
+        theme: darkMode ? "dark" : "light", 
+        cpdTargetHours: DEFAULT_CPD_TARGET_HOURS, 
+        ...(prefsRes.data.app_preferences || {}) 
+      });
+    } else {
+      storeAiPreferencesLocally(aiDefaults);
     }
 
     setBiometricAvailable(biometricSupport);
@@ -123,6 +165,24 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const updateAi = (field, value) => setAiPrefs(prev => ({ ...prev, [field]: value }));
   const updateApp = (field, value) => setAppPrefs(prev => ({ ...prev, [field]: value }));
 
+  const updateAiProvider = (provider) => {
+    setAiPrefs(prev => ({
+      ...prev,
+      provider,
+      model: providerModels[provider][0].value
+    }));
+  };
+
+  const storeAiPreferencesLocally = (prefs) => {
+    localStorage.setItem("vetlearn-ai-enabled", String(Boolean(prefs.enabled)));
+    localStorage.setItem("vetlearn-ai-preferences", JSON.stringify({
+      provider: prefs.provider || "openai",
+      model: prefs.model || "gpt-4o-mini",
+      responseStyle: prefs.responseStyle || "",
+      assistantPreference: prefs.assistantPreference || ""
+    }));
+  };
+
   const persistPreferences = async (nextAiPrefs = aiPrefs, nextAppPrefs = appPrefs) => {
     const { error } = await supabase.from("user_preferences").upsert({
       user_id: user.id,
@@ -132,7 +192,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     }, { onConflict: "user_id" });
 
     if (!error) {
-      localStorage.setItem("vetlearn-ai-enabled", String(nextAiPrefs.enabled));
+      storeAiPreferencesLocally(nextAiPrefs);
       window.dispatchEvent(new Event("settingsUpdated"));
     }
 
@@ -318,9 +378,9 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
       {aiApiPromptOpen && (
         <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
           <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
-            <h3 className="text-xl font-black mb-2">Add your OpenAI API key</h3>
+            <h3 className="text-xl font-black mb-2">Add your {providerLabels[aiPrefs.provider || "openai"]} API key</h3>
             <p className="text-sm opacity-70 leading-6 mb-4">AI features use your own key. It is saved securely where supported, with local encrypted fallback on this device.</p>
-            <input className={fieldClass} type="password" placeholder="OpenAI API key" value={aiApiKeyInput} onChange={(e) => setAiApiKeyInput(e.target.value)} />
+            <input className={fieldClass} type="password" placeholder={`${providerLabels[aiPrefs.provider || "openai"]} API key`} value={aiApiKeyInput} onChange={(e) => setAiApiKeyInput(e.target.value)} />
             <div className="grid grid-cols-2 gap-2 mt-4">
               <button onClick={() => setAiApiPromptOpen(false)} disabled={aiApiKeyBusy} className={`rounded-lg p-3 font-black ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>Cancel</button>
               <button onClick={() => saveAiApiKey({ enableAfterSave: true })} disabled={aiApiKeyBusy || !aiApiKeyInput.trim()} className="rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black disabled:opacity-50">
@@ -382,11 +442,47 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
             <SectionTitle icon={<Sparkles size={20} />} title="AI Preferences" subtitle="Control how VetLearn assists with learning, CPD and clinical support." darkMode={darkMode} />
             <Toggle checked={aiPrefs.enabled} onChange={updateAiEnabled} label="Enable AI features" darkMode={darkMode} />
             <div className={`mb-4 rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+              <div className="grid gap-3 mb-4 sm:grid-cols-2">
+                <label>
+                  <span className="block text-xs font-black uppercase tracking-widest opacity-60 mb-1">
+                    AI provider
+                  </span>
+                  <select
+                    className={fieldClass}
+                    value={aiPrefs.provider || "openai"}
+                    onChange={(e) => updateAiProvider(e.target.value)}
+                  >
+                    {Object.entries(providerLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span className="block text-xs font-black uppercase tracking-widest opacity-60 mb-1">
+                    Model
+                  </span>
+                  <select
+                    className={fieldClass}
+                    value={aiPrefs.model || providerModels[aiPrefs.provider || "openai"][0].value}
+                    onChange={(e) => updateAi("model", e.target.value)}
+                  >
+                    {(providerModels[aiPrefs.provider || "openai"] || providerModels.openai).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-black text-sm">OpenAI API key</p>
+                  <p className="font-black text-sm">
+                    {providerLabels[aiPrefs.provider || "openai"]} API key
+                  </p>
                   <p className="text-xs opacity-60 mt-1 leading-5">
-                    {aiApiKeySaved ? "An API key is saved for AI features." : "Add your own API key before turning AI on."}
+                    {aiApiKeySaved
+                      ? "An API key is saved for AI features."
+                      : `Add your own ${providerLabels[aiPrefs.provider || "openai"]} API key before turning AI on.`}
                   </p>
                 </div>
                 <span className={`rounded-full px-2 py-1 text-[10px] font-black ${aiApiKeySaved ? "bg-[#E8F8F5] text-[#0F8F83]" : "bg-orange-100 text-orange-700"}`}>
@@ -397,7 +493,11 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
                 <input
                   className={fieldClass}
                   type="password"
-                  placeholder={aiApiKeySaved ? "Enter a new key to replace it" : "OpenAI API key"}
+                  placeholder={
+                    aiApiKeySaved
+                      ? `Enter a new ${providerLabels[aiPrefs.provider || "openai"]} key to replace it`
+                      : `${providerLabels[aiPrefs.provider || "openai"]} API key`
+                  }
                   value={aiApiKeyInput}
                   onChange={(e) => setAiApiKeyInput(e.target.value)}
                 />
@@ -421,6 +521,9 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
                   Remove key and disable AI
                 </button>
               )}
+              <p className="text-xs opacity-60 mt-3 leading-5">
+                OpenRouter free models may be rate-limited or unavailable. Gemini, OpenAI and OpenRouter usage depends on the user's own account and API key.
+              </p>
             </div>
             <input className={fieldClass} placeholder="AI response style" value={aiPrefs.responseStyle} onChange={(e) => updateAi("responseStyle", e.target.value)} />
             <input className={fieldClass} placeholder="Assistant preferences" value={aiPrefs.assistantPreference} onChange={(e) => updateAi("assistantPreference", e.target.value)} />
