@@ -19,7 +19,6 @@ import {
   PlusCircle,
   Search,
   Send,
-  Share2,
   Trash2,
   UserPlus,
   UserRound,
@@ -575,7 +574,7 @@ function PostsTab(props) {
 
       {composerOpen && (
         <PostComposer
-          title="Share a post" subtitle="Post an update, case discussion, image, or useful resource." form={postForm}
+          title="Share a post" icon={Newspaper} subtitle="Post an update, case discussion, image, or useful resource." form={postForm}
           darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass}
           shareableCases={shareableCases} shareableProtocols={shareableProtocols}
           saving={postSaving} saveLabel="Share post"
@@ -609,7 +608,7 @@ function PostsTab(props) {
   );
 }
 
-function PostComposer({ title, subtitle, form, darkMode, panelClass, fieldClass, shareableCases, shareableProtocols, saving, saveLabel, onChange, onAttach, onClearAttachment, onSave, onRemoveExistingImage }) {
+function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, darkMode, panelClass, fieldClass, shareableCases, shareableProtocols, saving, saveLabel, onChange, onAttach, onClearAttachment, onSave, onRemoveExistingImage }) {
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
     onChange("images", [...(form.images || []), ...files]);
@@ -625,7 +624,9 @@ function PostComposer({ title, subtitle, form, darkMode, panelClass, fieldClass,
   return (
     <section className={`${panelClass} space-y-3 animate-in fade-in slide-in-from-top-4`}>
       <div className="flex items-start gap-3">
-        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}><Share2 size={18} /></div>
+        <div className={`${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"} rounded-lg p-3 shrink-0`}>
+          <HeaderIcon size={18} />
+        </div>
         <div><h2 className="font-black text-lg">{title}</h2>{subtitle && <p className="text-sm opacity-60 leading-6">{subtitle}</p>}</div>
       </div>
 
@@ -636,8 +637,8 @@ function PostComposer({ title, subtitle, form, darkMode, panelClass, fieldClass,
           {POST_CATEGORIES.filter(c => c !== "All").map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
         <select className={`${fieldClass} w-auto sm:flex-1`} value={form.visibility} onChange={(e) => onChange("visibility", e.target.value)}>
-          <option value="network">🌐 Entire network</option>
-          <option value="colleagues">👥 My colleagues only</option>
+          <option value="network">Entire network</option>
+<option value="colleagues">My colleagues only</option>
         </select>
       </div>
 
@@ -761,7 +762,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   if (editing) {
     return (
       <PostComposer 
-        title="Edit post" form={editForm} darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass} 
+        title="Edit post" icon={Edit3} form={editForm} darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass} 
         shareableCases={shareableCases} shareableProtocols={shareableProtocols} saving={postUpdating} 
         saveLabel="Save changes" onChange={onEditChange} onRemoveExistingImage={onRemoveExistingImage} 
         onAttach={onAttachEdit} onClearAttachment={onClearEditAttachment} onSave={onUpdate} 
@@ -777,7 +778,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
             {post.author?.avatar_url ? <img src={post.author.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
           </div>
           <div className="min-w-0">
-            <div className="font-black truncate flex items-center gap-2">
+            <div className="font-bold truncate flex items-center gap-2">
               {authorName}
               {post.visibility === "colleagues" && (
                 <span title="Shared with colleagues only" className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${darkMode ? "bg-white/10 text-slate-300" : "bg-black/5 text-slate-600"}`}>
