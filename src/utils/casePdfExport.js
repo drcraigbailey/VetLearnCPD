@@ -2,6 +2,8 @@ import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import logoImage from "../assets/icon.png"
 
+const REPORT_FILENAME = "VetLearn-Case-Reports.pdf"
+
 const loadImageAsDataUrl = (src) => {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -19,8 +21,39 @@ const loadImageAsDataUrl = (src) => {
   })
 }
 
-export const exportCaseLogs = async (cases) => {
-  if (!cases || cases.length === 0) return;
+const openPdfForPrinting = (doc) => {
+  try {
+    if (typeof doc.autoPrint === "function") {
+      doc.autoPrint({ variant: "non-conform" })
+    }
+
+    const pdfBlob = doc.output("blob")
+    const pdfUrl = URL.createObjectURL(pdfBlob)
+    const printWindow = window.open(pdfUrl, "_blank", "noopener,noreferrer")
+
+    if (!printWindow) {
+      URL.revokeObjectURL(pdfUrl)
+      doc.save(REPORT_FILENAME)
+      return false
+    }
+
+    const cleanup = () => window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000)
+    printWindow.addEventListener?.("load", () => {
+      cleanup()
+      printWindow.focus?.()
+      printWindow.print?.()
+    })
+    cleanup()
+    return true
+  } catch (error) {
+    console.error("Case log print error:", error)
+    doc.save(REPORT_FILENAME)
+    return false
+  }
+}
+
+export const exportCaseLogs = async (cases, { print = true } = {}) => {
+  if (!cases || cases.length === 0) return false
 
   const doc = new jsPDF({
     orientation: "portrait",
@@ -64,31 +97,29 @@ export const exportCaseLogs = async (cases) => {
   doc.setLineWidth(0.8)
   doc.line(14, 34, pageWidth - 14, 34)
 
-  let startY = 44;
+  let startY = 44
 
   cases.forEach((c, index) => {
-    // Add page break if not enough space for title
     if (startY > pageHeight - 40) {
-      doc.addPage();
-      startY = 20;
+      doc.addPage()
+      startY = 20
     }
 
     doc.setTextColor(...navy)
     doc.setFont("helvetica", "bold")
     doc.setFontSize(14)
     doc.text(c.title || "Untitled Case", 14, startY)
-    
+
     doc.setFontSize(10)
     doc.setTextColor(...muted)
-    doc.text(`Date: ${new Date(c.created_at).toLocaleDateString()}  |  Category: ${c.category || 'N/A'}`, 14, startY + 6)
+    doc.text(`Date: ${new Date(c.created_at).toLocaleDateString()}  |  Category: ${c.category || "N/A"}`, 14, startY + 6)
 
-    // Patient Details Table
     const patientData = [
       ["Patient Name", c.patient_name || "-"],
       ["Species", c.species || "-"],
       ["Breed", c.breed || "-"],
       ["Age / Gender", `${c.age || "-"} / ${c.gender || "-"}`]
-    ];
+    ]
 
     autoTable(doc, {
       startY: startY + 10,
@@ -97,38 +128,40 @@ export const exportCaseLogs = async (cases) => {
       styles: { fontSize: 9, cellPadding: 2, textColor: [17, 50, 71] },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 40, fillColor: [232, 248, 245] } },
       margin: { left: 14, right: 14 }
-    });
+    })
 
-    // Description text
     if (c.description) {
-      doc.setFont("helvetica", "bold");
-      doc.text("Clinical Notes:", 14, doc.lastAutoTable.finalY + 8);
-      doc.setFont("helvetica", "normal");
-      
-      const splitText = doc.splitTextToSize(c.description, pageWidth - 28);
-      doc.text(splitText, 14, doc.lastAutoTable.finalY + 14);
-      
-      startY = doc.lastAutoTable.finalY + 18 + (splitText.length * 4);
+      doc.setFont("helvetica", "bold")
+      doc.text("Clinical Notes:", 14, doc.lastAutoTable.finalY + 8)
+      doc.setFont("helvetica", "normal")
+
+      const splitText = doc.splitTextToSize(c.description, pageWidth - 28)
+      doc.text(splitText, 14, doc.lastAutoTable.finalY + 14)
+
+      startY = doc.lastAutoTable.finalY + 18 + (splitText.length * 4)
     } else {
-      startY = doc.lastAutoTable.finalY + 10;
+      startY = doc.lastAutoTable.finalY + 10
     }
 
-    // Attachments summary
     if (c.media_urls && c.media_urls.length > 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
-      doc.text(`* Case includes ${c.media_urls.length} attached files/media.`, 14, startY);
-      startY += 10;
+      doc.setFont("helvetica", "italic")
+      doc.setFontSize(8)
+      doc.text(`* Case includes ${c.media_urls.length} attached files/media.`, 14, startY)
+      startY += 10
     }
 
-    // Divider between cases
     if (index < cases.length - 1) {
-      doc.setDrawColor(220, 237, 234);
-      doc.setLineWidth(0.5);
-      doc.line(14, startY + 5, pageWidth - 14, startY + 5);
-      startY += 15;
+      doc.setDrawColor(220, 237, 234)
+      doc.setLineWidth(0.5)
+      doc.line(14, startY + 5, pageWidth - 14, startY + 5)
+      startY += 15
     }
-  });
+  })
 
-  doc.save("VetLearn-Case-Reports.pdf")
+  if (print) {
+    return openPdfForPrinting(doc)
+  }
+
+  doc.save(REPORT_FILENAME)
+  return true
 }
