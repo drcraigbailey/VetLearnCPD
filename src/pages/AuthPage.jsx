@@ -3,7 +3,6 @@ import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric, syncBiometricSession } from "../utils/biometricAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
-import { isNativeCredentialAvailable, signInWithCredentialManager, savePasswordCredential } from "../utils/credentialManager";
 
 import {
   Loader2,
@@ -12,7 +11,6 @@ import {
   Eye,
   EyeOff,
   Fingerprint,
-  KeyRound,
   X
 } from "lucide-react";
 
@@ -135,32 +133,6 @@ export default function AuthPage(){
     setLoading(false)
   }
 
-  const handleNativeSignIn = async () => {
-    setLoading(true);
-    try {
-      const credential = await signInWithCredentialManager();
-      if (credential.email && credential.password) {
-        setKeepMeLoggedIn(keepMeLoggedIn);
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credential.email,
-          password: credential.password
-        });
-        
-        if (error) throw error;
-        
-        await syncBiometricSession(data.user, data.session);
-        setFingerprintRefreshNeeded(false);
-        setShowFingerprintLogin(await isBiometricLoginEnabled());
-        toast.success("Signed in securely");
-      }
-    } catch (err) {
-      console.warn("Native login cancelled or failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const submit=async()=>{
     if(mode==="forgot"){
       await handlePasswordReset()
@@ -194,10 +166,6 @@ export default function AuthPage(){
         return
       }
 
-      if (isNativeCredentialAvailable()) {
-        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
-      }
-
       await syncBiometricSession(data.user, data.session)
       setFingerprintRefreshNeeded(false)
       setShowFingerprintLogin(await isBiometricLoginEnabled())
@@ -227,10 +195,6 @@ export default function AuthPage(){
         toast.error(error.message)
         setLoading(false)
         return
-      }
-      
-      if (isNativeCredentialAvailable()) {
-        savePasswordCredential(cleanEmail, password).catch(err => console.warn("Save cancelled", err));
       }
 
       toast.success("Account created")
@@ -341,6 +305,8 @@ export default function AuthPage(){
             <>
               <div className="mb-3">
                 <input
+                  id="full_name"
+                  name="name"
                   className={fieldClass}
                   placeholder="Full Name"
                   autoComplete="name"
@@ -374,12 +340,14 @@ export default function AuthPage(){
 
           <div className="mb-3">
             <input
+              id="email"
+              name="email"
               className={fieldClass}
               placeholder="Email"
               type="email"
               inputMode="email"
               autoCapitalize="none"
-              autoComplete={mode === "login" ? "username email" : "email"}
+              autoComplete={mode === "login" ? "username" : "email"}
               spellCheck="false"
               value={email}
               onChange={(e)=>setEmail(e.target.value)}
@@ -389,10 +357,12 @@ export default function AuthPage(){
           {mode!=="forgot" && (
             <div className="relative mb-3">
               <input
+                id="password"
+                name="password"
                 className={`${fieldClass} pr-12`}
                 placeholder="Password"
                 type={showPassword ? "text" : "password"}
-                autoComplete={mode==="login"?"current-password":"new-password"}
+                autoComplete={mode==="login" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e)=>setPassword(e.target.value)}
               />
@@ -496,18 +466,6 @@ export default function AuthPage(){
             >
               <Fingerprint size={18} />
               Fingerprint Unlock
-            </button>
-          )}
-          
-          {mode==="login" && isNativeCredentialAvailable() && (
-            <button
-              type="button"
-              className="w-full bg-transparent border-2 border-[#71CFC2] text-[#0F8F83] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
-              onClick={handleNativeSignIn}
-              disabled={loading}
-            >
-              <KeyRound size={18} />
-              Saved Password or Passkey
             </button>
           )}
         </div>
