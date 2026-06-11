@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { CheckCheck, Edit, Loader2, MessageSquare, MessageSquareX, Search, Send, User, X, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 import { sendMessagePushNotification } from "../utils/pushNotifications";
 
@@ -514,22 +515,19 @@ export default function Messages({ user, darkMode }) {
       </div>
 
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
-          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-xl font-black">Delete conversation?</h3>
-                <p className="mt-2 text-sm opacity-70 leading-6">This will delete the conversation with <span className="font-black">{deleteCandidate.colleague?.full_name || "this colleague"}</span> and remove its messages.</p>
-              </div>
-              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={deletingConversation} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}><X size={18} /></button>
-            </div>
-
-            <div className="flex gap-3 mt-5">
-              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={deletingConversation} className={`flex-1 rounded-lg px-4 py-3 text-sm font-black ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>Cancel</button>
-              <button type="button" onClick={() => deleteConversation(deleteCandidate)} disabled={deletingConversation} className="flex-1 rounded-lg bg-red-500 px-4 py-3 text-sm font-black text-white disabled:opacity-50">{deletingConversation ? "Deleting..." : "Delete"}</button>
-            </div>
-          </div>
-        </div>
+        <AppPopup
+          open={!!deleteCandidate}
+          onClose={() => !deletingConversation && setDeleteCandidate(null)}
+          darkMode={darkMode}
+          {...popupPresets.deleteConversation({
+            colleagueName: deleteCandidate.colleague?.full_name,
+            onPrimary: () => deleteConversation(deleteCandidate),
+            onSecondary: () => setDeleteCandidate(null),
+            primaryLoading: deletingConversation,
+            primaryDisabled: deletingConversation,
+            secondaryDisabled: deletingConversation
+          })}
+        />
       )}
     </div>
   );

@@ -8,71 +8,95 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID();
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return json({ error: "Method not allowed", requestId }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !anonKey || !serviceKey) {
-    return json({ error: "Missing Supabase environment variables" }, 500);
+    console.error("admin-user-actions is missing required environment variables", { requestId });
+    return json({ error: "Admin action service is not configured", requestId }, 500);
   }
 
   const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return json({ error: "Missing bearer token", requestId }, 401);
+  }
+
   const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } }
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false }
   });
   const adminClient = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
   const { data: authData, error: authError } = await userClient.auth.getUser();
-  if (authError || !authData.user) return json({ error: "Not signed in" }, 401);
+  if (authError || !authData.user) {
+    console.warn("admin-user-actions rejected an invalid session", {
+      requestId,
+      message: authError?.message || "No authenticated user"
+    });
+    return json({ error: "Not signed in", requestId }, 401);
+  }
 
-  const { data: role } = await adminClient
+  const { data: role, error: roleError } = await adminClient
     .from("admin_user_roles")
     .select("role, is_active")
     .eq("user_id", authData.user.id)
     .eq("is_active", true)
     .maybeSingle();
 
+  if (roleError) {
+    console.error("admin-user-actions role lookup failed", {
+      requestId,
+      adminUserId: authData.user.id,
+      code: roleError.code,
+      message: roleError.message
+    });
+    return json({ error: "Could not verify admin access", code: roleError.code, requestId }, 500);
+  }
+
   if (!role || !["admin", "super_admin"].includes(role.role)) {
-    return json({ error: "Admin access required" }, 403);
+    return json({ error: "Admin access required", requestId }, 403);
   }
 
   let payload;
   try {
     payload = await req.json();
   } catch (_error) {
-    return json({ error: "Invalid request body" }, 400);
+    return json({ error: "Invalid request body", requestId }, 400);
   }
 
   const { action, targetUserId, email } = payload;
-  if (!action) return json({ error: "Missing action" }, 400);
+  if (!action) return json({ error: "Missing action", requestId }, 400);
 
   try {
     if (action === "send_password_reset") {
-      if (!email) return json({ error: "Missing email" }, 400);
+      if (!email) return json({ error: "Missing email", requestId }, 400);
       const redirectTo = Deno.env.get("PASSWORD_RESET_REDIRECT_URL") || undefined;
       const { error } = await adminClient.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       await audit(adminClient, authData.user.id, action, targetUserId, { email });
-      return json({ ok: true });
+      return json({ ok: true, requestId });
     }
 
     if (action === "logout_user") {
-      if (!targetUserId) return json({ error: "Missing targetUserId" }, 400);
-      const { error } = await adminClient.auth.admin.signOut(targetUserId, "global");
-      if (error) throw error;
-      await audit(adminClient, authData.user.id, action, targetUserId, {});
-      return json({ ok: true });
+      return json({
+        error: "Remote logout requires the target user's access token and cannot be performed safely from a user ID",
+        requestId
+      }, 501);
     }
 
     if (action === "delete_user") {
-      if (role.role !== "super_admin") return json({ error: "Only Super Admins can delete users" }, 403);
-      if (!targetUserId) return json({ error: "Missing targetUserId" }, 400);
-      if (targetUserId === authData.user.id) return json({ error: "You cannot delete your own account from the admin dashboard" }, 400);
+      if (role.role !== "super_admin") return json({ error: "Only Super Admins can delete users", requestId }, 403);
+      if (!targetUserId) return json({ error: "Missing targetUserId", requestId }, 400);
+      if (!isUuid(targetUserId)) return json({ error: "Invalid targetUserId", requestId }, 400);
+      if (targetUserId === authData.user.id) return json({ error: "You cannot delete your own account from the admin dashboard", requestId }, 400);
 
       await deleteUserData(adminClient, targetUserId);
 
@@ -80,22 +104,24 @@ serve(async (req) => {
       if (error) throw error;
 
       await audit(adminClient, authData.user.id, action, null, { deleted_user_id: targetUserId, email: email || null });
-      return json({ ok: true });
+      return json({ ok: true, requestId });
     }
 
     if (action === "force_password_reset") {
-      if (!targetUserId) return json({ error: "Missing targetUserId" }, 400);
+      if (!targetUserId) return json({ error: "Missing targetUserId", requestId }, 400);
+      if (!isUuid(targetUserId)) return json({ error: "Invalid targetUserId", requestId }, 400);
       const { error } = await adminClient
         .from("user_account_status")
         .upsert({ user_id: targetUserId, status: "active", reason: "force_password_reset", updated_by: authData.user.id, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
       if (error) throw error;
       await audit(adminClient, authData.user.id, action, targetUserId, {});
-      return json({ ok: true });
+      return json({ ok: true, requestId });
     }
 
-    return json({ error: "Unknown action" }, 400);
+    return json({ error: "Unknown action", requestId }, 400);
   } catch (error) {
     console.error("admin-user-actions failed", {
+      requestId,
       action,
       targetUserId,
       code: error?.code || null,
@@ -108,7 +134,8 @@ serve(async (req) => {
       error: formatAdminError(error),
       code: error?.code || null,
       details: error?.details || null,
-      hint: error?.hint || null
+      hint: error?.hint || null,
+      requestId
     }, 500);
   }
 });
@@ -353,6 +380,10 @@ function formatAdminError(error) {
     return `Could not delete user because older linked data still exists: ${message}`;
   }
   return message;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function json(body, status = 200) {

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import LoadingState from "../components/LoadingState";
 import SettingsLegalDocuments from "../components/SettingsLegalDocuments";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
 import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
@@ -85,6 +86,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [aiApiKeySaved, setAiApiKeySaved] = useState(false);
   const [aiApiKeyBusy, setAiApiKeyBusy] = useState(false);
   const [aiApiPromptOpen, setAiApiPromptOpen] = useState(false);
+  const [appPopup, setAppPopup] = useState(null);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -248,8 +250,12 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     setAiPrefs(nextPrefs);
     const { error } = await persistPreferences(nextPrefs, appPrefs);
     setAiApiKeyBusy(false);
-    if (error) return toast.error("Could not update AI settings");
+    if (error) {
+      toast.error("Could not update AI settings");
+      return false;
+    }
     toast.success("AI API key removed");
+    return true;
   };
 
   const toggleBiometricUnlock = async (enabled) => {
@@ -512,7 +518,16 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
               </div>
               {aiApiKeySaved && (
                 <button
-                  onClick={removeAiApiKey}
+                  onClick={() => setAppPopup(popupPresets.removeAiApiKey({
+                    onPrimary: async () => {
+                      const removed = await removeAiApiKey();
+                      if (removed) setAppPopup(null);
+                    },
+                    onSecondary: () => setAppPopup(null),
+                    primaryLoading: aiApiKeyBusy,
+                    primaryDisabled: aiApiKeyBusy,
+                    secondaryDisabled: aiApiKeyBusy
+                  }))}
                   disabled={aiApiKeyBusy}
                   className={`mt-2 rounded-lg px-3 py-2 text-xs font-black flex items-center gap-2 ${darkMode ? "bg-transparent text-slate-200 hover:bg-red-500/10" : "bg-transparent text-[#0B3760] hover:bg-red-50"}`}
                   aria-label="Remove"
@@ -582,6 +597,16 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
         {activeTab === "docs" && <SettingsLegalDocuments darkMode={darkMode} />}
       </div>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={() => !aiApiKeyBusy && setAppPopup(null)}
+        darkMode={darkMode}
+        {...(appPopup || {})}
+        primaryLoading={aiApiKeyBusy}
+        primaryDisabled={aiApiKeyBusy}
+        secondaryDisabled={aiApiKeyBusy}
+      />
     </div>
   );
 }

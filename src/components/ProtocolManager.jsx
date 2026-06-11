@@ -6,6 +6,7 @@ import {
   Share2, Users, Globe, Lock, Trash2, Edit, Copy, Loader2
 } from "lucide-react";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 
 // Reused Accordion Pattern from Formulary
 const AccordionSection = React.memo(({ id, title, expandedSection, onToggle, darkMode, children }) => {
@@ -38,6 +39,9 @@ export default function Protocols({ user, darkMode }) {
   const [friendsList, setFriendsList] = useState([]);
   const [isSharingLoading, setIsSharingLoading] = useState(false);
   const [shareBusyId, setShareBusyId] = useState(null);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   const panelClass = darkMode ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]" : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
   const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"}`;
@@ -87,9 +91,19 @@ export default function Protocols({ user, darkMode }) {
   }, []);
 
   const deleteProtocol = async (id) => {
-    if (!window.confirm("Delete this protocol?")) return;
     const { error } = await supabase.from("protocols").delete().eq("id", id).eq("user_id", user.id);
     if (!error) { toast.success("Protocol deleted"); loadProtocols(); setActiveProtocol(null); }
+  };
+
+  const requestDeleteProtocol = (protocol) => {
+    setAppPopup(popupPresets.deleteProtocol({
+      protocolName: protocol?.name,
+      onPrimary: () => {
+        closeAppPopup();
+        deleteProtocol(protocol?.id || protocol);
+      },
+      onSecondary: closeAppPopup
+    }));
   };
 
   // Reused Sharing Architecture
@@ -175,7 +189,7 @@ export default function Protocols({ user, darkMode }) {
                   <button onClick={() => openShareProtocolMenu(activeProtocol)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"><Share2 size={14}/> Share</button>
                   <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"><Copy size={14}/> Duplicate</button>
                   {activeProtocol.user_id === user.id && (
-                    <button onClick={() => deleteProtocol(activeProtocol.id)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400"><Trash2 size={14}/> Delete</button>
+                    <button onClick={() => requestDeleteProtocol(activeProtocol)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400"><Trash2 size={14}/> Delete</button>
                   )}
                 </div>
               </div>
@@ -271,6 +285,14 @@ export default function Protocols({ user, darkMode }) {
           {filteredProtocols.length === 0 && <div className="col-span-full text-center py-10 opacity-50">No protocols found.</div>}
         </div>
       )}
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }

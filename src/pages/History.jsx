@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { exportCPD } from "../utils/pdfExport";
 import { generateReflection } from "../utils/aiReflection";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 
 export default function History({ user, darkMode = false }) {
   const [history, setHistory] = useState([]);
@@ -17,6 +18,9 @@ export default function History({ user, darkMode = false }) {
   const [friendsList, setFriendsList] = useState([]);
   const [isSharingLoading, setIsSharingLoading] = useState(false);
   const [shareBusyId, setShareBusyId] = useState(null);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   useEffect(() => {
     loadHistory();
@@ -169,6 +173,17 @@ export default function History({ user, darkMode = false }) {
   };
 
   const getEntrySource = (item) => item.entry_source || (item.manual_minutes ? "manual" : "timer");
+
+  const requestDeleteEntry = (item) => {
+    setAppPopup(popupPresets.deleteCpdEntry({
+      entryTitle: item.title,
+      onPrimary: () => {
+        closeAppPopup();
+        deleteEntry(item.id);
+      },
+      onSecondary: closeAppPopup
+    }));
+  };
   const filtered = history.filter(item => item.title?.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -287,7 +302,7 @@ export default function History({ user, darkMode = false }) {
                       <Save size={18} />
                     </button>
 
-                    <button className={`${darkMode ? "bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500"} rounded-lg p-3 transition`} onClick={() => deleteEntry(item.id)} title="Delete Entry">
+                    <button className={`${darkMode ? "bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500"} rounded-lg p-3 transition`} onClick={() => requestDeleteEntry(item)} title="Delete Entry">
                       {loadingId === item.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                     </button>
                   </div>
@@ -297,6 +312,14 @@ export default function History({ user, darkMode = false }) {
           </>
         )}
       </div>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }

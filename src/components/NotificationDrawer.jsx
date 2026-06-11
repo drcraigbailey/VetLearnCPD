@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { X, Check, Trash2, Bell, MessageSquare, Share2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import AppPopup, { popupPresets } from "./AppPopup";
 import { supabase } from "../supabaseClient";
 
 export default function NotificationDrawer({
@@ -15,6 +16,9 @@ export default function NotificationDrawer({
   const [activeTab, setActiveTab] = useState("unread");
   const [readNotifications, setReadNotifications] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,6 +107,17 @@ export default function NotificationDrawer({
     }
   };
 
+  const requestDeleteNotification = (notification) => {
+    setAppPopup(popupPresets.deleteNotification({
+      title: notification.title,
+      onPrimary: async () => {
+        await deleteNotification(notification);
+        closeAppPopup();
+      },
+      onSecondary: closeAppPopup
+    }));
+  };
+
   const deleteVisibleNotifications = async () => {
     if (visibleNotifications.length === 0 || !currentUserId) return;
 
@@ -177,7 +192,20 @@ export default function NotificationDrawer({
               <button onClick={markAllRead} className="text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Read All</button>
             )}
             {visibleNotifications.length > 0 && (
-              <button onClick={deleteVisibleNotifications} className="text-xs font-bold text-red-500 opacity-80 hover:opacity-100 transition-opacity">Delete All</button>
+              <button
+                onClick={() => setAppPopup(popupPresets.deleteNotifications({
+                  count: visibleNotifications.length,
+                  tabLabel: activeTab,
+                  onPrimary: () => {
+                    closeAppPopup();
+                    deleteVisibleNotifications();
+                  },
+                  onSecondary: closeAppPopup
+                }))}
+                className="text-xs font-bold text-red-500 opacity-80 hover:opacity-100 transition-opacity"
+              >
+                Delete All
+              </button>
             )}
             <button onClick={onClose} className="opacity-70 hover:opacity-100 transition-opacity"><X size={24} /></button>
           </div>
@@ -221,7 +249,7 @@ export default function NotificationDrawer({
                       </button>
                     )}
                     <button
-                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification); }}
+                      onClick={(e) => { e.stopPropagation(); requestDeleteNotification(notification); }}
                       className="p-1 opacity-50 hover:opacity-100 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-all"
                       title="Delete"
                     >
@@ -238,6 +266,14 @@ export default function NotificationDrawer({
           )}
         </div>
       </div>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </>
   );
 }

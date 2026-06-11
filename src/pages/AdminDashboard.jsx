@@ -24,6 +24,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import AdminActivityExplorer from "../components/AdminActivityExplorer";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 
 const adminTabs = [
@@ -64,31 +65,29 @@ const userTypeLabels = {
   super_admin: "Super Admin"
 };
 
-export default function AdminDashboard({ user, profile, darkMode }) {
+export default function AdminDashboard({ user, darkMode }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [adminRole, setAdminRole] = useState(null);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
   const [featureMatrix, setFeatureMatrix] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [adminMessages, setAdminMessages] = useState([]);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState({ title: "", body: "", audience: "all" });
   const [working, setWorking] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [usersError, setUsersError] = useState("");
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
     : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
 
-  useEffect(() => {
-    if (!user?.id) return;
-    loadAdminData();
-  }, [user?.id]);
-
   const loadAdminData = async () => {
     setLoading(true);
+    setStatsError("");
+    setUsersError("");
 
     const roleRes = await supabase
       .from("admin_user_roles")
@@ -96,6 +95,10 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       .eq("user_id", user.id)
       .eq("is_active", true)
       .maybeSingle();
+
+    if (roleRes.error) {
+      console.error("Admin role lookup failed", roleRes.error);
+    }
 
     if (roleRes.error || !roleRes.data || !["admin", "super_admin"].includes(roleRes.data.role)) {
       setAdminRole(null);
@@ -105,10 +108,9 @@ export default function AdminDashboard({ user, profile, darkMode }) {
 
     setAdminRole(roleRes.data.role);
 
-    const [statsRes, usersRes, auditRes, subRes, adminMessagesRes] = await Promise.all([
+    const [statsRes, usersRes, subRes, adminMessagesRes] = await Promise.all([
       supabase.rpc("admin_dashboard_stats"),
       supabase.from("admin_user_overview").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
       supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
       supabase
         .from("notifications")
@@ -123,11 +125,27 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       .select("*")
       .order("user_type", { ascending: true });
 
-    if (!statsRes.error) setStats(statsRes.data || {});
-    if (!usersRes.error) setUsers(usersRes.data || []);
-    if (!auditRes.error) setAuditLogs(auditRes.data || []);
+    if (statsRes.error) {
+      console.error("Admin overview stats failed to load", statsRes.error);
+      setStats(null);
+      setStatsError(getStatsErrorMessage(statsRes.error));
+    } else {
+      setStats(normaliseAdminStats(statsRes.data));
+    }
+
+    if (usersRes.error) {
+      console.error("Admin users failed to load", usersRes.error);
+      setUsers([]);
+      setUsersError(getUsersErrorMessage(usersRes.error));
+    } else {
+      setUsers(usersRes.data || []);
+    }
+
     if (!adminMessagesRes.error) setAdminMessages(groupAdminMessages(adminMessagesRes.data || []));
-    else setAdminMessages([]);
+    else {
+      console.error("Admin messages failed to load", adminMessagesRes.error);
+      setAdminMessages([]);
+    }
     if (!featureRes.error) {
       setFeatureMatrix(featureRes.data || []);
     } else {
@@ -144,9 +162,18 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       })));
     }
     if (!subRes.error) setSubscriptions(subRes.data || []);
+    else console.error("Admin subscriptions failed to load", subRes.error);
 
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    // Loading remote admin data is the external synchronization performed here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAdminData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -185,7 +212,14 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       if (!error) await audit(`user_${status}`, targetUser.user_id, { email: targetUser.email });
     }
 
-    if (error) toast.error("Could not update user status");
+    if (error) {
+      console.error("Admin user status update failed", {
+        targetUserId: targetUser.user_id,
+        status,
+        error
+      });
+      toast.error(error.message || "Could not update user status");
+    }
     else {
       toast.success(status === "active" ? "User reactivated" : "User suspended");
       loadAdminData();
@@ -204,7 +238,20 @@ export default function AdminDashboard({ user, profile, darkMode }) {
     }
 
     setWorking(true);
-    const { error } = await supabase.functions.invoke("admin-user-actions", {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      console.error("Admin delete could not obtain an authenticated session", sessionError);
+      toast.error("Your admin session has expired. Sign in again and retry.");
+      setWorking(false);
+      return false;
+    }
+
+    const { data, error } = await supabase.functions.invoke("admin-user-actions", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
       body: {
         action: "delete_user",
         targetUserId: targetUser.user_id,
@@ -212,9 +259,14 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       }
     });
 
-    if (error) {
-      console.error("Admin delete user failed", error);
-      toast.error(await getAdminActionErrorMessage(error));
+    if (error || !data?.ok) {
+      console.error("Admin delete user failed", {
+        functionName: "admin-user-actions",
+        targetUserId: targetUser.user_id,
+        response: data,
+        error
+      });
+      toast.error(await getAdminActionErrorMessage(error, data));
       setWorking(false);
       return false;
     }
@@ -246,7 +298,14 @@ export default function AdminDashboard({ user, profile, darkMode }) {
       new_user_type: userType
     });
 
-    if (error) toast.error(isMissingRpcError(error) ? "Run admin_user_types_notifications.sql first" : error.message || "Could not update user type");
+    if (error) {
+      console.error("Admin user type update failed", {
+        targetUserId: targetUser.user_id,
+        userType,
+        error
+      });
+      toast.error(isMissingRpcError(error) ? "Run admin_user_types_notifications.sql first" : error.message || "Could not update user type");
+    }
     else {
       toast.success("User type updated");
       loadAdminData();
@@ -355,7 +414,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
         })}
       </div>
 
-      {activeTab === "overview" && <Overview stats={stats} panelClass={panelClass} darkMode={darkMode} onRefresh={loadAdminData} />}
+      {activeTab === "overview" && <Overview stats={stats} error={statsError} panelClass={panelClass} darkMode={darkMode} onRefresh={loadAdminData} />}
       {activeTab === "users" && (
         <UsersPanel
           panelClass={panelClass}
@@ -369,6 +428,7 @@ export default function AdminDashboard({ user, profile, darkMode }) {
           currentUserId={user.id}
           isSuperAdmin={isSuperAdmin}
           working={working}
+          error={usersError}
         />
       )}
       {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
@@ -381,17 +441,26 @@ export default function AdminDashboard({ user, profile, darkMode }) {
   );
 }
 
-function Overview({ stats, panelClass, darkMode, onRefresh }) {
-  const metrics = [
-    ["Total users", stats?.total_users],
-    ["Active users", stats?.active_users],
-    ["CPD entries", stats?.cpd_entries],
-    ["Case logs", stats?.case_logs],
+function Overview({ stats, error, panelClass, darkMode, onRefresh }) {
+  const userMetrics = [
+    ["Total users", stats?.totalUsers],
+    ["Active users", stats?.activeUsers],
+    ["Suspended users", stats?.suspendedUsers],
+    ["Administrators", stats?.admins],
+    ["New this week", stats?.newWeek]
+  ];
+  const activityMetrics = [
+    ["CPD entries", stats?.cpdEntries],
+    ["Case logs", stats?.caseLogs],
+    ["Protocols", stats?.protocols],
+    ["Posts", stats?.posts],
     ["Messages", stats?.messages],
     ["Connections", stats?.connections]
   ];
 
-  const chartData = metrics.map(([name, value]) => ({ name, value: value || 0 }));
+  const chartData = [...userMetrics, ...activityMetrics]
+    .filter(([, value]) => Number.isFinite(value))
+    .map(([name, value]) => ({ name, value }));
 
   return (
     <section className={panelClass}>
@@ -401,69 +470,116 @@ function Overview({ stats, panelClass, darkMode, onRefresh }) {
           <RefreshCw size={15} /> Refresh
         </button>
       </div>
-      <MetricGrid metrics={metrics} darkMode={darkMode} />
-      <div className="h-64 mt-5">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="value" fill="#71CFC2" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {error && <AdminDataNotice title="Overview stats unavailable" message={error} darkMode={darkMode} />}
+      {stats?.missingObjects?.length > 0 && (
+        <AdminDataNotice
+          title="Some activity totals are unavailable"
+          message={`Missing Supabase objects: ${stats.missingObjects.join(", ")}. Run supabase/admin_dashboard_reliability_fix.sql.`}
+          darkMode={darkMode}
+          warning
+        />
+      )}
+
+      <h3 className="mb-3 mt-5 text-sm font-black uppercase tracking-[0.12em] opacity-60">Users</h3>
+      <MetricGrid metrics={userMetrics} darkMode={darkMode} />
+      <h3 className="mb-3 mt-6 text-sm font-black uppercase tracking-[0.12em] opacity-60">Activity</h3>
+      <MetricGrid metrics={activityMetrics} darkMode={darkMode} />
+
+      {(stats?.byRole?.length > 0 || stats?.byTier?.length > 0) && (
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <BreakdownCard title="Users by role" rows={stats.byRole} darkMode={darkMode} />
+          <BreakdownCard title="Users by subscription tier" rows={stats.byTier} darkMode={darkMode} />
+        </div>
+      )}
+
+      {chartData.length > 0 ? (
+        <div className="h-72 mt-6">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={80} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#71CFC2" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        !error && <AdminDataNotice title="No overview data yet" message="The dashboard query completed but did not return any countable records." darkMode={darkMode} />
+      )}
     </section>
   );
 }
 
-function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working }) {
+function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working, error }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
 
   return (
     <section className={panelClass}>
-      <div className="flex items-center gap-2 mb-4">
+      <div className={`mb-5 flex items-center gap-2 rounded-2xl border px-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#D6E9E6] bg-[#F2F8F7]"}`}>
         <Search size={18} className="opacity-50" />
-        <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search users" className={`w-full rounded-lg p-3 outline-none ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`} />
+        <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search users" className="w-full bg-transparent py-3.5 outline-none" />
       </div>
-      <div className="space-y-3">
+      {error && <AdminDataNotice title="Users could not be loaded" message={error} darkMode={darkMode} />}
+      <div className="space-y-5">
         {users.map(item => (
-          <div key={item.user_id} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+          <article key={item.user_id} className={`rounded-2xl border p-5 shadow-[0_10px_28px_rgba(11,55,96,0.05)] ${darkMode ? "border-white/10 bg-white/[0.07]" : "border-[#D6E9E6] bg-white"}`}>
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-black">{item.full_name || item.email}</h3>
-                <p className="text-sm opacity-65">{item.email}</p>
-                <p className="text-xs font-bold mt-1 text-[#0F8F83]">{userTypeLabels[getUserType(item)] || getUserType(item)}</p>
+              <div className="min-w-0">
+                <h3 className={`truncate text-xl font-black ${darkMode ? "text-white" : "text-[#0B3552]"}`}>{item.full_name || item.email}</h3>
+                <p className={`mt-1 truncate text-base ${darkMode ? "text-slate-300" : "text-[#667F91]"}`}>{item.email}</p>
               </div>
-              <select disabled={working} value={getUserType(item)} onChange={event => onUserType(item, event.target.value)} className={`rounded-lg p-2 text-xs font-bold ${darkMode ? "bg-[#071A24]" : "bg-white"}`}>
+              <StatusBadge status={item.account_status} />
+            </div>
+            <p className={`mt-2 text-sm ${darkMode ? "text-slate-400" : "text-[#8A9CAA]"}`}>
+              Joined {formatAdminDate(item.created_at)} - Last login {formatAdminDate(item.last_sign_in_at)}
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <select disabled={working} value={getUserType(item)} onChange={event => onUserType(item, event.target.value)} className={`min-w-0 rounded-xl border-0 px-4 py-3.5 text-sm font-black outline-none disabled:opacity-50 ${darkMode ? "bg-[#102C36] text-white" : "bg-[#EFF6F5] text-[#0B3552]"}`}>
                 {userTypeOptions.map(type => <option key={type} value={type}>{userTypeLabels[type]}</option>)}
               </select>
+              <button
+                disabled={working}
+                onClick={() => onStatus(item, item.account_status === "active" ? "suspended" : "active")}
+                className="rounded-xl bg-[#71CFC2] px-4 py-3.5 text-sm font-black text-[#062F63] shadow-sm transition hover:bg-[#61C4B7] disabled:opacity-50"
+              >
+                {item.account_status === "active" ? "Suspend" : "Reactivate"}
+              </button>
+              <button
+                disabled={working || !isSuperAdmin || item.user_id === currentUserId}
+                onClick={() => setDeleteCandidate(item)}
+                className={`col-span-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-300 hover:bg-red-500/20" : "bg-[#FFF0F1] text-[#E00019] hover:bg-[#FFE5E7]"}`}
+              >
+                <Trash2 size={19} /> Delete user and data
+              </button>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button disabled={working || item.account_status === "active"} onClick={() => onStatus(item, "active")} className="rounded-lg bg-[#71CFC2] p-2 text-xs font-black text-[#062F63] disabled:opacity-40">Activate</button>
-              <button disabled={working || item.account_status === "suspended"} onClick={() => onStatus(item, "suspended")} className="rounded-lg bg-orange-500 p-2 text-xs font-black text-white disabled:opacity-40">Suspend</button>
-              <button disabled={working || !isSuperAdmin || item.user_id === currentUserId} onClick={() => setDeleteCandidate(item)} className="col-span-2 rounded-lg bg-red-600 p-2 text-xs font-black text-white disabled:opacity-40">Delete user</button>
-            </div>
-          </div>
+          </article>
         ))}
+        {!error && users.length === 0 && (
+          <div className={`rounded-2xl border p-6 text-center text-sm ${darkMode ? "border-white/10 bg-white/[0.06] text-slate-300" : "border-[#D6E9E6] bg-white text-[#667F91]"}`}>
+            {query ? "No users match that search." : "No users were returned by Supabase."}
+          </div>
+        )}
       </div>
 
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 px-4 backdrop-blur-sm">
-          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${darkMode ? "bg-[#071A24] border-white/10 text-white" : "bg-white border-[#DCEDEA] text-[#113247]"}`}>
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-xl font-black">Delete this user?</h3>
-                <p className="mt-2 text-sm opacity-70 leading-6">This will permanently delete <span className="font-black">{deleteCandidate.email}</span> and linked app data. This cannot be undone.</p>
-              </div>
-              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={working} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}><Trash2 size={16} /></button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setDeleteCandidate(null)} disabled={working} className={`rounded-lg p-3 text-sm font-black ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}>Cancel</button>
-              <button type="button" disabled={working} onClick={async () => { const success = await onDelete(deleteCandidate); if (success) setDeleteCandidate(null); }} className="rounded-lg bg-red-600 p-3 text-sm font-black text-white disabled:bg-slate-300 disabled:text-slate-500">Delete permanently</button>
-            </div>
-          </div>
-        </div>
+        <AppPopup
+          open={!!deleteCandidate}
+          onClose={() => !working && setDeleteCandidate(null)}
+          darkMode={darkMode}
+          {...popupPresets.deleteUser({
+            email: deleteCandidate.email,
+            onPrimary: async () => {
+              const success = await onDelete(deleteCandidate);
+              if (success) setDeleteCandidate(null);
+            },
+            onSecondary: () => setDeleteCandidate(null),
+            primaryLoading: working,
+            primaryDisabled: working,
+            secondaryDisabled: working
+          })}
+        />
       )}
     </section>
   );
@@ -532,6 +648,8 @@ function SubscriptionsPanel({ panelClass, darkMode, subscriptions }) {
 }
 
 function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, working, history, onDeleteHistory }) {
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+
   return (
     <div className="space-y-5">
       <section className={panelClass}>
@@ -570,13 +688,32 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
                     <p className="mt-1 text-sm opacity-70 leading-6 whitespace-pre-wrap">{item.body}</p>
                     <p className="mt-2 text-xs opacity-55">{new Date(item.createdAt).toLocaleString()} · {item.count} notification{item.count === 1 ? "" : "s"} · {item.unreadCount} unread</p>
                   </div>
-                  <button disabled={working} onClick={() => onDeleteHistory(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
+                  <button disabled={working} onClick={() => setDeleteCandidate(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </section>
+
+      {deleteCandidate && (
+        <AppPopup
+          open={!!deleteCandidate}
+          onClose={() => !working && setDeleteCandidate(null)}
+          darkMode={darkMode}
+          {...popupPresets.deleteAdminMessage({
+            title: deleteCandidate.title,
+            onPrimary: async () => {
+              await onDeleteHistory(deleteCandidate);
+              setDeleteCandidate(null);
+            },
+            onSecondary: () => setDeleteCandidate(null),
+            primaryLoading: working,
+            primaryDisabled: working,
+            secondaryDisabled: working
+          })}
+        />
+      )}
     </div>
   );
 }
@@ -597,11 +734,55 @@ function AdminSettings({ panelClass }) {
 
 function MetricGrid({ metrics, darkMode }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       {metrics.map(([label, value]) => (
-        <div key={label} className={`rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}><div className="text-xl font-black text-[#0F8F83] truncate">{value ?? 0}</div><div className="text-xs font-bold opacity-65">{label}</div></div>
+        <div key={label} className={`rounded-xl border p-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+          <div className="truncate text-2xl font-black text-[#0F8F83]">{Number.isFinite(value) ? value.toLocaleString() : "—"}</div>
+          <div className="mt-1 text-xs font-bold opacity-65">{label}</div>
+          {!Number.isFinite(value) && <div className="mt-1 text-[10px] font-bold text-orange-500">Unavailable</div>}
+        </div>
       ))}
     </div>
+  );
+}
+
+function BreakdownCard({ title, rows = [], darkMode }) {
+  return (
+    <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+      <h3 className="font-black">{title}</h3>
+      <div className="mt-3 space-y-2">
+        {rows.map(row => (
+          <div key={row.label} className="flex items-center justify-between gap-3 text-sm">
+            <span className="capitalize opacity-70">{String(row.label).replaceAll("_", " ")}</span>
+            <span className="font-black text-[#0F8F83]">{Number(row.count).toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminDataNotice({ title, message, darkMode, warning = false }) {
+  return (
+    <div className={`my-4 rounded-xl border p-4 ${warning ? darkMode ? "border-amber-400/25 bg-amber-400/10" : "border-amber-200 bg-amber-50" : darkMode ? "border-red-400/25 bg-red-400/10" : "border-red-200 bg-red-50"}`}>
+      <div className="flex items-start gap-3">
+        <AlertTriangle size={18} className={warning ? "mt-0.5 shrink-0 text-amber-500" : "mt-0.5 shrink-0 text-red-500"} />
+        <div>
+          <p className="text-sm font-black">{title}</p>
+          <p className="mt-1 text-xs leading-5 opacity-75">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const inactive = status && status !== "active";
+  const label = status || "active";
+  return (
+    <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black capitalize ${inactive ? "bg-amber-100 text-amber-700" : "bg-[#E4F7F3] text-[#0F8F83]"}`}>
+      {label}
+    </span>
   );
 }
 
@@ -639,11 +820,87 @@ function roleDescription(type) {
   return "Default account type for new users unless another plan or role is set.";
 }
 
+function normaliseAdminStats(raw = {}) {
+  const users = raw.users || {};
+  const learning = raw.learning || {};
+  const system = raw.system || {};
+  const community = raw.community || {};
+
+  return {
+    totalUsers: numericStat(raw.total_users ?? users.total),
+    activeUsers: numericStat(raw.active_users ?? users.active),
+    suspendedUsers: numericStat(raw.suspended_users ?? users.suspended),
+    admins: numericStat(raw.admins ?? users.admins),
+    newWeek: numericStat(raw.new_week ?? users.new_week),
+    cpdEntries: numericStat(raw.cpd_entries ?? learning.cpd_entries),
+    caseLogs: numericStat(raw.case_logs ?? learning.case_logs),
+    protocols: numericStat(raw.protocols ?? learning.protocols),
+    posts: numericStat(raw.posts ?? community.posts),
+    messages: numericStat(raw.messages ?? system.messages_sent ?? community.messages),
+    connections: numericStat(raw.connections ?? community.connections),
+    byRole: normaliseBreakdown(raw.users_by_role ?? users.by_role),
+    byTier: normaliseBreakdown(raw.users_by_tier ?? users.by_tier),
+    missingObjects: Array.isArray(raw.missing_objects) ? raw.missing_objects : []
+  };
+}
+
+function numericStat(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normaliseBreakdown(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => ({
+        label: item.label ?? item.role ?? item.tier ?? item.name,
+        count: numericStat(item.count ?? item.total)
+      }))
+      .filter(item => item.label && Number.isFinite(item.count));
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([label, count]) => ({ label, count: numericStat(count) }))
+      .filter(item => Number.isFinite(item.count));
+  }
+  return [];
+}
+
+function formatAdminDate(value) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  return date.toLocaleDateString("en-GB");
+}
+
+function getStatsErrorMessage(error) {
+  if (isMissingRpcError(error)) {
+    return "The admin_dashboard_stats function is missing. Run supabase/admin_dashboard_reliability_fix.sql in the Supabase SQL Editor.";
+  }
+  if (error?.code === "42P01" || /relation .* does not exist/i.test(error?.message || "")) {
+    return `${error.message}. Run supabase/admin_dashboard_reliability_fix.sql so optional activity tables no longer break all overview stats.`;
+  }
+  return error?.message || "Supabase did not return the overview statistics.";
+}
+
+function getUsersErrorMessage(error) {
+  if (error?.code === "42P01" || error?.code === "PGRST205" || /admin_user_overview/i.test(error?.message || "")) {
+    return "The admin_user_overview view is missing or unavailable. Run the admin dashboard SQL setup in Supabase.";
+  }
+  return error?.message || "Supabase did not return the user list.";
+}
+
 function isMissingRpcError(error) {
   return error?.code === "42883" || error?.code === "PGRST202" || /function .* does not exist/i.test(error?.message || "");
 }
 
-async function getAdminActionErrorMessage(error) {
+async function getAdminActionErrorMessage(error, data) {
+  if (data?.error) {
+    const suffix = [data.code, data.details, data.hint].filter(Boolean).join(" | ");
+    return suffix ? `${data.error} (${suffix})` : data.error;
+  }
+
   const response = error?.context;
   if (response) {
     try {
@@ -652,11 +909,15 @@ async function getAdminActionErrorMessage(error) {
         const suffix = [body.code, body.details, body.hint].filter(Boolean).join(" | ");
         return suffix ? `${body.error} (${suffix})` : body.error;
       }
-    } catch (_jsonError) {}
+    } catch {
+      // Some Edge Function failures return plain text rather than JSON.
+    }
     try {
       const text = await response.clone().text();
       if (text) return text;
-    } catch (_textError) {}
+    } catch {
+      // Fall back to the SDK error message below.
+    }
   }
 
   const message = error?.message || "";

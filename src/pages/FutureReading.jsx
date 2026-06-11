@@ -11,6 +11,7 @@ import {
   Trash2
 } from "lucide-react";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 
 export default function FutureReading({ user, darkMode = false }) {
 
@@ -18,6 +19,7 @@ export default function FutureReading({ user, darkMode = false }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState(null)
+  const [appPopup, setAppPopup] = useState(null)
 
   const [form, setForm] = useState({
     title: "",
@@ -168,6 +170,17 @@ export default function FutureReading({ user, darkMode = false }) {
     setItems(items.filter(item => item.id !== id))
     toast.success("Removed")
     setBusyId(null)
+  }
+
+  const requestDeleteItem = (item) => {
+    setAppPopup(popupPresets.deleteFutureReading({
+      entryTitle: item.title,
+      onPrimary: () => {
+        setAppPopup(null)
+        deleteItem(item.id)
+      },
+      onSecondary: () => setAppPopup(null)
+    }))
   }
 
   const plannedCount = items.filter(item => item.status !== "done").length
@@ -352,7 +365,7 @@ export default function FutureReading({ user, darkMode = false }) {
               )}
 
               <button
-                onClick={() => deleteItem(item.id)}
+                onClick={() => requestDeleteItem(item)}
                 className={`rounded-lg px-3 py-2 text-sm font-bold flex items-center gap-2 ${darkMode ? "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-black"}`}
               >
                 {busyId === item.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
@@ -362,6 +375,13 @@ export default function FutureReading({ user, darkMode = false }) {
           </div>
         ))}
       </div>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={() => setAppPopup(null)}
+        darkMode={darkMode}
+        {...(appPopup || {})}
+      />
     </div>
   )
 }

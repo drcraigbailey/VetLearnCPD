@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle,
   Briefcase,
   Check,
   Edit3,
@@ -29,6 +28,7 @@ import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { AppButton, IconButton, PageToolbar, SearchBox } from "../components/VetLearnUI";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 
 const POST_CATEGORIES = [
@@ -93,6 +93,8 @@ export default function Network({ user, darkMode = false }) {
   const [profileLoading, setProfileLoading] = useState(false);
   
   const [gdprModalState, setGdprModalState] = useState({ open: false, mode: null });
+  const [deletePostCandidate, setDeletePostCandidate] = useState(null);
+  const [removeConnectionCandidate, setRemoveConnectionCandidate] = useState(null);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -288,6 +290,10 @@ export default function Network({ user, darkMode = false }) {
     setBusyId(null);
   };
 
+  const requestRemoveConnection = (connection) => {
+    setRemoveConnectionCandidate(connection);
+  };
+
   const updatePostForm = (field, value) => setPostForm(prev => ({ ...prev, [field]: value, ...(field === "shared_type" || field === "shared_title" || field === "shared_url" ? { shared_payload: null } : {}) }));
   const updateEditForm = (field, value) => setEditForm(prev => ({ ...prev, [field]: value, ...(field === "shared_type" || field === "shared_title" || field === "shared_url" ? { shared_payload: null } : {}) }));
 
@@ -433,6 +439,10 @@ export default function Network({ user, darkMode = false }) {
     toast.success("Post deleted");
   };
 
+  const requestDeletePost = (postId) => {
+    setDeletePostCandidate(postId);
+  };
+
   const openSharedPost = async (post) => {
     if (!post) return;
     if (post.shared_payload) return setSharedViewer(post);
@@ -472,15 +482,53 @@ export default function Network({ user, darkMode = false }) {
       {fullImagePreview && <PostImagePreviewModal url={fullImagePreview} darkMode={darkMode} onClose={() => setFullImagePreview(null)} />}
       
       {gdprModalState.open && (
-        <GdprImageWarningModal 
-          darkMode={darkMode} 
-          onCancel={() => setGdprModalState({ open: false, mode: null })} 
-          onConfirm={() => {
-            const mode = gdprModalState.mode;
-            setGdprModalState({ open: false, mode: null });
-            if (mode === "create") executeCreatePost();
-            else executeUpdatePost();
-          }} 
+        <AppPopup
+          open={gdprModalState.open}
+          onClose={() => setGdprModalState({ open: false, mode: null })}
+          darkMode={darkMode}
+          zIndex={130}
+          {...popupPresets.gdprImageWarning({
+            onPrimary: () => {
+              const mode = gdprModalState.mode;
+              setGdprModalState({ open: false, mode: null });
+              if (mode === "create") executeCreatePost();
+              else executeUpdatePost();
+            },
+            onSecondary: () => setGdprModalState({ open: false, mode: null })
+          })}
+        />
+      )}
+
+      {deletePostCandidate && (
+        <AppPopup
+          open={!!deletePostCandidate}
+          onClose={() => setDeletePostCandidate(null)}
+          darkMode={darkMode}
+          {...popupPresets.deleteNetworkPost({
+            onPrimary: () => {
+              const postId = deletePostCandidate;
+              setDeletePostCandidate(null);
+              deletePost(postId);
+            },
+            onSecondary: () => setDeletePostCandidate(null)
+          })}
+        />
+      )}
+
+      {removeConnectionCandidate && (
+        <AppPopup
+          open={!!removeConnectionCandidate}
+          onClose={() => setRemoveConnectionCandidate(null)}
+          darkMode={darkMode}
+          {...popupPresets.removeConnection({
+            colleagueName: removeConnectionCandidate.colleague?.full_name,
+            onPrimary: () => {
+              const connectionId = removeConnectionCandidate.connection_id;
+              setRemoveConnectionCandidate(null);
+              handleRemoveConnection(connectionId);
+            },
+            onSecondary: () => setRemoveConnectionCandidate(null)
+          })}
         />
       )}
 
@@ -507,7 +555,7 @@ export default function Network({ user, darkMode = false }) {
             setEditForm(prev => ({ ...prev, existing_urls: prev.existing_urls.filter(p => p !== path) }));
             setImagesToDelete(prev => [...prev, path]);
           }}
-          requestUpdateSave={() => requestPostSave("edit")} deletePost={deletePost}
+          requestUpdateSave={() => requestPostSave("edit")} deletePost={requestDeletePost}
           setSharedViewer={openSharedPost} setFullImagePreview={setFullImagePreview}
         />
       )}
@@ -516,7 +564,7 @@ export default function Network({ user, darkMode = false }) {
         <ColleaguesTab 
           requests={requests} connections={connections} panelClass={panelClass} 
           darkMode={darkMode} busyId={busyId} onRespond={handleRespond} 
-          onOpenProfile={openColleagueProfile} onRemoveConnection={handleRemoveConnection} 
+          onOpenProfile={openColleagueProfile} onRemoveConnection={requestRemoveConnection}
         />
       )}
       
@@ -638,7 +686,7 @@ function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, dar
         </select>
         <select className={`${fieldClass} w-auto sm:flex-1`} value={form.visibility} onChange={(e) => onChange("visibility", e.target.value)}>
           <option value="network">Entire network</option>
-<option value="colleagues">My colleagues only</option>
+          <option value="colleagues">My colleagues only</option>
         </select>
       </div>
 
@@ -744,7 +792,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   const sharedUrl = normaliseSharedUrl(post.shared_url);
   const isAuthor = post.author_id === user?.id;
   const edited = post.updated_at && post.created_at && new Date(post.updated_at).getTime() - new Date(post.created_at).getTime() > 2000;
-  const opensSharedModal = ["caselog", "protocol"].includes(post.shared_type);
+  const opensSharedModal = ["caselog", "protocol", "cpd", "resource"].includes(post.shared_type);
 
   useEffect(() => {
     async function loadUrls() {
@@ -912,6 +960,13 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
             <SharedRow label="Selected drug IDs" value={Array.isArray(payload.drug_ids) ? payload.drug_ids.join(", ") : ""} softClass={softClass} />
             {payload.drug_doses && <SharedRow label="Dose notes" value={JSON.stringify(payload.drug_doses, null, 2)} softClass={softClass} multiline />}
           </div>
+        ) : post.shared_type === "cpd" || post.shared_type === "resource" ? (
+          <div className="space-y-3">
+            <SharedRow label="Source / Category" value={payload.category || payload.source} softClass={softClass} />
+            <SharedRow label="Date Read" value={payload.date_read ? new Date(payload.date_read).toLocaleDateString() : "Recently completed"} softClass={softClass} />
+            <SharedRow label="Reflection / Notes" value={payload.notes} softClass={softClass} multiline />
+            {payload.url && <SharedRow label="Reference Link" value={payload.url} softClass={softClass} isLink />}
+          </div>
         ) : (
           <div className={`${softClass} rounded-lg border p-4 text-sm opacity-80`}>No preview is available for this shared item.</div>
         )}
@@ -937,38 +992,20 @@ function PostImagePreviewModal({ url, darkMode, onClose }) {
   );
 }
 
-function GdprImageWarningModal({ darkMode, onCancel, onConfirm }) {
-  const modalClass = darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]";
-  
-  return (
-    <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-      <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl border ${darkMode ? "border-white/10" : "border-[#DCEDEA]"} ${modalClass}`}>
-        <div className="h-12 w-12 rounded-full bg-amber-100 text-amber-600 grid place-items-center mb-4">
-          <AlertTriangle size={24} />
-        </div>
-        <h3 className="text-xl font-black mb-2">Check for sensitive data</h3>
-        <p className="text-sm opacity-80 leading-6 mb-6">
-          Before posting images, confirm they do not contain client names, owner details, addresses, phone numbers, microchip numbers, labels, consent forms, invoices, or other identifiable personal data. Redact anything sensitive before sharing.
-        </p>
-        <div className="flex flex-col gap-2">
-          <button onClick={onConfirm} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black transition hover:opacity-90">
-            I confirm, post images
-          </button>
-          <button onClick={onCancel} className={`w-full rounded-lg p-3 font-black transition ${darkMode ? "bg-white/10 hover:bg-white/20" : "bg-[#F0F6F5] hover:bg-[#E8F8F5]"}`}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SharedRow({ label, value, softClass, multiline = false }) {
+function SharedRow({ label, value, softClass, multiline = false, isLink = false }) {
   if (!value) return null;
   return (
     <div className={`rounded-lg border p-3 ${softClass}`}>
       <div className="text-xs font-black uppercase tracking-widest opacity-50 mb-1">{label}</div>
-      <div className={`text-sm font-bold break-words ${multiline ? "whitespace-pre-wrap leading-6" : ""}`}>{value}</div>
+      <div className={`text-sm font-bold break-words ${multiline ? "whitespace-pre-wrap leading-6" : ""}`}>
+        {isLink ? (
+          <a href={value.startsWith("http") ? value : `https://${value}`} target="_blank" rel="noreferrer" className="text-[#0F8F83] dark:text-[#71CFC2] hover:underline">
+            {value}
+          </a>
+        ) : (
+          value
+        )}
+      </div>
     </div>
   );
 }
@@ -1040,7 +1077,7 @@ function ColleaguesTab({ requests, connections, panelClass, darkMode, busyId, on
                 </button>
                 <div className="flex gap-2 shrink-0">
                   <Link to={`/messages?colleague=${c.colleague?.id}`} className={`h-10 w-10 rounded-full grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}><MessageSquare size={18} /></Link>
-                  <IconButton icon={busyId === c.connection_id ? Loader2 : Trash2} variant="danger" darkMode={darkMode} disabled={busyId === c.connection_id} onClick={() => onRemoveConnection(c.connection_id)} />
+                  <IconButton icon={busyId === c.connection_id ? Loader2 : Trash2} variant="danger" darkMode={darkMode} disabled={busyId === c.connection_id} onClick={() => onRemoveConnection(c)} />
                 </div>
               </div>
             ))}
@@ -1190,6 +1227,98 @@ function ProfileRow({ icon, label, value, softClass, isLink = false }) {
       <div className="min-w-0">
         <div className="text-xs font-black uppercase tracking-widest opacity-50 mb-1">{label}</div>
         {content}
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------------------
+// EXPORTED MODAL: Use this in Library.jsx or CPD.jsx to trigger the network sharing post
+// --------------------------------------------------------------------------------------
+
+export function ShareToNetworkModal({ user, item, darkMode, onClose }) {
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const modalClass = darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]";
+  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 text-sm transition ${
+    darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247] placeholder:text-slate-500"
+  }`;
+
+  const handleShare = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+
+    const payload = {
+      title: item.title,
+      source: item.source || "Library",
+      category: item.category || "CPD",
+      date_read: item.completed_at || item.created_at,
+      notes: item.reflection || item.notes || "",
+      url: item.link || ""
+    };
+
+    const { error } = await supabase.from("network_posts").insert({
+      author_id: user.id,
+      body: body.trim() || `I just finished reading: ${item.title}`,
+      shared_type: "cpd",
+      shared_title: item.title,
+      shared_url: item.link || null,
+      shared_payload: payload,
+      visibility: "network",
+      post_category: "CPD"
+    });
+
+    setSaving(false);
+
+    if (error) {
+      toast.error("Could not share to network.");
+    } else {
+      toast.success("Shared to your professional network!");
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+      <div className={`w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl ${modalClass}`}>
+        <div className="flex justify-between items-start gap-3 mb-4">
+          <div>
+            <h2 className="text-xl font-black">Share to Network</h2>
+            <p className="text-xs opacity-60 mt-1">Share this reading item with colleagues.</p>
+          </div>
+          <button onClick={onClose} className="opacity-50 hover:opacity-100 transition"><X size={20} /></button>
+        </div>
+
+        <div className={`mb-4 p-3 rounded-lg border ${darkMode ? "bg-white/5 border-white/10" : "bg-[#E8F8F5] border-[#DCEDEA]"}`}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#0F8F83] mb-1">Attached Reading</p>
+          <p className="font-bold text-sm">{item.title}</p>
+          {item.reflection && <p className="text-xs opacity-70 mt-1 truncate">"{item.reflection}"</p>}
+        </div>
+
+        <textarea
+          className={fieldClass}
+          rows="3"
+          placeholder="Add a thought or takeaway... (optional)"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={onClose}
+            className={`flex-1 rounded-lg p-3 font-black transition ${darkMode ? "bg-white/10 hover:bg-white/20" : "bg-[#F0F6F5] hover:bg-[#DCEDEA]"}`}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={saving}
+            className="flex-1 rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />} Post
+          </button>
+        </div>
       </div>
     </div>
   );

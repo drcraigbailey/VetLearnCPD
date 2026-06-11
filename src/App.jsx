@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldCheck, Sun, Users, X } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
+import { HybridToaster } from "./components/CustomToast";
 import FeatureUnavailable from "./components/FeatureUnavailable";
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
 import LoadingState from "./components/LoadingState";
@@ -524,7 +525,7 @@ function App() {
     : "min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]";
 
   if (loading) return <LoadingState label="Loading VetLearn..." darkMode={darkMode} fullScreen />;
-  if (!session) return <><Toaster position="top-center" /><AuthPage /></>;
+  if (!session) return <><HybridToaster darkMode={darkMode} /><AuthPage /></>;
 
   const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
   const menuBadgeCount = (canUseFeature(featureAccess, featureKeys.messaging, adminAccess) ? unreadMessageCount : 0)
@@ -546,7 +547,7 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <RecentRouteTracker user={session.user} />
-      <Toaster position="top-center" />
+      <HybridToaster darkMode={darkMode} />
       <div className={shellClass}>
         <AppHeader
           darkMode={darkMode}

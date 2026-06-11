@@ -8,6 +8,7 @@ import {
 import { exportCaseLogs } from "../utils/casePdfExport";
 import { saveLocalFile, getLocalFileUrl, deleteLocalFile } from "../utils/localFiles";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 
 export default function Caselogs({ user, darkMode = false }) {
   const [logs, setLogs] = useState([]);
@@ -34,6 +35,9 @@ export default function Caselogs({ user, darkMode = false }) {
   const [isSharingLoading, setIsSharingLoading] = useState(false);
   const [shareBusyId, setShareBusyId] = useState(null);
   const [includeMedia, setIncludeMedia] = useState(true);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   const initialForm = {
     title: "", category: "Medicine", patient_name: "", species: "",
@@ -295,7 +299,7 @@ export default function Caselogs({ user, darkMode = false }) {
   const handlePrintPDF = () => {
     const casesToExport = logs.filter(l => selectedLogs.includes(l.id));
     if (casesToExport.length === 0) {
-      toast.error("Select cases to print first");
+      setAppPopup(popupPresets.selectCasesToPrint({ onPrimary: closeAppPopup }));
       return;
     }
     exportCaseLogs(casesToExport);
@@ -524,7 +528,7 @@ export default function Caselogs({ user, darkMode = false }) {
                   <button onClick={() => openEditor(log)} title="Edit Case" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-white/10 hover:text-white" : "text-slate-400 hover:bg-slate-100 hover:text-black"}`}>
                     <Edit3 size={16} />
                   </button>
-                  <button onClick={() => deleteLog(log)} title="Delete Case" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "text-slate-400 hover:bg-red-50 hover:text-red-500"}`}>
+                  <button onClick={() => setAppPopup(popupPresets.deleteCaseLog({ caseTitle: log.title, onPrimary: () => { closeAppPopup(); deleteLog(log); }, onSecondary: closeAppPopup }))} title="Delete Case" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "text-slate-400 hover:bg-red-50 hover:text-red-500"}`}>
                     {busyId === log.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
                 </div>
@@ -550,6 +554,14 @@ export default function Caselogs({ user, darkMode = false }) {
           </div>
         ))}
       </div>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }

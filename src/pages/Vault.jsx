@@ -3,6 +3,7 @@ import { Copy, Eye, EyeOff, KeyRound, Loader2, Pencil, Plus, Search, Trash2, X }
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 
 const categories = ["Veterinary Platforms", "CPD Providers", "Government Services", "Finance", "Insurance", "Personal", "Custom"];
@@ -18,7 +19,10 @@ export default function Vault({ user, darkMode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [appPopup, setAppPopup] = useState(null);
   const formRef = useRef(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -104,6 +108,17 @@ export default function Vault({ user, darkMode }) {
     });
     setFormOpen(true);
     scrollToForm();
+  };
+
+  const requestDeleteEntry = (entry) => {
+    setAppPopup(popupPresets.deleteVaultEntry({
+      platformName: entry.platform_name,
+      onPrimary: () => {
+        closeAppPopup();
+        deleteEntry(entry.id);
+      },
+      onSecondary: closeAppPopup
+    }));
   };
 
   const deleteEntry = async (id) => {
@@ -209,7 +224,7 @@ export default function Vault({ user, darkMode }) {
               </div>
               <div className="flex gap-1 shrink-0">
                 <button onClick={() => editEntry(entry)} className={`p-2 rounded-lg ${quietButtonClass}`} aria-label="Edit"><Pencil size={16} /></button>
-                <button onClick={() => deleteEntry(entry.id)} className={`p-2 rounded-lg ${dangerButtonClass}`} aria-label="Delete"><Trash2 size={16} /></button>
+                <button onClick={() => requestDeleteEntry(entry)} className={`p-2 rounded-lg ${dangerButtonClass}`} aria-label="Delete"><Trash2 size={16} /></button>
               </div>
             </div>
 
@@ -229,6 +244,14 @@ export default function Vault({ user, darkMode }) {
           </section>
         );
       })}
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }

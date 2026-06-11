@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import { AppButton, FilterPills, IconButton, SearchBox } from "../components/VetLearnUI";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 
 const emptyForm = { name: "", indication: "", drug_ids: [], drug_doses: {} };
 const doseUnits = ["mg/kg", "mcg/kg", "mg/m2", "IU/kg", "ml/kg", "tablet", "drops", "other"];
@@ -25,6 +26,9 @@ export default function Protocols({ user, darkMode }) {
   const [isShareOpen, setIsShareOpen] = useState(null);
   const [friendsList, setFriendsList] = useState([]);
   const [shareBusyId, setShareBusyId] = useState(null);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   useEffect(() => {
     if (!user) return;
@@ -129,6 +133,17 @@ export default function Protocols({ user, darkMode }) {
       setProtocols(prev => prev.filter(protocol => protocol.id !== id));
       toast.success("Protocol deleted");
     }
+  };
+
+  const requestDeleteProtocol = (protocol) => {
+    setAppPopup(popupPresets.deleteProtocol({
+      protocolName: protocol?.name,
+      onPrimary: () => {
+        closeAppPopup();
+        deleteProtocol(protocol.id);
+      },
+      onSecondary: closeAppPopup
+    }));
   };
 
   const openShareMenu = async (protocol) => {
@@ -274,7 +289,7 @@ export default function Protocols({ user, darkMode }) {
                   {p.user_id === user.id && (
                     <>
                       <IconButton icon={Edit3} label="Edit protocol" darkMode={darkMode} className="h-8 w-8" onClick={() => openEditor(p)} />
-                      <IconButton icon={Trash2} label="Delete protocol" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => deleteProtocol(p.id)} />
+                      <IconButton icon={Trash2} label="Delete protocol" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => requestDeleteProtocol(p)} />
                     </>
                   )}
                 </div>
@@ -291,6 +306,14 @@ export default function Protocols({ user, darkMode }) {
           ))}
         </div>
       </section>
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }

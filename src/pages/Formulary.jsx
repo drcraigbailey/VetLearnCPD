@@ -22,6 +22,7 @@ import {
   X
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
+import AppPopup, { popupPresets } from "../components/AppPopup";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
 import { exportDrugHistory } from "../utils/drugsPdfExport";
@@ -85,6 +86,9 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [checkingInteractions, setCheckingInteractions] = useState(false);
   const [interactionResults, setInteractionResults] = useState(null);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
+  const [appPopup, setAppPopup] = useState(null);
+
+  const closeAppPopup = () => setAppPopup(null);
 
   const panelClass = sectionClass(darkMode);
   const fieldClass = inputClass(darkMode);
@@ -424,6 +428,17 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     loadDatabase();
   };
 
+  const requestDeleteDrug = (id) => {
+    setAppPopup(popupPresets.deleteDrugDose({
+      drugName: activeDrugName,
+      onPrimary: () => {
+        closeAppPopup();
+        deleteDrug(id);
+      },
+      onSecondary: closeAppPopup
+    }));
+  };
+
   const addDrugToActiveCalc = (drug) => {
     if (selectedCalcDrugs.some((item) => String(item.id) === String(drug.id))) return;
     setSelectedCalcDrugs((prev) => [...prev, { ...drug, selectedDose: parseSafeNumber(drug.dose_min, 0) }]);
@@ -503,7 +518,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         favourites={favourites}
         isFavourite={isActiveFavourite}
         onToggleFavourite={() => handleToggleFav(activeDrugName)}
-        onDeleteDose={deleteDrug}
+        onDeleteDose={requestDeleteDrug}
         user={user}
         noteText={noteText}
         setNoteText={setNoteText}
@@ -596,6 +611,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
           {activeTab === "history" && <HistoryTab darkMode={darkMode} panelClass={panelClass} history={history} />}
         </div>
       )}
+
+      <AppPopup
+        open={!!appPopup}
+        onClose={closeAppPopup}
+        darkMode={darkMode}
+        onSecondary={closeAppPopup}
+        {...(appPopup || {})}
+      />
     </div>
   );
 }
