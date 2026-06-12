@@ -5,11 +5,18 @@ import android.app.NotificationManager;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AppCompatDelegate;
+
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // VetLearn renders its own dark mode in the WebView. Keeping the native
+        // activity light prevents Samsung's copy/paste toolbar becoming
+        // white-on-white when the device itself is using dark mode.
+        getDelegate().setLocalNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        registerPlugin(NativeBrowserPlugin.class);
         super.onCreate(savedInstanceState);
         createNotificationChannel();
     }
