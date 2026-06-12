@@ -1,24 +1,7 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-
-const vetlearnPatches = [
-  'scripts/apply-drug-sharing-patch.cjs',
-  'scripts/patch-my-drugs-admin.cjs',
-  'scripts/patch-my-drugs-app-route.cjs',
-  'scripts/patch-my-drugs-formulary.cjs'
-]
-
-if (process.env.VETLEARN_SKIP_PATCHES !== '1') {
-  vetlearnPatches.forEach((patchPath) => {
-    const patch = resolve(patchPath)
-    if (existsSync(patch)) execFileSync(process.execPath, [patch], { stdio: 'inherit' })
-  })
-}
 
 export default defineConfig({
   plugins: [
