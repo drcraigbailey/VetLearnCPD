@@ -1,7 +1,15 @@
+import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+const drugSharingPatch = resolve('scripts/apply-drug-sharing-patch.cjs')
+if (existsSync(drugSharingPatch) && process.env.VETLEARN_SKIP_DRUG_SHARING_PATCH !== '1') {
+  execFileSync(process.execPath, [drugSharingPatch], { stdio: 'inherit' })
+}
 
 export default defineConfig({
   plugins: [
