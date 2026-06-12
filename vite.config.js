@@ -6,9 +6,18 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const drugSharingPatch = resolve('scripts/apply-drug-sharing-patch.cjs')
-if (existsSync(drugSharingPatch) && process.env.VETLEARN_SKIP_DRUG_SHARING_PATCH !== '1') {
-  execFileSync(process.execPath, [drugSharingPatch], { stdio: 'inherit' })
+const vetlearnPatches = [
+  'scripts/apply-drug-sharing-patch.cjs',
+  'scripts/patch-my-drugs-admin.cjs',
+  'scripts/patch-my-drugs-app-route.cjs',
+  'scripts/patch-my-drugs-formulary.cjs'
+]
+
+if (process.env.VETLEARN_SKIP_PATCHES !== '1') {
+  vetlearnPatches.forEach((patchPath) => {
+    const patch = resolve(patchPath)
+    if (existsSync(patch)) execFileSync(process.execPath, [patch], { stdio: 'inherit' })
+  })
 }
 
 export default defineConfig({
