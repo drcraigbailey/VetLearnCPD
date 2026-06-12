@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric, syncBiometricSession } from "../utils/biometricAuth";
+import { listenForNativeOAuthCallbacks, startGoogleSignIn } from "../utils/googleAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
 
 import {
@@ -81,6 +82,19 @@ export default function AuthPage(){
     };
   }, []);
 
+  useEffect(() => {
+    let removeListener = () => {};
+
+    listenForNativeOAuthCallbacks(
+      () => toast.success("Signed in with Google"),
+      (error) => toast.error(error?.message || "Google sign-in could not be completed")
+    ).then((remove) => {
+      removeListener = remove;
+    });
+
+    return () => removeListener();
+  }, []);
+
   const updateKeepMeLoggedIn = (value) => {
     setKeepMeLoggedInState(value);
     setKeepMeLoggedIn(value);
@@ -94,14 +108,26 @@ export default function AuthPage(){
 
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`
-      }
-    })
-
-    if(error){
+    try {
+      const consentTimestamp = new Date().toISOString()
+      await startGoogleSignIn({
+        signupMetadata: mode === "signup"
+          ? {
+              accepted_terms: true,
+              accepted_terms_at: consentTimestamp,
+              accepted_terms_version: CONSENT_VERSION,
+              accepted_email_privacy: true,
+              accepted_email_privacy_at: consentTimestamp,
+              accepted_email_privacy_version: CONSENT_VERSION,
+              marketing_emails_opt_in: marketingOptIn,
+              marketing_emails_opt_in_at: marketingOptIn ? consentTimestamp : null,
+              marketing_emails_opt_in_version: CONSENT_VERSION
+            }
+          : null
+      })
+      setLoading(false)
+    } catch (error) {
+      console.error("Could not start Google sign in", error)
       toast.error(error.message || "Could not start Google sign in")
       setLoading(false)
     }
