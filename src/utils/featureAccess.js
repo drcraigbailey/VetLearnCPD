@@ -6,6 +6,7 @@ export const featureKeys = {
   additionalCalculators: "additional_calculators",
   clinicalProtocols: "clinical_protocols",
   drugDatabase: "drug_database",
+  myDrugs: "my_drugs",
   library: "library",
   caseLogs: "case_logs",
   network: "network",
