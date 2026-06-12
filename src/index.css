@@ -14,6 +14,47 @@ body,
   }
 }
 
+.vetlearn-copy-field-button {
+  position: fixed;
+  z-index: 2147483647;
+  display: inline-flex;
+  width: 2.125rem;
+  height: 2.125rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(113, 207, 194, 0.55);
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #0b3760;
+  box-shadow: 0 10px 24px rgba(11, 55, 96, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transition: opacity 160ms ease, transform 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.vetlearn-copy-field-button.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.vetlearn-copy-field-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.vetlearn-copy-field-button.is-copied {
+  background: #71cfc2;
+  color: #0b3760;
+}
+
+.vetlearn-copy-field-button span {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .relative.overflow-hidden.bg-gradient-to-br.border.rounded-lg.p-6.mb-6.shadow-sm::after {
   content: "";
   position: absolute;
