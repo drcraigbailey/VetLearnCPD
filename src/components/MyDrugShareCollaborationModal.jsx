@@ -5,7 +5,7 @@ export default function MyDrugShareCollaborationModal({
   open,
   darkMode = false,
   drug,
-  mode = "share",
+  mode = "",
   setMode,
   colleagues = [],
   loading = false,
@@ -42,7 +42,8 @@ export default function MyDrugShareCollaborationModal({
 
   if (!open) return null;
 
-  const actionLabel = mode === "collaborate" ? "Invite collaborator" : "Send monograph";
+  const hasChosenMode = mode === "share" || mode === "collaborate";
+  const actionLabel = mode === "collaborate" ? "Invite collaborator" : mode === "share" ? "Send monograph" : "Choose Share or Collaborate";
   const selectedColleague = colleagues.find((colleague) => colleague?.id === selectedColleagueId);
 
   return (
@@ -59,13 +60,18 @@ export default function MyDrugShareCollaborationModal({
           </button>
         </div>
 
+        <div className={`mb-3 rounded-2xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
+          <h3 className="text-sm font-black">What would you like to do?</h3>
+          <p className="mt-1 text-xs leading-5 opacity-65">Choose Share for a read-only monograph, or Collaborate to invite a colleague to contribute where permissions allow.</p>
+        </div>
+
         <div className="grid grid-cols-2 gap-2 mb-5">
-          <button type="button" onClick={() => setMode?.("share")} disabled={busy} className={`rounded-2xl border p-3 text-left transition disabled:opacity-60 ${mode === "share" ? "border-[#71CFC2] bg-[#71CFC2]/20" : darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
+          <button type="button" onClick={() => setMode?.("share")} disabled={busy} aria-pressed={mode === "share"} className={`rounded-2xl border p-3 text-left transition disabled:opacity-60 ${mode === "share" ? "border-[#71CFC2] bg-[#71CFC2]/20 ring-2 ring-[#71CFC2]/30" : darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
             <Share2 size={18} className="mb-2 text-[#0F8F83]" />
             <span className="block text-sm font-black">Share</span>
             <span className="block text-xs opacity-65 leading-5">Read-only copy/message.</span>
           </button>
-          <button type="button" onClick={() => setMode?.("collaborate")} disabled={busy} className={`rounded-2xl border p-3 text-left transition disabled:opacity-60 ${mode === "collaborate" ? "border-[#71CFC2] bg-[#71CFC2]/20" : darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
+          <button type="button" onClick={() => setMode?.("collaborate")} disabled={busy} aria-pressed={mode === "collaborate"} className={`rounded-2xl border p-3 text-left transition disabled:opacity-60 ${mode === "collaborate" ? "border-[#71CFC2] bg-[#71CFC2]/20 ring-2 ring-[#71CFC2]/30" : darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-[#F9FCFB]"}`}>
             <UserPlus size={18} className="mb-2 text-[#0F8F83]" />
             <span className="block text-sm font-black">Collaborate</span>
             <span className="block text-xs opacity-65 leading-5">Invite controlled contribution.</span>
@@ -96,7 +102,7 @@ export default function MyDrugShareCollaborationModal({
 
         <div className="mt-5 flex gap-3 max-[420px]:flex-col">
           <button type="button" onClick={onClose} disabled={busy} className={`flex-1 rounded-2xl px-4 py-3 text-sm font-black disabled:opacity-50 ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`}>Cancel</button>
-          <button type="button" disabled={!selectedColleagueId || loading || busy} onClick={() => onSubmit?.({ colleagueId: selectedColleagueId, colleague: selectedColleague, mode })} className="flex-1 rounded-2xl bg-[#71CFC2] px-4 py-3 text-sm font-black text-[#062F63] transition disabled:opacity-50">{busy ? "Sending..." : actionLabel}</button>
+          <button type="button" disabled={!hasChosenMode || !selectedColleagueId || loading || busy} onClick={() => onSubmit?.({ colleagueId: selectedColleagueId, colleague: selectedColleague, mode })} className="flex-1 rounded-2xl bg-[#71CFC2] px-4 py-3 text-sm font-black text-[#062F63] transition disabled:opacity-50">{busy ? "Sending..." : actionLabel}</button>
         </div>
       </div>
     </div>
