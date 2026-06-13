@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   BookOpen,
@@ -8,6 +9,7 @@ import {
   FileText,
   History as HistoryIcon,
   Loader2,
+  Pencil,
   Plus,
   Printer,
   RefreshCw,
@@ -41,6 +43,37 @@ const parseSafeNumber = (val, fallback = 0) => {
 const normalise = (value) => String(value || "").toLowerCase().trim();
 
 const unique = (items) => [...new Set((items || []).filter(Boolean))];
+const emptyDrugForm = {
+  id: null,
+  name: "",
+  species: "Dog",
+  concentration: "",
+  dose_min: "",
+  dose_max: "",
+  route: "",
+  category: "Analgesic",
+  indication: "",
+  summary: "",
+  warnings: "",
+  contraindications: "",
+  interactions: "",
+  monitoring: ""
+};
+
+const additionalDrugFields = [
+  { key: "indication", label: "Indications", placeholder: "What is this drug used for?" },
+  { key: "summary", label: "Clinical summary", placeholder: "Add a clinical overview." },
+  { key: "warnings", label: "Warnings", placeholder: "Add one warning per line." },
+  { key: "contraindications", label: "Contraindications", placeholder: "Add one contraindication per line." },
+  { key: "interactions", label: "Interactions", placeholder: "Add one interaction per line." },
+  { key: "monitoring", label: "Monitoring", placeholder: "Add one monitoring recommendation per line." }
+];
+
+const clinicalItemsFromText = (text) => String(text || "")
+  .split(/\r?\n/)
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .map((description) => ({ description }));
 
 const sectionClass = (darkMode) =>
   darkMode
@@ -53,12 +86,18 @@ const inputClass = (darkMode) =>
   }`;
 
 export default function Drugs({ user, darkMode = false, featureAccess, adminAccess = false }) {
-  const [activeTab, setActiveTab] = useState("library");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const canUseMyDrugs = canUseFeature(featureAccess, featureKeys.myDrugs, adminAccess);
+  const isMyDrugsPath = location.pathname === "/drugs/my-drugs" || location.pathname === "/drugs/my-monographs";
+  const [activeTab, setActiveTab] = useState(isMyDrugsPath ? "my-drugs" : "library");
   const [drugs, setDrugs] = useState([]);
   const [allAliases, setAllAliases] = useState([]);
+  const [drugCollaborations, setDrugCollaborations] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [drugSearch, setDrugSearch] = useState("");
+  const [myDrugSearch, setMyDrugSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState("");
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
@@ -66,6 +105,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   const [activeDrugName, setActiveDrugName] = useState("");
+  const [activeDrugId, setActiveDrugId] = useState(null);
+  const [activeDrugScope, setActiveDrugScope] = useState("library");
   const [activeDrugDoses, setActiveDrugDoses] = useState([]);
   const [activeSummary, setActiveSummary] = useState(null);
   const [summaryCache, setSummaryCache] = useState({});
@@ -77,7 +118,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [shareBusyId, setShareBusyId] = useState(null);
 
   const [showAddDrug, setShowAddDrug] = useState(false);
-  const [drugForm, setDrugForm] = useState({ name: "", species: "Dog", concentration: "", dose_min: "", dose_max: "", route: "", category: "Analgesic" });
+  const [drugForm, setDrugForm] = useState(emptyDrugForm);
 
   const [calcPatient, setCalcPatient] = useState({ name: "", weight: "", species: "Dog" });
   const [selectedCalcDrugs, setSelectedCalcDrugs] = useState([]);
@@ -98,7 +139,15 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     loadDatabase();
     loadDrugCollections();
     loadLocalHistory();
-  }, [user]);
+  }, [user, canUseMyDrugs]);
+
+  useEffect(() => {
+    if (!canUseMyDrugs && activeDrugScope === "custom") {
+      setMonographOpen(false);
+      setShowAddDrug(false);
+      setDrugForm(emptyDrugForm);
+    }
+  }, [activeDrugScope, canUseMyDrugs]);
 
   useEffect(() => {
     setVisibleCount(pageSize);
@@ -152,14 +201,27 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const loadDatabase = async () => {
     setLoading(true);
     try {
-      const [drugsRes, aliasesRes] = await Promise.all([
-        supabase.from("drugs").select("*").or(`user_id.is.null,user_id.eq.${user.id}`).eq("active", true).order("name"),
-        supabase.from("drug_aliases").select("*")
+      let drugsQuery = supabase.from("drugs").select("*").eq("active", true).order("name");
+      if (!canUseMyDrugs) drugsQuery = drugsQuery.is("user_id", null);
+      const [drugsRes, aliasesRes, collaborationsRes] = await Promise.all([
+        drugsQuery,
+        supabase.from("drug_aliases").select("*"),
+        canUseMyDrugs
+          ? supabase.from("drug_collaborators").select("drug_id, owner_id, user_id, permission").eq("user_id", user.id)
+          : Promise.resolve({ data: [], error: null })
       ]);
       if (drugsRes.error) throw drugsRes.error;
+      if (aliasesRes.error) throw aliasesRes.error;
       setDrugs(drugsRes.data || []);
       setAllAliases(aliasesRes.data || []);
+      if (collaborationsRes.error) {
+        console.warn("Drug collaboration access is not installed yet", collaborationsRes.error);
+        setDrugCollaborations({});
+      } else {
+        setDrugCollaborations(Object.fromEntries((collaborationsRes.data || []).map((entry) => [String(entry.drug_id), entry])));
+      }
     } catch (error) {
+      console.error("Failed to load formulary", error);
       toast.error("Failed to load formulary");
     } finally {
       setLoading(false);
@@ -192,39 +254,62 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     }
   };
 
-  const uniqueDrugsList = useMemo(() => {
+  const buildDrugList = useCallback((sourceDrugs, isCustom) => {
     const map = new Map();
 
-    drugs.forEach((drug) => {
+    sourceDrugs.forEach((drug) => {
       if (!drug.name) return;
       const key = normalise(drug.name);
+      const details = drug.custom_details || {};
       const aliasRows = allAliases.filter((alias) => String(alias.drug_id) === String(drug.id) || normalise(alias.drug_name) === key);
       const aliases = aliasRows.map((alias) => alias.alias || alias.name).filter(Boolean);
       const brandNames = aliasRows.filter((alias) => alias.is_trade_name || alias.type === "brand").map((alias) => alias.alias || alias.name).filter(Boolean);
+      const collaboration = drugCollaborations[String(drug.id)];
+      const isOwned = drug.user_id === user.id;
 
       if (!map.has(key)) {
         map.set(key, {
           id: drug.id,
+          user_id: drug.user_id,
           name: drug.name,
           category: drug.category || drug.drug_class || "Uncategorised",
-          indication: drug.indication || drug.indications || "",
-          summary: drug.summary || drug.clinical_summary || drug.notes || "",
+          indication: drug.indication || drug.indications || details.indication || "",
+          summary: drug.summary || drug.clinical_summary || drug.notes || details.summary || "",
           aliases,
           brandNames,
-          searchTerms: Array.isArray(drug.search_terms) ? drug.search_terms : [],
-          isCustom: drug.user_id === user.id
+          searchTerms: unique([
+            ...(Array.isArray(drug.search_terms) ? drug.search_terms : []),
+            ...Object.values(details).filter((value) => typeof value === "string")
+          ]),
+          isCustom,
+          isOwned,
+          isShared: Boolean(isCustom && !isOwned),
+          collaborationPermission: collaboration?.permission || null,
+          canEdit: Boolean(isOwned || collaboration?.permission === "edit")
         });
       } else {
         const existing = map.get(key);
         existing.aliases = unique([...existing.aliases, ...aliases]);
         existing.brandNames = unique([...existing.brandNames, ...brandNames]);
         existing.searchTerms = unique([...existing.searchTerms, ...(Array.isArray(drug.search_terms) ? drug.search_terms : [])]);
-        existing.isCustom = existing.isCustom || drug.user_id === user.id;
       }
     });
 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [drugs, allAliases, user.id]);
+  }, [allAliases, drugCollaborations, user.id]);
+
+  const libraryDrugsList = useMemo(
+    () => buildDrugList(drugs.filter((drug) => !drug.user_id), false),
+    [buildDrugList, drugs]
+  );
+  const myDrugsList = useMemo(
+    () => canUseMyDrugs ? buildDrugList(drugs.filter((drug) => Boolean(drug.user_id)), true) : [],
+    [buildDrugList, canUseMyDrugs, drugs, user.id]
+  );
+  const uniqueDrugsList = useMemo(
+    () => [...libraryDrugsList, ...myDrugsList].sort((a, b) => a.name.localeCompare(b.name)),
+    [libraryDrugsList, myDrugsList]
+  );
 
   const filteredLibrary = useMemo(() => {
     const q = normalise(drugSearch);
@@ -251,7 +336,21 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   }, [drugSearch, selectedLetter, uniqueDrugsList]);
 
   const visibleLibrary = filteredLibrary.slice(0, visibleCount);
-  const activeDrugRecord = uniqueDrugsList.find((drug) => normalise(drug.name) === normalise(activeDrugName));
+  const filteredMyDrugs = useMemo(() => {
+    const query = normalise(myDrugSearch);
+    if (!query) return myDrugsList;
+    return myDrugsList.filter((drug) => [
+      drug.name,
+      drug.category,
+      drug.indication,
+      drug.summary,
+      ...drug.searchTerms
+    ].map(normalise).some((value) => value.includes(query)));
+  }, [myDrugSearch, myDrugsList]);
+  const activeDrugRecord = (activeDrugScope === "custom" && activeDrugId
+    ? myDrugsList.find((drug) => String(drug.id) === String(activeDrugId))
+    : (activeDrugScope === "custom" ? myDrugsList : libraryDrugsList)
+      .find((drug) => normalise(drug.name) === normalise(activeDrugName)));
   const isActiveFavourite = favourites.some((item) => normalise(item.title) === normalise(activeDrugName));
 
   const saveRecentlyViewedDrug = async (drugName) => {
@@ -270,14 +369,40 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     if (!error) loadDrugCollections();
   };
 
-  const openMonograph = useCallback(async (drugName) => {
+  const openMonograph = useCallback(async (drugName, scope = "library", drugId = null) => {
     if (!drugName) return;
+    if (scope === "custom" && !canUseMyDrugs) {
+      toast.error("My Drugs is not available for your account");
+      return;
+    }
     const formattedName = normalise(drugName);
-    const doses = drugs.filter((drug) => normalise(drug.name) === formattedName);
+    const cacheKey = `${scope}:${formattedName}`;
+    const doses = drugs.filter((drug) => (
+      normalise(drug.name) === formattedName
+      && (
+        scope === "custom"
+          ? Boolean(drug.user_id) && (!drugId || String(drug.id) === String(drugId))
+          : !drug.user_id
+      )
+    ));
+    if (doses.length === 0) return toast.error("This drug is not available");
 
     setActiveDrugName(drugName);
+    setActiveDrugId(scope === "custom" ? drugId || doses[0]?.id || null : null);
+    setActiveDrugScope(scope);
     setActiveDrugDoses(doses);
-    setActiveSummary(summaryCache[formattedName] || null);
+    const customDetails = doses[0]?.custom_details || {};
+    setActiveSummary(scope === "custom" ? {
+      aliases: [],
+      warnings: clinicalItemsFromText(customDetails.warnings),
+      contraindications: clinicalItemsFromText(customDetails.contraindications),
+      interactions: clinicalItemsFromText(customDetails.interactions),
+      monitoring: clinicalItemsFromText(customDetails.monitoring),
+      speciesWarnings: [],
+      drugInformation: clinicalItemsFromText(customDetails.summary || customDetails.indication),
+      adverseEffects: [],
+      clinicalPearls: []
+    } : summaryCache[cacheKey] || null);
     setMonographOpen(true);
     setShareOpen(false);
 
@@ -285,7 +410,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     setNoteText(savedNotes[formattedName] || "");
     saveRecentlyViewedDrug(drugName);
 
-    if (summaryCache[formattedName] || doses.length === 0) return;
+    if (scope === "custom" || summaryCache[cacheKey] || doses.length === 0) return;
 
     setLoadingSummary(true);
     const drugNames = unique(doses.map((drug) => drug.name));
@@ -315,14 +440,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         adverseEffects: adverseEffects.data || [],
         clinicalPearls: pearls.data || []
       };
-      setSummaryCache((prev) => ({ ...prev, [formattedName]: summary }));
+      setSummaryCache((prev) => ({ ...prev, [cacheKey]: summary }));
       setActiveSummary(summary);
     } catch {
       toast.error("Could not load drug details");
     } finally {
       setLoadingSummary(false);
     }
-  }, [drugs, summaryCache, user.id]);
+  }, [canUseMyDrugs, drugs, summaryCache, user.id]);
 
   const handleToggleFav = async (drugName) => {
     const existing = favourites.find((item) => normalise(item.title) === normalise(drugName));
@@ -371,6 +496,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   };
 
   const loadFriendsForSharing = async () => {
+    if (activeDrugScope === "custom" && !canUseMyDrugs) {
+      toast.error("My Drugs is not available for your account");
+      return;
+    }
     setShareOpen(true);
     const { data, error } = await supabase
       .from("connections")
@@ -385,25 +514,69 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     })));
   };
 
-  const shareDrugWithColleague = async (friendId) => {
-    setShareBusyId(friendId);
-    const { error } = await supabase.from("shared_records").insert({
-      sender_id: user.id,
-      receiver_id: friendId,
-      record_type: "drug",
-      record_id: activeDrugName,
-      record_title: activeDrugName
-    });
+  const shareDrugWithColleague = async (friendId, permission = "read") => {
+    if (activeDrugScope === "custom" && !canUseMyDrugs) {
+      toast.error("My Drugs is not available for your account");
+      return;
+    }
+    const activeRecord = activeDrugDoses[0];
+    const busyKey = `${friendId}:${permission}`;
+    setShareBusyId(busyKey);
+
+    let error;
+    if (activeDrugScope === "custom") {
+      if (!activeRecord || activeRecord.user_id !== user.id) {
+        setShareBusyId(null);
+        return toast.error("Only the owner can share this live monograph");
+      }
+
+      ({ error } = await supabase.from("drug_collaborators").upsert({
+        drug_id: activeRecord.id,
+        owner_id: user.id,
+        user_id: friendId,
+        permission
+      }, { onConflict: "drug_id,user_id" }));
+    } else {
+      ({ error } = await supabase.from("shared_records").insert({
+        sender_id: user.id,
+        receiver_id: friendId,
+        record_type: "drug",
+        record_id: activeDrugName,
+        record_title: activeDrugName
+      }));
+    }
+
     setShareBusyId(null);
-    if (error) return toast.error("Could not share drug");
-    toast.success("Drug shared");
+    if (error) {
+      console.error("Could not share drug", error);
+      return toast.error(error.message || "Could not share drug");
+    }
+
+    const shareLabel = permission === "edit" ? "invited you to collaborate on" : "shared";
+    const { error: notificationError } = await supabase.from("notifications").insert({
+      user_id: friendId,
+      type: "shared_drug",
+      title: permission === "edit" ? "Drug collaboration invitation" : "Drug shared with you",
+      message: `${user.email || "A colleague"} ${shareLabel} "${activeDrugName}".`,
+      is_read: false,
+      related_id: activeRecord?.id ? String(activeRecord.id) : null
+    });
+    if (notificationError) console.warn("Drug shared but notification could not be created", notificationError);
+
+    toast.success(permission === "edit" ? "Collaboration access granted" : "Drug shared read-only");
     setShareOpen(false);
   };
 
+  const quickShareDrug = async (drug) => {
+    if (!drug?.isOwned) return toast.error("Only the owner can share this monograph");
+    await openMonograph(drug.name, "custom", drug.id);
+    await loadFriendsForSharing();
+  };
+
   const saveDrug = async () => {
+    if (!canUseMyDrugs) return toast.error("My Drugs is not available for your account");
     if (!drugForm.name.trim()) return toast.error("Drug name required");
-    const { error } = await supabase.from("drugs").insert({
-      user_id: user.id,
+    const payload = {
       name: drugForm.name.trim(),
       species: drugForm.species,
       concentration: drugForm.concentration ? parseFloat(drugForm.concentration) : null,
@@ -411,16 +584,29 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       dose_max: drugForm.dose_max ? parseFloat(drugForm.dose_max) : null,
       route: drugForm.route.trim() || null,
       category: drugForm.category.trim() || "Custom",
+      custom_details: {
+        indication: drugForm.indication.trim(),
+        summary: drugForm.summary.trim(),
+        warnings: drugForm.warnings.trim(),
+        contraindications: drugForm.contraindications.trim(),
+        interactions: drugForm.interactions.trim(),
+        monitoring: drugForm.monitoring.trim()
+      },
       active: true
-    });
+    };
+    const query = drugForm.id
+      ? supabase.from("drugs").update(payload).eq("id", drugForm.id)
+      : supabase.from("drugs").insert({ ...payload, user_id: user.id });
+    const { error } = await query;
     if (error) return toast.error(error.message);
-    toast.success("Custom dosing record saved");
-    setDrugForm({ name: "", species: "Dog", concentration: "", dose_min: "", dose_max: "", route: "", category: "Analgesic" });
+    toast.success(drugForm.id ? "My Drug updated" : "My Drug saved");
+    setDrugForm(emptyDrugForm);
     setShowAddDrug(false);
     loadDatabase();
   };
 
   const deleteDrug = async (id) => {
+    if (!canUseMyDrugs) return toast.error("My Drugs is not available for your account");
     const { error } = await supabase.from("drugs").delete().eq("id", id).eq("user_id", user.id);
     if (error) return toast.error("You do not have permission to delete this record");
     toast.success("Dose record deleted");
@@ -429,6 +615,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   };
 
   const requestDeleteDrug = (id) => {
+    if (activeDrugScope !== "custom" || !canUseMyDrugs) return;
     setAppPopup(popupPresets.deleteDrugDose({
       drugName: activeDrugName,
       onPrimary: () => {
@@ -437,6 +624,43 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       },
       onSecondary: closeAppPopup
     }));
+  };
+
+  const startCreateDrug = () => {
+    if (!canUseMyDrugs) return;
+    setDrugForm(emptyDrugForm);
+    setShowAddDrug(true);
+  };
+
+  const startEditDrug = (drugId) => {
+    if (!canUseMyDrugs) return;
+    const record = drugs.find((drug) => String(drug.id) === String(drugId) && Boolean(drug.user_id));
+    if (!record) return toast.error("This drug is not available");
+    const collaboration = drugCollaborations[String(record.id)];
+    if (record.user_id !== user.id && collaboration?.permission !== "edit") {
+      return toast.error("This monograph was shared read-only");
+    }
+    const details = record.custom_details || {};
+    setDrugForm({
+      id: record.id,
+      name: record.name || "",
+      species: record.species || "Dog",
+      concentration: record.concentration ?? "",
+      dose_min: record.dose_min ?? "",
+      dose_max: record.dose_max ?? "",
+      route: record.route || "",
+      category: record.category || "Custom",
+      indication: details.indication || "",
+      summary: details.summary || "",
+      warnings: details.warnings || "",
+      contraindications: details.contraindications || "",
+      interactions: details.interactions || "",
+      monitoring: details.monitoring || ""
+    });
+    setShowAddDrug(true);
+    setMonographOpen(false);
+    setActiveTab("my-drugs");
+    navigate("/drugs/my-drugs", { replace: true });
   };
 
   const addDrugToActiveCalc = (drug) => {
@@ -490,13 +714,20 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const canUseLibrary = canUseFeature(featureAccess, featureKeys.library, adminAccess);
   const formularyTabs = useMemo(() => [
     ...(canUseLibrary ? [{ id: "library", label: "Library" }] : []),
+    ...(canUseMyDrugs ? [{ id: "my-drugs", label: "My Drugs" }] : []),
     ...(canUseCalculator ? [{ id: "calculator", label: "Calculator" }] : []),
     { id: "history", label: "History" }
-  ], [canUseCalculator, canUseLibrary]);
+  ], [canUseCalculator, canUseLibrary, canUseMyDrugs]);
 
   useEffect(() => {
     if (!formularyTabs.some((tab) => tab.id === activeTab)) setActiveTab(formularyTabs[0]?.id || "history");
   }, [activeTab, formularyTabs]);
+
+  const selectTab = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === "my-drugs") navigate("/drugs/my-drugs");
+    else if (isMyDrugsPath) navigate("/drugs");
+  };
 
   const copyDrugSummary = () => {
     navigator.clipboard.writeText(`VetLearn Formulary: ${activeDrugName}\nClass: ${activeDrugRecord?.category || "Uncategorised"}`);
@@ -524,11 +755,15 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         setNoteText={setNoteText}
         onSaveNote={saveDrugNote}
         onCopy={copyDrugSummary}
+        onEdit={() => startEditDrug(activeDrugDoses[0]?.id)}
+        canManageCustom={canUseMyDrugs && activeDrugScope === "custom" && Boolean(activeDrugRecord?.canEdit)}
+        canShareCustom={activeDrugScope !== "custom" || Boolean(activeDrugRecord?.isOwned)}
+        supportsCollaboration={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
         onAddToCalculator={() => {
           if (activeDrugDoses[0]) {
             setCalcPatient((prev) => ({ ...prev, species: activeDrugDoses[0].species || "Dog" }));
             addDrugToActiveCalc(activeDrugDoses[0]);
-            setActiveTab("calculator");
+            selectTab("calculator");
             setMonographOpen(false);
           }
         }}
@@ -548,7 +783,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
         {formularyTabs.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63] shadow-md" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+          <button key={tab.id} onClick={() => selectTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition ${activeTab === tab.id ? "bg-[#71CFC2] text-[#062F63] shadow-md" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
             {tab.label}
           </button>
         ))}
@@ -565,7 +800,6 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
             <LibraryTab
               darkMode={darkMode}
               panelClass={panelClass}
-              fieldClass={fieldClass}
               uniqueDrugsList={uniqueDrugsList}
               drugSearch={drugSearch}
               setDrugSearch={setDrugSearch}
@@ -577,13 +811,31 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               setVisibleCount={setVisibleCount}
               favourites={favourites}
               recentlyViewed={recentlyViewed}
-              openMonograph={openMonograph}
+              openMonograph={(name, isCustom = false, drugId = null) => openMonograph(name, isCustom ? "custom" : "library", drugId)}
               handleToggleFav={handleToggleFav}
-              showAddDrug={showAddDrug}
-              setShowAddDrug={setShowAddDrug}
+            />
+          )}
+
+          {canUseMyDrugs && activeTab === "my-drugs" && (
+            <MyDrugsTab
+              darkMode={darkMode}
+              panelClass={panelClass}
+              fieldClass={fieldClass}
+              drugs={filteredMyDrugs}
+              search={myDrugSearch}
+              setSearch={setMyDrugSearch}
+              showForm={showAddDrug}
               drugForm={drugForm}
               setDrugForm={setDrugForm}
               saveDrug={saveDrug}
+              onCreate={startCreateDrug}
+              onEdit={startEditDrug}
+              onQuickShare={quickShareDrug}
+              onOpen={(drug) => openMonograph(drug.name, "custom", drug.id)}
+              onCloseForm={() => {
+                setShowAddDrug(false);
+                setDrugForm(emptyDrugForm);
+              }}
             />
           )}
 
@@ -627,7 +879,6 @@ function LibraryTab(props) {
   const {
     darkMode,
     panelClass,
-    fieldClass,
     uniqueDrugsList,
     drugSearch,
     setDrugSearch,
@@ -640,12 +891,7 @@ function LibraryTab(props) {
     favourites,
     recentlyViewed,
     openMonograph,
-    handleToggleFav,
-    showAddDrug,
-    setShowAddDrug,
-    drugForm,
-    setDrugForm,
-    saveDrug
+    handleToggleFav
   } = props;
 
   const noActiveFilter = !drugSearch.trim() && !selectedLetter;
@@ -672,14 +918,11 @@ function LibraryTab(props) {
       </div>
 
       <div className={panelClass}>
-        <div className="flex items-center justify-between mb-4 gap-3">
+        <div className="mb-4">
           <div>
             <h2 className="font-black text-lg">Browse A-Z</h2>
             <p className="text-sm opacity-60">Choose a letter to show matching drugs only.</p>
           </div>
-          <button onClick={() => setShowAddDrug(!showAddDrug)} className="bg-[#71CFC2] text-[#062F63] px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm shrink-0">
-            <Plus size={14} /> Custom
-          </button>
         </div>
         <div className="grid grid-cols-7 gap-2 sm:grid-cols-13">
           {alphabet.map((letter) => {
@@ -702,8 +945,6 @@ function LibraryTab(props) {
         </div>
       </div>
 
-      {showAddDrug && <CustomDrugForm panelClass={panelClass} fieldClass={fieldClass} drugForm={drugForm} setDrugForm={setDrugForm} saveDrug={saveDrug} onClose={() => setShowAddDrug(false)} />}
-
       {noActiveFilter && (
         <div className="space-y-4">
           <DrugChips title="Favourite Drugs" icon={<Star size={15} />} items={favourites} empty="Favourite drugs will appear here." onOpen={openMonograph} onRemove={handleToggleFav} darkMode={darkMode} />
@@ -722,7 +963,7 @@ function LibraryTab(props) {
           </div>
 
           {visibleLibrary.map((drug) => (
-            <DrugResultCard key={drug.id} drug={drug} darkMode={darkMode} panelClass={panelClass} search={drugSearch} onOpen={() => openMonograph(drug.name)} />
+            <DrugResultCard key={`${drug.isCustom ? "mine" : "formulary"}-${drug.id}`} drug={drug} darkMode={darkMode} panelClass={panelClass} search={drugSearch} onOpen={() => openMonograph(drug.name, drug.isCustom, drug.id)} />
           ))}
 
           {filteredLibrary.length === 0 && <div className={`${panelClass} text-center opacity-60 text-sm`}>No drugs found.</div>}
@@ -731,6 +972,101 @@ function LibraryTab(props) {
               Show more
             </button>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MyDrugsTab({
+  darkMode,
+  panelClass,
+  fieldClass,
+  drugs,
+  search,
+  setSearch,
+  showForm,
+  drugForm,
+  setDrugForm,
+  saveDrug,
+  onCreate,
+  onEdit,
+  onQuickShare,
+  onOpen,
+  onCloseForm
+}) {
+  return (
+    <div className="space-y-5">
+      <section className={panelClass}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-black text-xl">My Drugs</h2>
+            <p className="text-sm opacity-65 mt-1">Create your own drug monographs and share them with colleagues.</p>
+          </div>
+          <button onClick={onCreate} className="bg-[#71CFC2] text-[#062F63] px-3 py-2 rounded-lg font-black text-xs flex items-center gap-1 shrink-0">
+            <Plus size={14} /> Add Drug
+          </button>
+        </div>
+      </section>
+
+      {showForm && (
+        <CustomDrugForm
+          panelClass={panelClass}
+          fieldClass={fieldClass}
+          drugForm={drugForm}
+          setDrugForm={setDrugForm}
+          saveDrug={saveDrug}
+          onClose={onCloseForm}
+        />
+      )}
+
+      <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
+        <Search size={20} className="opacity-50" />
+        <input
+          className="w-full py-4 outline-none bg-transparent text-sm font-bold"
+          placeholder="Search My Drugs..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        {search && <button onClick={() => setSearch("")}><X size={16} /></button>}
+      </div>
+
+      {drugs.length === 0 ? (
+        <div className={`${panelClass} text-center`}>
+          <BookOpen className="mx-auto mb-3 text-[#0F8F83]" size={30} />
+          <h3 className="font-black">{search ? "No matching drugs" : "No personal monographs yet"}</h3>
+          <p className="text-sm opacity-60 mt-2">{search ? "Try another search." : "Use Add Drug to create your first monograph."}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {drugs.map((drug) => (
+            <div key={drug.id} className={`${panelClass} flex items-center gap-3`}>
+              <button className="min-w-0 flex-1 text-left" onClick={() => onOpen(drug)}>
+                <h3 className="font-black text-lg truncate">{drug.name}</h3>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="text-sm opacity-60">{drug.category || "My Drug"}</p>
+                  {drug.isShared && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${drug.canEdit ? "bg-[#E8F8F5] text-[#0F8F83]" : "bg-slate-100 text-slate-500"}`}>
+                      {drug.canEdit ? "Shared collaborator" : "Shared read-only"}
+                    </span>
+                  )}
+                </div>
+              </button>
+              {drug.isOwned && (
+                <button onClick={() => onQuickShare(drug)} className={`p-2.5 rounded-lg ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"} text-[#0F8F83]`} aria-label={`Share ${drug.name}`}>
+                  <Share2 size={17} />
+                </button>
+              )}
+              {drug.canEdit && (
+                <button onClick={() => onEdit(drug.id)} className={`p-2.5 rounded-lg ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"} text-[#0F8F83]`} aria-label={`Edit ${drug.name}`}>
+                  <Pencil size={17} />
+                </button>
+              )}
+              <button onClick={() => onOpen(drug)} className="p-2.5 rounded-lg bg-[#71CFC2] text-[#062F63]" aria-label={`Open ${drug.name}`}>
+                <ChevronRight size={17} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -749,7 +1085,11 @@ function DrugResultCard({ drug, darkMode, panelClass, search, onOpen }) {
         <div className="flex gap-2 flex-wrap">
           <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>{drug.category}</span>
           {drug.brandNames.slice(0, 2).map((brand) => <span key={brand} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#E8F8F5] text-[#0F8F83]">{brand}</span>)}
-          {drug.isCustom && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1 bg-[#71CFC2]/20 text-[#0F8F83]"><UserIcon size={10} /> Custom</span>}
+          {drug.isCustom && (
+            <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full flex items-center gap-1 bg-[#71CFC2]/25 text-[#0F8F83] ring-1 ring-[#71CFC2]/50">
+              <UserIcon size={10} /> {drug.isOwned ? "My Drug" : drug.canEdit ? "Shared collaborator" : "Shared drug"}
+            </span>
+          )}
         </div>
       </div>
       <ChevronRight size={20} className="opacity-30 shrink-0" />
@@ -776,10 +1116,13 @@ function DrugChips({ title, icon, items, empty, onOpen, onRemove, darkMode }) {
 }
 
 function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDrug, onClose }) {
+  const [additionalField, setAdditionalField] = useState("");
+  const selectedField = additionalDrugFields.find((field) => field.key === additionalField);
+
   return (
     <div className={`${panelClass} border-l-4 border-l-[#71CFC2] animate-in slide-in-from-top-2`}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-black">Add Custom Dosing Record</h2>
+        <h2 className="font-black">{drugForm.id ? "Edit My Drug" : "Add My Drug"}</h2>
         <button onClick={onClose}><X size={20} className="opacity-50" /></button>
       </div>
       <div className="grid grid-cols-[2fr_1fr] gap-3 mb-3">
@@ -797,7 +1140,26 @@ function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDru
         <input className={fieldClass} placeholder="Route" value={drugForm.route} onChange={(event) => setDrugForm({ ...drugForm, route: event.target.value })} />
       </div>
       <input className={fieldClass} placeholder="Class/category" value={drugForm.category} onChange={(event) => setDrugForm({ ...drugForm, category: event.target.value })} />
-      <button onClick={saveDrug} className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-3 font-bold mt-3">Save Dosing Record</button>
+
+      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
+        <label className="block text-xs font-black uppercase tracking-widest opacity-55 mb-2">Further information</label>
+        <select className={fieldClass} value={additionalField} onChange={(event) => setAdditionalField(event.target.value)}>
+          <option value="">Choose information to add...</option>
+          {additionalDrugFields.map((field) => (
+            <option key={field.key} value={field.key}>{field.label}{drugForm[field.key]?.trim() ? " (added)" : ""}</option>
+          ))}
+        </select>
+        {selectedField && (
+          <textarea
+            className={`${fieldClass} min-h-[110px] mt-3`}
+            placeholder={selectedField.placeholder}
+            value={drugForm[selectedField.key]}
+            onChange={(event) => setDrugForm({ ...drugForm, [selectedField.key]: event.target.value })}
+          />
+        )}
+      </div>
+
+      <button onClick={saveDrug} className="w-full bg-[#71CFC2] text-[#062F63] rounded-lg p-3 font-bold mt-4">{drugForm.id ? "Save Changes" : "Save My Drug"}</button>
     </div>
   );
 }
@@ -820,6 +1182,10 @@ function DrugMonograph(props) {
     setNoteText,
     onSaveNote,
     onCopy,
+    onEdit,
+    canManageCustom,
+    canShareCustom,
+    supportsCollaboration,
     onAddToCalculator,
     shareOpen,
     friendsList,
@@ -852,7 +1218,8 @@ function DrugMonograph(props) {
             <ActionButton onClick={onToggleFavourite} active={isFavourite} icon={<Star size={14} className={isFavourite ? "fill-current" : ""} />}>{isFavourite ? "Favourited" : "Favourite"}</ActionButton>
             <ActionButton onClick={onAddToCalculator} icon={<Syringe size={14} />}>Calc Dose</ActionButton>
             <ActionButton onClick={onCopy} icon={<Copy size={14} />}>Copy</ActionButton>
-            <ActionButton onClick={onOpenShare} icon={<Share2 size={14} />}>Share</ActionButton>
+            {canShareCustom && <ActionButton onClick={onOpenShare} icon={<Share2 size={14} />}>Share</ActionButton>}
+            {canManageCustom && <ActionButton onClick={onEdit} icon={<Pencil size={14} />}>Edit</ActionButton>}
           </div>
         </div>
 
@@ -866,6 +1233,7 @@ function DrugMonograph(props) {
             <>
               <MonographSection title="Drug Information" icon={<BookOpen size={18} />} darkMode={darkMode}>
                 <InfoRow label="Drug class" value={drug?.category || "Uncategorised"} />
+                <InfoRow label="Indications" value={drug?.indication || "None recorded"} />
                 <InfoRow label="Aliases" value={aliases.length ? aliases.join(", ") : "None recorded"} />
                 <InfoRow label="Brand names" value={brandNames.length ? brandNames.join(", ") : "None recorded"} />
                 <ClinicalList items={summaryItems} fallback={drug?.summary || "No clinical summary recorded."} darkMode={darkMode} />
@@ -885,7 +1253,7 @@ function DrugMonograph(props) {
                               {dose.concentration && <span className="opacity-60"> | {dose.concentration} mg/ml</span>}
                               {dose.notes && <div className="opacity-65 mt-1">{dose.notes}</div>}
                             </div>
-                            {dose.user_id === user.id && <button onClick={() => onDeleteDose(dose.id)} className="text-red-400"><Trash2 size={15} /></button>}
+                            {canManageCustom && dose.user_id === user.id && <button onClick={() => onDeleteDose(dose.id)} className="text-red-400"><Trash2 size={15} /></button>}
                           </div>
                         ))}
                       </div>
@@ -910,11 +1278,18 @@ function DrugMonograph(props) {
                 {shareOpen && (
                   <div className={`rounded-lg p-3 mt-4 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
                     {friendsList.length === 0 ? <p className="text-sm opacity-55">No colleagues available to share with.</p> : friendsList.map((friend) => (
-                      <div key={friend.connection_id} className="flex items-center justify-between gap-3 py-2">
+                      <div key={friend.connection_id} className="flex flex-col gap-2 border-b border-slate-200/60 py-3 last:border-b-0 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm font-bold">{friend.colleague?.title} {friend.colleague?.full_name}</span>
-                        <button onClick={() => onShare(friend.colleague.id)} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black">
-                          {shareBusyId === friend.colleague.id ? "Sending..." : "Send"}
-                        </button>
+                        <div className={`grid gap-2 ${supportsCollaboration ? "grid-cols-2" : "grid-cols-1"}`}>
+                          <button onClick={() => onShare(friend.colleague.id, "read")} disabled={Boolean(shareBusyId)} className="rounded-lg bg-[#E8F8F5] text-[#0B3760] px-3 py-2 text-xs font-black disabled:opacity-50">
+                            {shareBusyId === `${friend.colleague.id}:read` ? "Sharing..." : "Share read-only"}
+                          </button>
+                          {supportsCollaboration && (
+                            <button onClick={() => onShare(friend.colleague.id, "edit")} disabled={Boolean(shareBusyId)} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black disabled:opacity-50">
+                              {shareBusyId === `${friend.colleague.id}:edit` ? "Inviting..." : "Collaborate"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1071,7 +1446,7 @@ function CalculatorTab(props) {
             return (
               <div key={drug.id} className="mb-4 pb-4 border-b border-slate-200 dark:border-white/10 last:border-0 last:mb-0 last:pb-0">
                 <div className="flex justify-between items-center mb-2">
-                  <button className="font-bold cursor-pointer hover:text-[#71CFC2] flex items-center gap-2" onClick={() => openMonograph(drug.name)}>{drug.name} <BookOpen size={14} /></button>
+                  <button className="font-bold cursor-pointer hover:text-[#71CFC2] flex items-center gap-2" onClick={() => openMonograph(drug.name, drug.user_id ? "custom" : "library")}>{drug.name} <BookOpen size={14} /></button>
                   <button onClick={() => setSelectedCalcDrugs((prev) => prev.filter((item) => String(item.id) !== String(drug.id)))} className="text-red-400"><Trash2 size={16} /></button>
                 </div>
                 <div className="text-xs opacity-70 mb-2">Route: {drug.route || "General"} | Range: {drug.dose_min || 0} - {drug.dose_max || 0} mg/kg</div>

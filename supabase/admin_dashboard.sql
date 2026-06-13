@@ -192,6 +192,7 @@ values
   ('clinical_tools', 'Clinical Tools', 'Dose, CRI, fluid, emergency and toxicology calculators.'),
   ('clinical_protocols', 'Clinical Protocols', 'Create and share treatment protocols.'),
   ('drug_database', 'Drug Database', 'Search formulary and clinical drug information.'),
+  ('my_drugs', 'My Drugs / My Monographs', 'Create and share personal drug monographs.'),
   ('library', 'Library', 'Learning resources and saved reading.'),
   ('case_logs', 'Case Logs', 'Record and review clinical cases.'),
   ('messaging', 'Messaging', 'Secure colleague messaging.'),
@@ -206,12 +207,15 @@ insert into public.subscription_feature_access (subscription_tier, feature_key, 
 select tier, feature_key,
   case
     when tier = 'free' and feature_key in ('cpd_tracker', 'drug_database') then true
-    when tier = 'clinician' and feature_key in ('cpd_tracker', 'drug_database', 'clinical_tools', 'clinical_protocols', 'case_logs', 'messaging') then true
+    when tier = 'clinician' and feature_key in ('cpd_tracker', 'drug_database', 'my_drugs', 'clinical_tools', 'clinical_protocols', 'case_logs', 'messaging') then true
     when tier in ('professional', 'premium', 'enterprise') then true
     else false
   end
 from public.subscription_plans cross join public.app_features
 on conflict (subscription_tier, feature_key) do nothing;
+
+alter table if exists public.drugs
+  add column if not exists custom_details jsonb not null default '{}'::jsonb;
 
 -- ---------- Views ----------
 create or replace view public.admin_user_overview as
