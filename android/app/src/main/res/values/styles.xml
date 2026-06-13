@@ -19,6 +19,10 @@
         <item name="android:textColorHighlight">#5571CFC2</item>
         <item name="colorControlNormal">#0B3760</item>
         <item name="android:colorControlNormal">#0B3760</item>
+        <item name="actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="android:actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:actionMenuTextColor">@android:color/white</item>
     </style>
 
     <!-- Main app theme without action bar -->
@@ -38,6 +42,29 @@
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="android:actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:actionMenuTextColor">@android:color/white</item>
+    </style>
+
+    <!-- Native Android copy / paste toolbar styling -->
+    <style name="VetLearnActionMode" parent="Widget.AppCompat.ActionMode">
+        <item name="background">@color/colorPrimary</item>
+        <item name="android:background">@color/colorPrimary</item>
+        <item name="titleTextStyle">@style/VetLearnActionModeTitle</item>
+        <item name="subtitleTextStyle">@style/VetLearnActionModeSubtitle</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:actionMenuTextColor">@android:color/white</item>
+    </style>
+
+    <style name="VetLearnActionModeTitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="VetLearnActionModeSubtitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
+        <item name="android:textColor">#E8F8F5</item>
     </style>
 
     <!-- Launch / splash screen theme -->
