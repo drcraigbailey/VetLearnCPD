@@ -257,3 +257,55 @@ body,
   color: #123c3a !important;
   box-shadow: 0 1px 3px rgba(15, 55, 83, 0.18) !important;
 }
+
+/* Android WebView native text selection / copy-paste support */
+html,
+body,
+#root,
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  touch-action: auto;
+  cursor: text;
+  caret-color: #0b3760;
+  -webkit-tap-highlight-color: rgba(113, 207, 194, 0.35);
+}
+
+input::selection,
+textarea::selection,
+[contenteditable="true"]::selection {
+  background: rgba(113, 207, 194, 0.45);
+  color: #0b3760;
+}
+
+.dark input,
+.dark textarea,
+.dark select,
+.dark [contenteditable="true"] {
+  caret-color: #71cfc2;
+}
+
+.dark input::selection,
+.dark textarea::selection,
+.dark [contenteditable="true"]::selection {
+  background: rgba(113, 207, 194, 0.35);
+  color: #ffffff;
+}
+
+button,
+[role="button"],
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
