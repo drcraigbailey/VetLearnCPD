@@ -589,6 +589,8 @@ function App() {
             <Route path="/cpd" element={featureRoute(featureKeys.cpdTracker, "CPD", <CPD user={session.user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={startReadingSession} onFinishReading={finishReadingSession} onSaveManualReading={saveManualReadingSession} savingReading={savingReading} />)} />
             <Route path="/caselogs" element={featureRoute(featureKeys.caseLogs, "Case Logs", <Caselogs user={session.user} darkMode={darkMode} />)} />
             <Route path="/drugs" element={featureRoute(featureKeys.drugDatabase, "Formulary", <Formulary user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />)} />
+            <Route path="/drugs/my-drugs" element={featureRoute(featureKeys.drugDatabase, "Formulary", featureRoute(featureKeys.myDrugs, "My Drugs", <Formulary user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />))} />
+            <Route path="/drugs/my-monographs" element={featureRoute(featureKeys.drugDatabase, "Formulary", featureRoute(featureKeys.myDrugs, "My Drugs", <Formulary user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />))} />
             <Route path="/clinical-tools" element={featureRoute(featureKeys.clinicalTools, "Clinical Tools", <ClinicalToolsPage user={session.user} darkMode={darkMode} featureAccess={featureAccess} adminAccess={adminAccess} />)} />
             <Route path="/network" element={featureRoute(featureKeys.network, "Network", <Network user={session.user} darkMode={darkMode} />)} />
             <Route path="/settings" element={<SettingsPage user={session.user} darkMode={darkMode} setDarkMode={setDarkMode} />} />

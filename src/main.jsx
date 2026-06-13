@@ -4,11 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import { registerPwaUpdates } from './pwaUpdate.js'
 import { startSessionSecurity } from './utils/sessionSecurity.js'
-import { startTextFieldCopyButtons } from './utils/textFieldCopyButtons.js'
 
 registerPwaUpdates()
 startSessionSecurity()
-startTextFieldCopyButtons()
 
 window.addEventListener('click', (event) => {
   const target = event.target

@@ -79,6 +79,7 @@ export default function Network({ user, darkMode = false }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [shareableCases, setShareableCases] = useState([]);
   const [shareableProtocols, setShareableProtocols] = useState([]);
+  const [shareableDrugs, setShareableDrugs] = useState([]);
   const [sharedViewer, setSharedViewer] = useState(null);
   const [fullImagePreview, setFullImagePreview] = useState(null);
   
@@ -219,12 +220,14 @@ export default function Network({ user, darkMode = false }) {
 
   async function loadShareableItems() {
     if (!user?.id) return;
-    const [casesRes, protocolsRes] = await Promise.all([
+    const [casesRes, protocolsRes, drugsRes] = await Promise.all([
       supabase.from("caselogs").select("id, title, category, patient_name, species, breed, age, gender, description, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
-      supabase.from("protocols").select("id, name, indication, drug_ids, drug_doses, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30)
+      supabase.from("protocols").select("id, name, indication, drug_ids, drug_doses, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
+      supabase.from("drugs").select("id, user_id, name, species, concentration, dose_min, dose_max, route, category, custom_details").eq("user_id", user.id).eq("active", true).order("name").limit(50)
     ]);
     if (!casesRes.error) setShareableCases(casesRes.data || []);
     if (!protocolsRes.error) setShareableProtocols(protocolsRes.data || []);
+    if (!drugsRes.error) setShareableDrugs(drugsRes.data || []);
   }
 
   async function searchColleagues() {
@@ -298,7 +301,11 @@ export default function Network({ user, darkMode = false }) {
   const updateEditForm = (field, value) => setEditForm(prev => ({ ...prev, [field]: value, ...(field === "shared_type" || field === "shared_title" || field === "shared_url" ? { shared_payload: null } : {}) }));
 
   const attachOwnItem = (kind, id, isEditing = false) => {
-    const source = kind === "caselog" ? shareableCases : shareableProtocols;
+    const source = kind === "caselog"
+      ? shareableCases
+      : kind === "protocol"
+        ? shareableProtocols
+        : shareableDrugs;
     const item = source.find(entry => String(entry.id) === String(id));
     if (!item) return;
 
@@ -306,7 +313,10 @@ export default function Network({ user, darkMode = false }) {
       shared_type: kind, 
       shared_title: kind === "caselog" ? item.title : item.name, 
       shared_url: `shared://${kind}/${item.id}`, 
-      shared_payload: buildSharedPayload(kind, item) 
+      shared_payload: {
+        ...buildSharedPayload(kind, item),
+        ...(kind === "drug" ? { collaboration_enabled: false } : {})
+      }
     };
 
     if (isEditing) setEditForm(prev => ({ ...prev, ...nextAttachment }));
@@ -546,7 +556,7 @@ export default function Network({ user, darkMode = false }) {
           postsAvailable={postsAvailable} postSearchQuery={postSearchQuery} setPostSearchQuery={setPostSearchQuery}
           activeCategory={activeCategory} setActiveCategory={setActiveCategory}
           composerOpen={composerOpen} setComposerOpen={setComposerOpen}
-          postForm={postForm} postSaving={postSaving} shareableCases={shareableCases} shareableProtocols={shareableProtocols}
+          postForm={postForm} postSaving={postSaving} shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs}
           updatePostForm={updatePostForm} attachOwnItem={attachOwnItem} clearAttachment={clearAttachment} requestPostSave={() => requestPostSave("create")}
           posts={posts} postLoading={postLoading} user={user}
           editForm={editForm} editingPostId={editingPostId} postUpdating={postUpdating}
@@ -584,7 +594,7 @@ function PostsTab(props) {
   const {
     darkMode, panelClass, fieldClass, postsAvailable, postSearchQuery, setPostSearchQuery, 
     activeCategory, setActiveCategory, composerOpen, setComposerOpen,
-    postForm, postSaving, shareableCases, shareableProtocols, updatePostForm, attachOwnItem, clearAttachment, requestPostSave,
+    postForm, postSaving, shareableCases, shareableProtocols, shareableDrugs, updatePostForm, attachOwnItem, clearAttachment, requestPostSave,
     posts, postLoading, user, editForm, editingPostId, postUpdating, startEditingPost, cancelEditingPost, updateEditForm,
     onRemoveExistingImage, requestUpdateSave, deletePost, setSharedViewer, setFullImagePreview
   } = props;
@@ -624,7 +634,7 @@ function PostsTab(props) {
         <PostComposer
           title="Share a post" icon={Newspaper} subtitle="Post an update, case discussion, image, or useful resource." form={postForm}
           darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass}
-          shareableCases={shareableCases} shareableProtocols={shareableProtocols}
+          shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs}
           saving={postSaving} saveLabel="Share post"
           onChange={updatePostForm} onAttach={attachOwnItem} onClearAttachment={() => clearAttachment(false)} onSave={requestPostSave}
         />
@@ -643,7 +653,7 @@ function PostsTab(props) {
           <NetworkPost
             key={post.id} post={post} user={user} darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass}
             editForm={editForm} editing={editingPostId === post.id} postUpdating={postUpdating}
-            shareableCases={shareableCases} shareableProtocols={shareableProtocols}
+            shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs}
             onEdit={() => startEditingPost(post)} onCancelEdit={cancelEditingPost} onEditChange={updateEditForm}
             onRemoveExistingImage={onRemoveExistingImage}
             onAttachEdit={(kind, id) => attachOwnItem(kind, id, true)} onClearEditAttachment={() => clearAttachment(true)}
@@ -656,7 +666,7 @@ function PostsTab(props) {
   );
 }
 
-function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, darkMode, panelClass, fieldClass, shareableCases, shareableProtocols, saving, saveLabel, onChange, onAttach, onClearAttachment, onSave, onRemoveExistingImage }) {
+function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, darkMode, panelClass, fieldClass, shareableCases, shareableProtocols, shareableDrugs, saving, saveLabel, onChange, onAttach, onClearAttachment, onSave, onRemoveExistingImage }) {
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
     onChange("images", [...(form.images || []), ...files]);
@@ -726,7 +736,7 @@ function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, dar
           </div>
         </div>
         
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <select
             className={fieldClass}
             value={form.shared_type === "caselog" ? form.shared_url?.replace("shared://caselog/", "") || "" : ""}
@@ -758,7 +768,41 @@ function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, dar
               </option>
             ))}
           </select>
+
+          <select
+            className={fieldClass}
+            value={form.shared_type === "drug" ? form.shared_url?.replace("shared://drug/", "") || "" : ""}
+            onChange={(event) => {
+              const selectedId = event.target.value;
+              if (selectedId) onAttach("drug", selectedId);
+            }}
+          >
+            <option value="">Attach My Drug</option>
+            {shareableDrugs.map(item => (
+              <option key={item.id} value={item.id}>
+                {item.name || "Untitled monograph"}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {form.shared_type === "drug" && form.shared_payload?.id && (
+          <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-white"}`}>
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-[#0F8F83]"
+              checked={Boolean(form.shared_payload?.collaboration_enabled)}
+              onChange={(event) => onChange("shared_payload", {
+                ...form.shared_payload,
+                collaboration_enabled: event.target.checked
+              })}
+            />
+            <span>
+              <span className="block text-sm font-black">Allow collaboration</span>
+              <span className="block text-xs leading-5 opacity-60">People who can see this post may join and edit the live monograph with you.</span>
+            </span>
+          </label>
+        )}
 
         {form.shared_type && form.shared_title && (
           <div className={`rounded-lg px-3 py-2 text-xs font-black flex justify-between items-center ${darkMode ? "bg-[#71CFC2]/15 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0F8F83]"}`}>
@@ -784,7 +828,7 @@ function PostComposer({ title, subtitle, icon: HeaderIcon = Newspaper, form, dar
   );
 }
 
-function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, editing, postUpdating, shareableCases, shareableProtocols, onEdit, onCancelEdit, onEditChange, onRemoveExistingImage, onAttachEdit, onClearEditAttachment, onUpdate, onDelete, onOpenShared, onOpenImage }) {
+function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, editing, postUpdating, shareableCases, shareableProtocols, shareableDrugs, onEdit, onCancelEdit, onEditChange, onRemoveExistingImage, onAttachEdit, onClearEditAttachment, onUpdate, onDelete, onOpenShared, onOpenImage }) {
   const [imageUrls, setImageUrls] = useState({});
   const authorName = post.author?.full_name || "VetLearn user";
   const initials = authorName.charAt(0).toUpperCase();
@@ -792,7 +836,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   const sharedUrl = normaliseSharedUrl(post.shared_url);
   const isAuthor = post.author_id === user?.id;
   const edited = post.updated_at && post.created_at && new Date(post.updated_at).getTime() - new Date(post.created_at).getTime() > 2000;
-  const opensSharedModal = ["caselog", "protocol", "cpd", "resource"].includes(post.shared_type);
+  const opensSharedModal = ["caselog", "protocol", "drug", "cpd", "resource"].includes(post.shared_type);
 
   useEffect(() => {
     async function loadUrls() {
@@ -811,7 +855,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
     return (
       <PostComposer 
         title="Edit post" icon={Edit3} form={editForm} darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass} 
-        shareableCases={shareableCases} shareableProtocols={shareableProtocols} saving={postUpdating} 
+        shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs} saving={postUpdating}
         saveLabel="Save changes" onChange={onEditChange} onRemoveExistingImage={onRemoveExistingImage} 
         onAttach={onAttachEdit} onClearAttachment={onClearEditAttachment} onSave={onUpdate} 
       />
@@ -897,6 +941,7 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
 
 function SharedAttachmentModal({ post, user, darkMode, onClose }) {
   const [saving, setSaving] = useState(false);
+  const [joining, setJoining] = useState(false);
   const payload = post.shared_payload || {};
   const modalClass = darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]";
   const softClass = darkMode ? "bg-white/10 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]";
@@ -904,12 +949,15 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
   const saveSharedItem = async () => {
     if (!user?.id || saving) return;
     setSaving(true);
-    
-    const isCase = post.shared_type === "caselog";
-    const table = isCase ? "caselogs" : "protocols";
-    
-    const payloadToInsert = isCase 
-      ? { 
+
+    let table;
+    let itemLabel;
+    let payloadToInsert;
+
+    if (post.shared_type === "caselog") {
+      table = "caselogs";
+      itemLabel = "case";
+      payloadToInsert = {
           user_id: user.id, 
           title: `${post.shared_title || payload.title || "Shared case"} (shared)`, 
           category: payload.category || "Other", 
@@ -920,20 +968,60 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
           gender: payload.gender || null, 
           description: payload.description || null, 
           media_urls: [] 
-        }
-      : { 
+      };
+    } else if (post.shared_type === "protocol") {
+      table = "protocols";
+      itemLabel = "protocol";
+      payloadToInsert = {
           user_id: user.id, 
           name: `${post.shared_title || payload.name || "Shared protocol"} (shared)`, 
           indication: payload.indication || "", 
           drug_ids: Array.isArray(payload.drug_ids) ? payload.drug_ids : [], 
           drug_doses: payload.drug_doses && typeof payload.drug_doses === "object" ? payload.drug_doses : {} 
-        };
+      };
+    } else if (post.shared_type === "drug") {
+      table = "drugs";
+      itemLabel = "drug";
+      payloadToInsert = {
+        user_id: user.id,
+        name: `${post.shared_title || payload.name || "Shared drug"} (shared)`,
+        species: payload.species || "Other",
+        concentration: payload.concentration ?? null,
+        dose_min: payload.dose_min ?? null,
+        dose_max: payload.dose_max ?? null,
+        route: payload.route || null,
+        category: payload.category || "Custom",
+        custom_details: payload.custom_details && typeof payload.custom_details === "object" ? payload.custom_details : {},
+        active: true
+      };
+    } else {
+      setSaving(false);
+      return;
+    }
 
     const { error } = await supabase.from(table).insert(payloadToInsert);
     setSaving(false);
     
-    if (error) return toast.error(`Could not save shared ${isCase ? "case" : "protocol"}`);
-    toast.success(`Saved to your ${isCase ? "case logs" : "protocols"}`);
+    if (error) return toast.error(`Could not save shared ${itemLabel}`);
+    toast.success(itemLabel === "drug" ? "Saved as a copy in My Drugs" : `Saved to your ${itemLabel === "case" ? "case logs" : "protocols"}`);
+    onClose();
+  };
+
+  const joinCollaboration = async () => {
+    if (!user?.id || !payload.id || joining) return;
+    setJoining(true);
+    const { error } = await supabase.rpc("join_shared_drug_collaboration", {
+      selected_drug_id: payload.id,
+      selected_post_id: post.id
+    });
+    setJoining(false);
+
+    if (error) {
+      console.error("Could not join drug collaboration", error);
+      return toast.error(error.message || "Could not join this collaboration");
+    }
+
+    toast.success("Collaboration added to My Drugs");
     onClose();
   };
 
@@ -960,6 +1048,16 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
             <SharedRow label="Selected drug IDs" value={Array.isArray(payload.drug_ids) ? payload.drug_ids.join(", ") : ""} softClass={softClass} />
             {payload.drug_doses && <SharedRow label="Dose notes" value={JSON.stringify(payload.drug_doses, null, 2)} softClass={softClass} multiline />}
           </div>
+        ) : post.shared_type === "drug" ? (
+          <div className="space-y-3">
+            <SharedRow label="Species" value={payload.species} softClass={softClass} />
+            <SharedRow label="Class / Category" value={payload.category} softClass={softClass} />
+            <SharedRow label="Dose" value={formatDrugDose(payload)} softClass={softClass} />
+            <SharedRow label="Route" value={payload.route} softClass={softClass} />
+            <SharedRow label="Indications" value={payload.custom_details?.indication} softClass={softClass} multiline />
+            <SharedRow label="Clinical summary" value={payload.custom_details?.summary} softClass={softClass} multiline />
+            <SharedRow label="Warnings" value={payload.custom_details?.warnings} softClass={softClass} multiline />
+          </div>
         ) : post.shared_type === "cpd" || post.shared_type === "resource" ? (
           <div className="space-y-3">
             <SharedRow label="Source / Category" value={payload.category || payload.source} softClass={softClass} />
@@ -971,9 +1069,21 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
           <div className={`${softClass} rounded-lg border p-4 text-sm opacity-80`}>No preview is available for this shared item.</div>
         )}
 
-        {(post.shared_type === "caselog" || post.shared_type === "protocol") && (
+        {(post.shared_type === "caselog" || post.shared_type === "protocol" || post.shared_type === "drug") && (
           <button onClick={saveSharedItem} disabled={saving} className="mt-5 w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50">
-            {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />} {post.shared_type === "caselog" ? "Add to my Case Logs" : "Save to my Protocols"}
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />} {
+              post.shared_type === "caselog"
+                ? "Add to my Case Logs"
+                : post.shared_type === "protocol"
+                  ? "Save to my Protocols"
+                  : "Save a copy to My Drugs"
+            }
+          </button>
+        )}
+
+        {post.shared_type === "drug" && payload.collaboration_enabled && post.author_id !== user?.id && (
+          <button onClick={joinCollaboration} disabled={joining} className={`mt-3 w-full rounded-lg border p-3 font-black flex items-center justify-center gap-2 disabled:opacity-50 ${darkMode ? "border-[#71CFC2]/40 bg-[#71CFC2]/10 text-[#71CFC2]" : "border-[#71CFC2] bg-[#E8F8F5] text-[#0B3760]"}`}>
+            {joining ? <Loader2 size={18} className="animate-spin" /> : <Users size={18} />} Collaborate on live monograph
           </button>
         )}
       </div>
@@ -1018,10 +1128,32 @@ function buildSharedPayload(kind, item) {
       created_at: item.created_at 
     };
   }
+  if (kind === "drug") {
+    return {
+      id: item.id,
+      name: item.name,
+      species: item.species,
+      concentration: item.concentration,
+      dose_min: item.dose_min,
+      dose_max: item.dose_max,
+      route: item.route,
+      category: item.category,
+      custom_details: item.custom_details || {},
+      created_at: item.created_at
+    };
+  }
   return { 
     id: item.id, name: item.name, indication: item.indication, 
     drug_ids: item.drug_ids, drug_doses: item.drug_doses, created_at: item.created_at 
   };
+}
+
+function formatDrugDose(payload) {
+  if (payload.dose_min == null && payload.dose_max == null) return "";
+  const range = payload.dose_max != null && payload.dose_max !== payload.dose_min
+    ? `${payload.dose_min ?? "?"} - ${payload.dose_max}`
+    : String(payload.dose_min ?? payload.dose_max);
+  return `${range} mg/kg${payload.concentration != null ? ` | ${payload.concentration} mg/ml` : ""}`;
 }
 
 function normaliseSharedUrl(url = "") {

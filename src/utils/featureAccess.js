@@ -43,6 +43,7 @@ export const canUseFeature = (featureAccess, featureKey) => {
 export const featureForPath = (path) => {
   if (path === "/cpd") return featureKeys.cpdTracker;
   if (path === "/caselogs") return featureKeys.caseLogs;
+  if (path === "/drugs/my-drugs" || path === "/drugs/my-monographs") return featureKeys.myDrugs;
   if (path === "/drugs") return featureKeys.drugDatabase;
   if (path === "/clinical-tools") return featureKeys.clinicalTools;
   if (path === "/network") return featureKeys.network;

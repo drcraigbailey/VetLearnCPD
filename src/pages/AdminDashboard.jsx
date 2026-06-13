@@ -44,6 +44,7 @@ const featureLabels = {
   additional_calculators: "Additional Calculators",
   clinical_protocols: "Clinical Protocols",
   drug_database: "Drug Database",
+  my_drugs: "My Drugs / My Monographs",
   library: "Library",
   case_logs: "Case Logs",
   network: "Network",
