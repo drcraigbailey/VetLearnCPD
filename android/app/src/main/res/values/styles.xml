@@ -46,8 +46,8 @@
 
     <!-- Make Android's native copy / paste toolbar readable in the WebView -->
     <style name="VetLearnActionMode" parent="Widget.AppCompat.ActionMode">
-        <item name="background">#0B3760</item>
-        <item name="android:background">#0B3760</item>
+        <item name="background">@color/colorPrimary</item>
+        <item name="android:background">@color/colorPrimary</item>
         <item name="titleTextStyle">@style/VetLearnActionModeTitle</item>
         <item name="subtitleTextStyle">@style/VetLearnActionModeSubtitle</item>
     </style>
