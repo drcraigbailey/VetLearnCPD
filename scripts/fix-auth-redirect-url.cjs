@@ -5,13 +5,15 @@ const filePath = path.join(__dirname, '..', 'src', 'pages', 'AuthPage.jsx');
 let source = fs.readFileSync(filePath, 'utf8');
 const before = source;
 
-const helper = `
-const getAuthRedirectUrl = () => {
-  const configuredRedirect = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
-  const redirectBase = configuredRedirect || window.location.origin;
-  return redirectBase.endsWith("/") ? redirectBase : `${redirectBase}/`;
-};
-`;
+const helper = [
+  '',
+  'const getAuthRedirectUrl = () => {',
+  '  const configuredRedirect = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();',
+  '  const redirectBase = configuredRedirect || window.location.origin;',
+  '  return redirectBase.endsWith("/") ? redirectBase : `${redirectBase}/`;',
+  '};',
+  ''
+].join('\n');
 
 if (!source.includes('const getAuthRedirectUrl = () =>')) {
   source = source.replace('const CONSENT_VERSION = "2026-06-07";\n', `const CONSENT_VERSION = "2026-06-07";\n${helper}`);
