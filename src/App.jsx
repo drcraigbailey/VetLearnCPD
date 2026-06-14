@@ -67,15 +67,18 @@ function RecentRouteTracker({ user }) {
   return null;
 }
 
-function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotifications, onToggleDarkMode, onSignOut }) {
+function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotifications, onToggleDarkMode, onSignOut, onLockApp }) {
   const location = useLocation();
   const navigate = useNavigate();
   const showBack = location.pathname !== "/";
+  const [securityMenuOpen, setSecurityMenuOpen] = useState(false);
 
   const goBack = () => {
     if (window.history.length > 1) navigate(-1);
     else navigate("/");
   };
+
+  const closeSecurityMenu = () => setSecurityMenuOpen(false);
 
   return (
     <div className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#071A24]/85" : "border-[#DCEDEA] bg-white/85"}`}>
@@ -102,9 +105,47 @@ function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotif
             <button onClick={onToggleDarkMode} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Toggle dark mode">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button onClick={onSignOut} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Sign out">
-              <LogOut size={18} />
-            </button>
+            <div className="relative">
+              <button onClick={() => setSecurityMenuOpen(open => !open)} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open logout and lock options">
+                <LogOut size={18} />
+              </button>
+
+              {securityMenuOpen && (
+                <>
+                  <button className="fixed inset-0 z-40 cursor-default" aria-label="Close security menu" onClick={closeSecurityMenu} type="button" />
+                  <div className={`absolute right-0 top-12 z-50 w-56 rounded-2xl border p-2 shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-slate-100" : "border-[#DCEDEA] bg-white text-[#113247]"}`}>
+                    <button
+                      onClick={() => {
+                        closeSecurityMenu();
+                        onLockApp();
+                      }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left font-black transition ${darkMode ? "hover:bg-white/10" : "hover:bg-[#E8F8F5]"}`}
+                      type="button"
+                    >
+                      <Lock size={18} />
+                      <span>
+                        <span className="block">Lock app</span>
+                        <span className="block text-xs font-semibold opacity-60">Fingerprint or password to unlock</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        closeSecurityMenu();
+                        onSignOut();
+                      }}
+                      className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left font-black transition ${darkMode ? "hover:bg-white/10" : "hover:bg-[#E8F8F5]"}`}
+                      type="button"
+                    >
+                      <LogOut size={18} />
+                      <span>
+                        <span className="block">Log out</span>
+                        <span className="block text-xs font-semibold opacity-60">Fully leave this account</span>
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -359,6 +400,23 @@ function App() {
     await supabase.auth.signOut();
   };
 
+  const lockApp = async () => {
+    if (!session?.user) return;
+
+    const available = await isBiometricAvailable();
+    const biometricEnabled = isBiometricEnabled(session.user.id);
+
+    if (available && biometricEnabled) {
+      setBiometricLocked(true);
+      toast.success("VetLearn locked");
+      return;
+    }
+
+    setBiometricLocked(false);
+    await supabase.auth.signOut({ scope: "local" });
+    toast.success("App locked. Sign in with your password to unlock.");
+  };
+
   const unlockWithBiometric = async () => {
     if (!session?.user) return;
     setBiometricChecking(true);
@@ -556,6 +614,7 @@ function App() {
           onOpenNotifications={() => setNotificationsOpen(true)}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onSignOut={signOut}
+          onLockApp={lockApp}
         />
 
         <NotificationDrawer isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} setNotifications={setNotifications} darkMode={darkMode} />
