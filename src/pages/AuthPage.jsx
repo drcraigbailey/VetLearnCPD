@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric, syncBiometricSession } from "../utils/biometricAuth";
+import { listenForNativeOAuthCallbacks, startGoogleSignIn } from "../utils/googleAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
 
 import {
@@ -81,6 +82,34 @@ export default function AuthPage(){
     };
   }, []);
 
+  useEffect(() => {
+    let removeListener = () => {};
+    let cancelled = false;
+
+    listenForNativeOAuthCallbacks(
+      () => {
+        if (cancelled) return;
+        setLoading(false);
+        toast.success("Signed in with Google");
+      },
+      (error) => {
+        if (cancelled) return;
+        setLoading(false);
+        toast.error(error?.message || "Could not complete Google sign in");
+      }
+    ).then((remove) => {
+      if (cancelled) remove();
+      else removeListener = remove;
+    }).catch((error) => {
+      console.error("Could not listen for Google sign-in callbacks", error);
+    });
+
+    return () => {
+      cancelled = true;
+      removeListener();
+    };
+  }, []);
+
   const updateKeepMeLoggedIn = (value) => {
     setKeepMeLoggedInState(value);
     setKeepMeLoggedIn(value);
@@ -93,15 +122,25 @@ export default function AuthPage(){
     }
 
     setLoading(true)
+    const consentTimestamp = new Date().toISOString()
+    const signupMetadata = mode === "signup" ? {
+      full_name: name.trim() || undefined,
+      rcvs_number: rcvsNumber.trim(),
+      accepted_terms: true,
+      accepted_terms_at: consentTimestamp,
+      accepted_terms_version: CONSENT_VERSION,
+      accepted_email_privacy: true,
+      accepted_email_privacy_at: consentTimestamp,
+      accepted_email_privacy_version: CONSENT_VERSION,
+      marketing_emails_opt_in: marketingOptIn,
+      marketing_emails_opt_in_at: marketingOptIn ? consentTimestamp : null,
+      marketing_emails_opt_in_version: CONSENT_VERSION
+    } : null
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`
-      }
-    })
-
-    if(error){
+    try {
+      await startGoogleSignIn({ signupMetadata })
+    } catch (error) {
+      console.error("Could not start Google sign in", error)
       toast.error(error.message || "Could not start Google sign in")
       setLoading(false)
     }

@@ -150,7 +150,7 @@ export default function AppPopup({
     >
       <div
         ref={dialogRef}
-        className={`relative w-full max-w-sm overflow-hidden rounded-3xl border p-5 shadow-[0_24px_70px_rgba(11,55,96,0.22)] ${
+        className={`relative max-h-[calc(100vh-3rem)] w-full max-w-sm overflow-y-auto rounded-3xl border p-5 shadow-[0_24px_70px_rgba(11,55,96,0.22)] ${
           darkMode
             ? "bg-[#092A38] border-[#71CFC2]/30 text-white"
             : "bg-white border-[#CDEBE7] text-[#113247]"
@@ -361,6 +361,17 @@ export const popupPresets = {
     message: `This will permanently remove your custom dose record${drugName ? ` for ${drugName}` : ""}.`,
     footerLabel: "FORMULARY",
     primaryLabel: "Delete record",
+    secondaryLabel: "Cancel",
+    ...overrides
+  }),
+
+  deleteMyDrug: ({ drugName, ...overrides } = {}) => ({
+    tone: "danger",
+    icon: Trash2,
+    title: "Delete My Drug?",
+    message: `This will permanently delete ${drugName || "this drug monograph"} and remove access for anyone it was shared with. This cannot be undone.`,
+    footerLabel: "MY DRUGS",
+    primaryLabel: "Delete drug",
     secondaryLabel: "Cancel",
     ...overrides
   }),

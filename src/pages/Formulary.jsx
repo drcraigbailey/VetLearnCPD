@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import DrugShareModal from "../components/DrugShareModal";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
 import { exportDrugHistory } from "../utils/drugsPdfExport";
@@ -113,9 +114,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [monographOpen, setMonographOpen] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [shareOpen, setShareOpen] = useState(false);
-  const [friendsList, setFriendsList] = useState([]);
-  const [shareBusyId, setShareBusyId] = useState(null);
+  const [shareDrugTarget, setShareDrugTarget] = useState(null);
 
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [drugForm, setDrugForm] = useState(emptyDrugForm);
@@ -404,7 +403,6 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       clinicalPearls: []
     } : summaryCache[cacheKey] || null);
     setMonographOpen(true);
-    setShareOpen(false);
 
     const savedNotes = JSON.parse(localStorage.getItem("vetlearn-drug-notes") || "{}");
     setNoteText(savedNotes[formattedName] || "");
@@ -495,82 +493,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     toast.success("Drug note saved");
   };
 
-  const loadFriendsForSharing = async () => {
-    if (activeDrugScope === "custom" && !canUseMyDrugs) {
-      toast.error("My Drugs is not available for your account");
-      return;
-    }
-    setShareOpen(true);
-    const { data, error } = await supabase
-      .from("connections")
-      .select("id, requester_id, receiver_id, requester:profiles!connections_requester_id_fkey(id, full_name, title), receiver:profiles!connections_receiver_id_fkey(id, full_name, title)")
-      .eq("status", "accepted")
-      .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
-
-    if (error) return toast.error("Could not load colleagues");
-    setFriendsList((data || []).map((connection) => ({
-      connection_id: connection.id,
-      colleague: connection.requester_id === user.id ? connection.receiver : connection.requester
-    })));
-  };
-
-  const shareDrugWithColleague = async (friendId, permission = "read") => {
-    if (activeDrugScope === "custom" && !canUseMyDrugs) {
-      toast.error("My Drugs is not available for your account");
-      return;
-    }
-    const activeRecord = activeDrugDoses[0];
-    const busyKey = `${friendId}:${permission}`;
-    setShareBusyId(busyKey);
-
-    let error;
-    if (activeDrugScope === "custom") {
-      if (!activeRecord || activeRecord.user_id !== user.id) {
-        setShareBusyId(null);
-        return toast.error("Only the owner can share this live monograph");
-      }
-
-      ({ error } = await supabase.from("drug_collaborators").upsert({
-        drug_id: activeRecord.id,
-        owner_id: user.id,
-        user_id: friendId,
-        permission
-      }, { onConflict: "drug_id,user_id" }));
-    } else {
-      ({ error } = await supabase.from("shared_records").insert({
-        sender_id: user.id,
-        receiver_id: friendId,
-        record_type: "drug",
-        record_id: activeDrugName,
-        record_title: activeDrugName
-      }));
-    }
-
-    setShareBusyId(null);
-    if (error) {
-      console.error("Could not share drug", error);
-      return toast.error(error.message || "Could not share drug");
-    }
-
-    const shareLabel = permission === "edit" ? "invited you to collaborate on" : "shared";
-    const { error: notificationError } = await supabase.from("notifications").insert({
-      user_id: friendId,
-      type: "shared_drug",
-      title: permission === "edit" ? "Drug collaboration invitation" : "Drug shared with you",
-      message: `${user.email || "A colleague"} ${shareLabel} "${activeDrugName}".`,
-      is_read: false,
-      related_id: activeRecord?.id ? String(activeRecord.id) : null
-    });
-    if (notificationError) console.warn("Drug shared but notification could not be created", notificationError);
-
-    toast.success(permission === "edit" ? "Collaboration access granted" : "Drug shared read-only");
-    setShareOpen(false);
-  };
-
-  const quickShareDrug = async (drug) => {
+  const openDrugShareModal = (drug) => {
+    if (!canUseMyDrugs) return toast.error("My Drugs is not available for your account");
     if (!drug?.isOwned) return toast.error("Only the owner can share this monograph");
-    await openMonograph(drug.name, "custom", drug.id);
-    await loadFriendsForSharing();
+    setShareDrugTarget({ id: drug.id, name: drug.name, isOwned: true });
   };
 
   const saveDrug = async () => {
@@ -607,20 +533,49 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
   const deleteDrug = async (id) => {
     if (!canUseMyDrugs) return toast.error("My Drugs is not available for your account");
-    const { error } = await supabase.from("drugs").delete().eq("id", id).eq("user_id", user.id);
-    if (error) return toast.error("You do not have permission to delete this record");
-    toast.success("Dose record deleted");
-    setActiveDrugDoses((prev) => prev.filter((dose) => String(dose.id) !== String(id)));
-    loadDatabase();
+    const { data, error } = await supabase
+      .from("drugs")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error("Failed to delete My Drug", { drugId: id, error });
+      return toast.error("Only the owner can delete this My Drug");
+    }
+
+    if (String(activeDrugId) === String(id)) {
+      setMonographOpen(false);
+      setActiveDrugId(null);
+      setActiveDrugName("");
+      setActiveDrugDoses([]);
+      setActiveSummary(null);
+    }
+    if (String(drugForm.id) === String(id)) {
+      setShowAddDrug(false);
+      setDrugForm(emptyDrugForm);
+    }
+    if (String(shareDrugTarget?.id) === String(id)) {
+      setShareDrugTarget(null);
+    }
+
+    await loadDatabase();
+    toast.success("My Drug deleted");
   };
 
-  const requestDeleteDrug = (id) => {
-    if (activeDrugScope !== "custom" || !canUseMyDrugs) return;
-    setAppPopup(popupPresets.deleteDrugDose({
-      drugName: activeDrugName,
+  const requestDeleteDrug = (drug) => {
+    if (!canUseMyDrugs) return;
+    const drugId = typeof drug === "object" ? drug?.id : drug;
+    const ownedDrug = drugs.find((item) => String(item.id) === String(drugId) && item.user_id === user.id);
+    if (!ownedDrug) return toast.error("Only the owner can delete this My Drug");
+
+    setAppPopup(popupPresets.deleteMyDrug({
+      drugName: ownedDrug.name,
       onPrimary: () => {
         closeAppPopup();
-        deleteDrug(id);
+        deleteDrug(ownedDrug.id);
       },
       onSecondary: closeAppPopup
     }));
@@ -749,16 +704,16 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         favourites={favourites}
         isFavourite={isActiveFavourite}
         onToggleFavourite={() => handleToggleFav(activeDrugName)}
-        onDeleteDose={requestDeleteDrug}
-        user={user}
         noteText={noteText}
         setNoteText={setNoteText}
         onSaveNote={saveDrugNote}
         onCopy={copyDrugSummary}
         onEdit={() => startEditDrug(activeDrugDoses[0]?.id)}
         canManageCustom={canUseMyDrugs && activeDrugScope === "custom" && Boolean(activeDrugRecord?.canEdit)}
-        canShareCustom={activeDrugScope !== "custom" || Boolean(activeDrugRecord?.isOwned)}
-        supportsCollaboration={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
+        canShareCustom={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
+        canDeleteCustom={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
+        onOpenShare={() => openDrugShareModal(activeDrugRecord)}
+        onDelete={() => requestDeleteDrug(activeDrugRecord)}
         onAddToCalculator={() => {
           if (activeDrugDoses[0]) {
             setCalcPatient((prev) => ({ ...prev, species: activeDrugDoses[0].species || "Dog" }));
@@ -767,11 +722,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
             setMonographOpen(false);
           }
         }}
-        shareOpen={shareOpen}
-        friendsList={friendsList}
-        onOpenShare={loadFriendsForSharing}
-        onShare={shareDrugWithColleague}
-        shareBusyId={shareBusyId}
+      />
+
+      <DrugShareModal
+        open={Boolean(shareDrugTarget)}
+        drug={shareDrugTarget}
+        user={user}
+        darkMode={darkMode}
+        onClose={() => setShareDrugTarget(null)}
       />
 
       <PageBanner
@@ -830,7 +788,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               saveDrug={saveDrug}
               onCreate={startCreateDrug}
               onEdit={startEditDrug}
-              onQuickShare={quickShareDrug}
+              onQuickShare={openDrugShareModal}
+              onDelete={requestDeleteDrug}
               onOpen={(drug) => openMonograph(drug.name, "custom", drug.id)}
               onCloseForm={() => {
                 setShowAddDrug(false);
@@ -992,6 +951,7 @@ function MyDrugsTab({
   onCreate,
   onEdit,
   onQuickShare,
+  onDelete,
   onOpen,
   onCloseForm
 }) {
@@ -1060,6 +1020,11 @@ function MyDrugsTab({
               {drug.canEdit && (
                 <button onClick={() => onEdit(drug.id)} className={`p-2.5 rounded-lg ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"} text-[#0F8F83]`} aria-label={`Edit ${drug.name}`}>
                   <Pencil size={17} />
+                </button>
+              )}
+              {drug.isOwned && (
+                <button onClick={() => onDelete(drug)} className={`p-2.5 rounded-lg ${darkMode ? "bg-red-500/15" : "bg-red-50"} text-red-500`} aria-label={`Delete ${drug.name}`}>
+                  <Trash2 size={17} />
                 </button>
               )}
               <button onClick={() => onOpen(drug)} className="p-2.5 rounded-lg bg-[#71CFC2] text-[#062F63]" aria-label={`Open ${drug.name}`}>
@@ -1176,8 +1141,6 @@ function DrugMonograph(props) {
     loading,
     isFavourite,
     onToggleFavourite,
-    onDeleteDose,
-    user,
     noteText,
     setNoteText,
     onSaveNote,
@@ -1185,13 +1148,10 @@ function DrugMonograph(props) {
     onEdit,
     canManageCustom,
     canShareCustom,
-    supportsCollaboration,
+    canDeleteCustom,
     onAddToCalculator,
-    shareOpen,
-    friendsList,
     onOpenShare,
-    onShare,
-    shareBusyId
+    onDelete
   } = props;
 
   if (!open) return null;
@@ -1220,6 +1180,7 @@ function DrugMonograph(props) {
             <ActionButton onClick={onCopy} icon={<Copy size={14} />}>Copy</ActionButton>
             {canShareCustom && <ActionButton onClick={onOpenShare} icon={<Share2 size={14} />}>Share</ActionButton>}
             {canManageCustom && <ActionButton onClick={onEdit} icon={<Pencil size={14} />}>Edit</ActionButton>}
+            {canDeleteCustom && <ActionButton onClick={onDelete} icon={<Trash2 size={14} />} danger>Delete</ActionButton>}
           </div>
         </div>
 
@@ -1253,7 +1214,6 @@ function DrugMonograph(props) {
                               {dose.concentration && <span className="opacity-60"> | {dose.concentration} mg/ml</span>}
                               {dose.notes && <div className="opacity-65 mt-1">{dose.notes}</div>}
                             </div>
-                            {canManageCustom && dose.user_id === user.id && <button onClick={() => onDeleteDose(dose.id)} className="text-red-400"><Trash2 size={15} /></button>}
                           </div>
                         ))}
                       </div>
@@ -1274,26 +1234,6 @@ function DrugMonograph(props) {
               <MonographSection title="User Tools" icon={<FileText size={18} />} darkMode={darkMode}>
                 <textarea className={`${inputClass(darkMode)} min-h-[110px] mb-3`} placeholder="Add personal notes for this drug..." value={noteText} onChange={(event) => setNoteText(event.target.value)} />
                 <button onClick={onSaveNote} className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] py-3 font-black mb-4">Save Personal Notes</button>
-
-                {shareOpen && (
-                  <div className={`rounded-lg p-3 mt-4 ${darkMode ? "bg-white/5" : "bg-[#F0F6F5]"}`}>
-                    {friendsList.length === 0 ? <p className="text-sm opacity-55">No colleagues available to share with.</p> : friendsList.map((friend) => (
-                      <div key={friend.connection_id} className="flex flex-col gap-2 border-b border-slate-200/60 py-3 last:border-b-0 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-bold">{friend.colleague?.title} {friend.colleague?.full_name}</span>
-                        <div className={`grid gap-2 ${supportsCollaboration ? "grid-cols-2" : "grid-cols-1"}`}>
-                          <button onClick={() => onShare(friend.colleague.id, "read")} disabled={Boolean(shareBusyId)} className="rounded-lg bg-[#E8F8F5] text-[#0B3760] px-3 py-2 text-xs font-black disabled:opacity-50">
-                            {shareBusyId === `${friend.colleague.id}:read` ? "Sharing..." : "Share read-only"}
-                          </button>
-                          {supportsCollaboration && (
-                            <button onClick={() => onShare(friend.colleague.id, "edit")} disabled={Boolean(shareBusyId)} className="rounded-lg bg-[#71CFC2] text-[#062F63] px-3 py-2 text-xs font-black disabled:opacity-50">
-                              {shareBusyId === `${friend.colleague.id}:edit` ? "Inviting..." : "Collaborate"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </MonographSection>
             </>
           )}
@@ -1316,8 +1256,13 @@ function PillLabel({ children }) {
   return <span className="inline-block px-3 py-1 rounded bg-[#E8F8F5] dark:bg-[#71CFC2]/20 text-[#0F8F83] dark:text-[#71CFC2] text-xs font-black uppercase tracking-wider">{children}</span>;
 }
 
-function ActionButton({ children, icon, onClick, active }) {
-  return <button onClick={onClick} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${active ? "bg-yellow-100 text-yellow-700" : "bg-[#E8F8F5] text-[#0B3760]"}`}>{icon}{children}</button>;
+function ActionButton({ children, icon, onClick, active, danger = false }) {
+  const colourClass = danger
+    ? "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300"
+    : active
+      ? "bg-yellow-100 text-yellow-700"
+      : "bg-[#E8F8F5] text-[#0B3760]";
+  return <button onClick={onClick} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${colourClass}`}>{icon}{children}</button>;
 }
 
 function InfoRow({ label, value }) {
