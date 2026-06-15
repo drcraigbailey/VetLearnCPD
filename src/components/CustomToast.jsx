@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AlertTriangle, Check, Info, Loader2, X } from "lucide-react";
 import toast, { resolveValue, Toaster } from "react-hot-toast";
 
@@ -33,6 +34,27 @@ const toastStyles = {
     label: "NOTICE"
   }
 };
+
+function SecurityMenuClickAway() {
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      const closeButton = document.querySelector('button[aria-label="Close security menu"]');
+      if (!closeButton) return;
+
+      const target = event.target;
+      const securityMenu = closeButton.nextElementSibling;
+      const securityTrigger = document.querySelector('button[aria-label="Open logout and lock options"]');
+
+      if (securityMenu?.contains(target) || securityTrigger?.contains(target) || closeButton.contains(target)) return;
+      closeButton.click();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, []);
+
+  return null;
+}
 
 export function CustomToast({ toast: toastItem, darkMode = false }) {
   const config = toastStyles[toastItem.type] || toastStyles.blank;
@@ -86,17 +108,20 @@ export function CustomToast({ toast: toastItem, darkMode = false }) {
 
 export function HybridToaster({ darkMode = false }) {
   return (
-    <Toaster
-      position="top-center"
-      gutter={10}
-      containerStyle={{ top: 14, zIndex: 200 }}
-      toastOptions={{
-        duration: 4500,
-        success: { duration: 3500 },
-        error: { duration: 6000 }
-      }}
-    >
-      {(toastItem) => <CustomToast toast={toastItem} darkMode={darkMode} />}
-    </Toaster>
+    <>
+      <SecurityMenuClickAway />
+      <Toaster
+        position="top-center"
+        gutter={10}
+        containerStyle={{ top: 14, zIndex: 200 }}
+        toastOptions={{
+          duration: 4500,
+          success: { duration: 3500 },
+          error: { duration: 6000 }
+        }}
+      >
+        {(toastItem) => <CustomToast toast={toastItem} darkMode={darkMode} />}
+      </Toaster>
+    </>
   );
 }
