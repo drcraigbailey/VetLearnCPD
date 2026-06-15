@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
-import { getLastBiometricUser, isBiometricLoginEnabled, needsBiometricRelink, signInWithBiometric, syncBiometricSession } from "../utils/biometricAuth";
 import { listenForNativeOAuthCallbacks, startGoogleSignIn } from "../utils/googleAuth";
 import { getKeepMeLoggedIn, setKeepMeLoggedIn } from "../utils/sessionSecurity";
 
@@ -11,7 +10,6 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  Fingerprint,
   X
 } from "lucide-react";
 
@@ -25,8 +23,6 @@ export default function AuthPage(){
   const [email,setEmail]=useState("")
   const [password,setPassword]=useState("")
   const [showPassword, setShowPassword]=useState(false)
-  const [showFingerprintLogin, setShowFingerprintLogin]=useState(false)
-  const [fingerprintRefreshNeeded, setFingerprintRefreshNeeded]=useState(false)
   const [keepMeLoggedIn, setKeepMeLoggedInState]=useState(() => getKeepMeLoggedIn())
   const [loading,setLoading]=useState(false)
   const [resetEmailSent,setResetEmailSent]=useState(false)
@@ -51,36 +47,6 @@ export default function AuthPage(){
       setMarketingOptIn(false)
     }
   }
-
-  const checkFingerprintLogin = async () => {
-    const savedUser = getLastBiometricUser();
-    if (!email && savedUser?.email) setEmail(savedUser.email);
-    setFingerprintRefreshNeeded(needsBiometricRelink());
-    const enabled = await isBiometricLoginEnabled();
-    setShowFingerprintLogin(enabled);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const runCheck = async () => {
-      const savedUser = getLastBiometricUser();
-      const needsRelink = needsBiometricRelink();
-      const enabled = await isBiometricLoginEnabled();
-      if (cancelled) return;
-      if (savedUser?.email) setEmail(savedUser.email);
-      setFingerprintRefreshNeeded(needsRelink);
-      setShowFingerprintLogin(enabled);
-    };
-
-    runCheck();
-    window.addEventListener("biometricSettingsUpdated", runCheck);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("biometricSettingsUpdated", runCheck);
-    };
-  }, []);
 
   useEffect(() => {
     let removeListener = () => {};
@@ -194,7 +160,7 @@ export default function AuthPage(){
 
     if(mode==="login"){
       setKeepMeLoggedIn(keepMeLoggedIn)
-      const { data, error }=await supabase.auth.signInWithPassword({
+      const { error }=await supabase.auth.signInWithPassword({
         email:cleanEmail,
         password
       })
@@ -204,10 +170,6 @@ export default function AuthPage(){
         setLoading(false)
         return
       }
-
-      await syncBiometricSession(data.user, data.session)
-      setFingerprintRefreshNeeded(false)
-      setShowFingerprintLogin(await isBiometricLoginEnabled())
     }else{
       const consentTimestamp = new Date().toISOString();
       const {error}=await supabase.auth.signUp({
@@ -241,24 +203,6 @@ export default function AuthPage(){
 
     setEmail(cleanEmail)
     setLoading(false)
-  }
-
-  const handleFingerprintLogin = async () => {
-    setLoading(true)
-    try {
-      await signInWithBiometric()
-      toast.success("Signed in successfully")
-    } catch (error) {
-      const message = error.message || "Fingerprint login is not set up on this device.";
-      if (message.includes("needs refreshing")) {
-        toast("Log in once with email and password to refresh fingerprint login.")
-      } else {
-        toast.error(message)
-      }
-      await checkFingerprintLogin()
-    } finally {
-      setLoading(false)
-    }
   }
 
   return(
@@ -363,12 +307,6 @@ export default function AuthPage(){
                 />
               </div>
             </>
-          )}
-
-          {mode==="login" && fingerprintRefreshNeeded && (
-            <div className="mb-3 rounded-lg border border-[#CDEBE7] bg-[#E8F8F5] p-3 text-sm text-slate-600 leading-5">
-              Fingerprint login needs refreshing. Please log in once with your email and password, then fingerprint login will be saved again on this phone.
-            </div>
           )}
 
           {mode==="forgot" && resetEmailSent && (
@@ -495,17 +433,6 @@ export default function AuthPage(){
 
           {mode==="signup" && signupBlocked && (
             <p className="mt-2 text-center text-xs font-bold text-orange-600">Please accept the required notices to create your profile.</p>
-          )}
-
-          {mode==="login" && showFingerprintLogin && (
-            <button
-              className="w-full bg-transparent border-2 border-[#DCEDEA] text-[#0B3760] rounded-lg p-4 font-black disabled:opacity-50 flex items-center justify-center gap-2 mt-3 hover:bg-[#F0F6F5] transition-colors"
-              onClick={handleFingerprintLogin}
-              disabled={loading}
-            >
-              <Fingerprint size={18} />
-              Fingerprint Unlock
-            </button>
           )}
         </div>
       </div>
