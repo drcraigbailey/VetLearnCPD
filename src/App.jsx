@@ -10,7 +10,7 @@ import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
-import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, syncBiometricSession } from "./utils/biometricAuth";
+import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric, syncBiometricSession } from "./utils/biometricAuth";
 import { canUseFeature, defaultFeatureAccess, featureKeys, loadFeatureAccess } from "./utils/featureAccess";
 import { setupPushNotifications } from "./utils/pushNotifications";
 
@@ -174,6 +174,56 @@ function BiometricGate({ darkMode, checking, onUnlock, onPasswordFallback }) {
   );
 }
 
+function LockSetupPrompt({ darkMode, biometricAvailable, checking, onEnableBiometric, onPasswordLock, onClose }) {
+  const canEnableBiometric = biometricAvailable === true;
+  const availabilityText = biometricAvailable === null
+    ? "Checking this device..."
+    : canEnableBiometric
+      ? "Fingerprint unlock is available on this device."
+      : "Fingerprint unlock is not available on this device.";
+
+  return (
+    <div className="fixed inset-0 z-[130] grid place-items-center bg-black/55 px-5 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className={`w-full max-w-sm rounded-3xl border p-6 text-center shadow-2xl ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-[#DCEDEA] bg-white text-[#113247]"}`}>
+        <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-[#E8F8F5] text-[#0B3760] grid place-items-center">
+          <ShieldCheck size={28} />
+        </div>
+        <h2 className="text-2xl font-black mb-2">Lock VetLearn</h2>
+        <p className="text-sm opacity-70 leading-6 mb-4">
+          Fingerprint unlock is not switched on for this device. Turn it on now, or lock the app and use your password next time.
+        </p>
+        <div className={`mb-5 rounded-2xl px-3 py-2 text-xs font-black ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+          {availabilityText}
+        </div>
+        <button
+          onClick={onEnableBiometric}
+          disabled={!canEnableBiometric || checking}
+          className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-4 font-black disabled:cursor-not-allowed disabled:opacity-55"
+          type="button"
+        >
+          {checking ? "Working..." : "Turn on fingerprint and lock"}
+        </button>
+        <button
+          onClick={onPasswordLock}
+          disabled={checking}
+          className={`mt-4 w-full rounded-lg p-3 text-sm font-black disabled:opacity-60 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+          type="button"
+        >
+          Continue with password
+        </button>
+        <button
+          onClick={onClose}
+          disabled={checking}
+          className={`mt-3 w-full rounded-lg p-2 text-sm font-bold disabled:opacity-60 ${darkMode ? "text-slate-300" : "text-slate-500"}`}
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -189,6 +239,9 @@ function App() {
   const [savingReading, setSavingReading] = useState(false);
   const [biometricLocked, setBiometricLocked] = useState(false);
   const [biometricChecking, setBiometricChecking] = useState(false);
+  const [lockSetupOpen, setLockSetupOpen] = useState(false);
+  const [lockSetupChecking, setLockSetupChecking] = useState(false);
+  const [lockSetupBiometricAvailable, setLockSetupBiometricAvailable] = useState(null);
   const [activeReading, setActiveReading] = useState(() => {
     const saved = localStorage.getItem("vetlearn-active-reading");
     return saved ? JSON.parse(saved) : null;
@@ -255,6 +308,7 @@ function App() {
         setUnreadNotificationCount(0);
         setUnreadMessageCount(0);
         setPendingRequestCount(0);
+        setLockSetupOpen(false);
         return;
       }
 
@@ -392,6 +446,7 @@ function App() {
 
   const signOut = async () => {
     setBiometricLocked(false);
+    setLockSetupOpen(false);
     if (session?.user?.id && isBiometricEnabled(session.user.id)) {
       await supabase.auth.signOut({ scope: "local" });
       window.dispatchEvent(new Event("biometricSettingsUpdated"));
@@ -412,9 +467,39 @@ function App() {
       return;
     }
 
-    setBiometricLocked(false);
-    await supabase.auth.signOut({ scope: "local" });
-    toast.success("App locked. Sign in with your password to unlock.");
+    setLockSetupBiometricAvailable(available);
+    setLockSetupOpen(true);
+  };
+
+  const enableBiometricAndLock = async () => {
+    if (!session?.user) return;
+    setLockSetupChecking(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const currentSession = data.session || session;
+      await registerBiometric(currentSession.user, currentSession);
+      setLockSetupOpen(false);
+      setBiometricLocked(true);
+      toast.success("Fingerprint unlock enabled. VetLearn locked.");
+    } catch (error) {
+      toast.error(error.message || "Could not turn on fingerprint unlock");
+    } finally {
+      setLockSetupChecking(false);
+    }
+  };
+
+  const lockWithPassword = async () => {
+    setLockSetupChecking(true);
+    try {
+      setLockSetupOpen(false);
+      setBiometricLocked(false);
+      await supabase.auth.signOut({ scope: "local" });
+      toast.success("App locked. Sign in with your password to unlock.");
+    } catch (error) {
+      toast.error(error.message || "Could not lock the app");
+    } finally {
+      setLockSetupChecking(false);
+    }
   };
 
   const unlockWithBiometric = async () => {
@@ -660,6 +745,16 @@ function App() {
           </Routes>
         </div>
 
+        {lockSetupOpen && (
+          <LockSetupPrompt
+            darkMode={darkMode}
+            biometricAvailable={lockSetupBiometricAvailable}
+            checking={lockSetupChecking}
+            onEnableBiometric={enableBiometricAndLock}
+            onPasswordLock={lockWithPassword}
+            onClose={() => setLockSetupOpen(false)}
+          />
+        )}
         {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onPasswordFallback={usePasswordFallback} />}
         <FloatingReadingTimer session={activeReading} onFinish={() => finishReadingSession()} onCancel={cancelReadingSession} darkMode={darkMode} />
         <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} featureAccess={featureAccess} adminAccess={adminAccess} />
