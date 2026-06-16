@@ -14,12 +14,16 @@ const scrollToPatientDetails = (attempt = 0) => {
   )
 
   if (patientDetailsHeading) {
-    patientDetailsHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const patientDetailsCard = patientDetailsHeading.closest('section, .rounded-lg, .rounded-xl, div') || patientDetailsHeading
+    const headerOffset = 190
+    const top = window.scrollY + patientDetailsCard.getBoundingClientRect().top - headerOffset
+
+    window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
     return
   }
 
-  if (attempt < 10) {
-    window.setTimeout(() => scrollToPatientDetails(attempt + 1), 50)
+  if (attempt < 14) {
+    window.setTimeout(() => scrollToPatientDetails(attempt + 1), 60)
   }
 }
 
