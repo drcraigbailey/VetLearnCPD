@@ -4,9 +4,11 @@ import './index.css'
 import App from './App.jsx'
 import { registerPwaUpdates } from './pwaUpdate.js'
 import { startSessionSecurity } from './utils/sessionSecurity.js'
+import { mountNetworkProfileModalEnhancer } from './utils/networkProfileModalEnhancer.jsx'
 
 registerPwaUpdates()
 startSessionSecurity()
+mountNetworkProfileModalEnhancer()
 
 const scrollToPatientDetails = (attempt = 0) => {
   const patientDetailsHeading = Array.from(document.querySelectorAll('h1, h2, h3')).find(
