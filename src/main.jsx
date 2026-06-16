@@ -8,6 +8,32 @@ import { startSessionSecurity } from './utils/sessionSecurity.js'
 registerPwaUpdates()
 startSessionSecurity()
 
+const scrollToPatientDetails = (attempt = 0) => {
+  const patientDetailsHeading = Array.from(document.querySelectorAll('h1, h2, h3')).find(
+    (heading) => heading.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() === 'patient details'
+  )
+
+  if (patientDetailsHeading) {
+    patientDetailsHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+
+  if (attempt < 10) {
+    window.setTimeout(() => scrollToPatientDetails(attempt + 1), 50)
+  }
+}
+
+window.addEventListener('click', (event) => {
+  const target = event.target
+  if (!(target instanceof Element)) return
+
+  const button = target.closest('button')
+  const buttonText = button?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase()
+  if (buttonText !== 'calc dose') return
+
+  window.setTimeout(() => window.requestAnimationFrame(() => scrollToPatientDetails()), 0)
+})
+
 window.addEventListener('click', (event) => {
   const target = event.target
   if (!(target instanceof Element)) return
