@@ -1,6 +1,7 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import logoImage from "../assets/icon.png"
+import { saveOrSharePdf } from "./pdfFile"
 
 const REPORT_FILENAME = "VetLearn-Case-Reports.pdf"
 
@@ -19,37 +20,6 @@ const loadImageAsDataUrl = (src) => {
     img.onerror = reject
     img.src = src
   })
-}
-
-const openPdfForPrinting = (doc) => {
-  try {
-    if (typeof doc.autoPrint === "function") {
-      doc.autoPrint({ variant: "non-conform" })
-    }
-
-    const pdfBlob = doc.output("blob")
-    const pdfUrl = URL.createObjectURL(pdfBlob)
-    const printWindow = window.open(pdfUrl, "_blank", "noopener,noreferrer")
-
-    if (!printWindow) {
-      URL.revokeObjectURL(pdfUrl)
-      doc.save(REPORT_FILENAME)
-      return false
-    }
-
-    const cleanup = () => window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000)
-    printWindow.addEventListener?.("load", () => {
-      cleanup()
-      printWindow.focus?.()
-      printWindow.print?.()
-    })
-    cleanup()
-    return true
-  } catch (error) {
-    console.error("Case log print error:", error)
-    doc.save(REPORT_FILENAME)
-    return false
-  }
 }
 
 export const exportCaseLogs = async (cases, { print = true } = {}) => {
@@ -158,10 +128,9 @@ export const exportCaseLogs = async (cases, { print = true } = {}) => {
     }
   })
 
-  if (print) {
-    return openPdfForPrinting(doc)
-  }
-
-  doc.save(REPORT_FILENAME)
-  return true
+  return saveOrSharePdf(doc, REPORT_FILENAME, {
+    title: "VetLearn Case Reports",
+    text: "Your VetLearn clinical case reports PDF is ready.",
+    print,
+  })
 }
