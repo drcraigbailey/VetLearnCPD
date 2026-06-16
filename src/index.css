@@ -258,6 +258,11 @@ body,
   box-shadow: 0 1px 3px rgba(15, 55, 83, 0.18) !important;
 }
 
+/* My Drugs cards: hide the redundant green open arrow */
+button[aria-label^="Open "][class*="bg-[#71CFC2]"] {
+  display: none !important;
+}
+
 /* Android WebView native text selection / copy-paste support */
 html,
 body,
