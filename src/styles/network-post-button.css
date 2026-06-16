@@ -1,0 +1,12 @@
+/* Network page: make the Post / Close composer toggle smaller */
+.flex.gap-2 > button.rounded-lg.bg-\[\#71CFC2\].text-\[\#062F63\].px-4.py-3.font-black.flex.items-center.gap-2.shrink-0 {
+  min-height: 2.35rem !important;
+  padding: 0.45rem 0.7rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1rem !important;
+}
+
+.flex.gap-2 > button.rounded-lg.bg-\[\#71CFC2\].text-\[\#062F63\].px-4.py-3.font-black.flex.items-center.gap-2.shrink-0 svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+}
