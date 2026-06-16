@@ -56,6 +56,53 @@ export default function NotificationDrawer({
   const unreadNotifications = useMemo(() => notifications.filter(n => !n.is_read), [notifications]);
   const visibleNotifications = activeTab === "unread" ? unreadNotifications : readNotifications;
 
+  const addReadNotifications = (items, readAt) => {
+    const readItems = items.map(notification => ({
+      ...notification,
+      is_read: true,
+      read_at: notification.read_at || readAt
+    }));
+    const readIds = new Set(readItems.map(notification => notification.id));
+
+    setReadNotifications(prev => [
+      ...readItems,
+      ...prev.filter(notification => !readIds.has(notification.id))
+    ]);
+  };
+
+  useEffect(() => {
+    if (!isOpen || !currentUserId || unreadNotifications.length === 0) return;
+
+    let cancelled = false;
+    const markViewedNotificationsAsRead = async () => {
+      const notificationsToRead = [...unreadNotifications];
+      const ids = notificationsToRead.map(notification => notification.id);
+      const readAt = new Date().toISOString();
+
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true, read_at: readAt })
+        .eq("user_id", currentUserId)
+        .in("id", ids);
+
+      if (cancelled) return;
+
+      if (!error) {
+        addReadNotifications(notificationsToRead, readAt);
+        setNotifications(prev => prev.filter(notification => !ids.includes(notification.id)));
+        setActiveTab("read");
+        window.dispatchEvent(new Event("notificationsUpdated"));
+      } else {
+        toast.error("Could not mark notifications as read");
+      }
+    };
+
+    markViewedNotificationsAsRead();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, currentUserId, unreadNotifications, setNotifications]);
+
   const markAsRead = async (notification) => {
     if (notification.is_read || !currentUserId) return;
     const readAt = new Date().toISOString();
@@ -67,7 +114,7 @@ export default function NotificationDrawer({
 
     if (!error) {
       setNotifications(prev => prev.filter(n => n.id !== notification.id));
-      setReadNotifications(prev => [{ ...notification, is_read: true, read_at: readAt }, ...prev]);
+      addReadNotifications([notification], readAt);
       window.dispatchEvent(new Event("notificationsUpdated"));
       toast.success("Marked as read");
     } else {
@@ -76,7 +123,7 @@ export default function NotificationDrawer({
   };
 
   const markAllRead = async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || unreadNotifications.length === 0) return;
     const readAt = new Date().toISOString();
     const { error } = await supabase
       .from("notifications")
@@ -85,8 +132,9 @@ export default function NotificationDrawer({
       .eq("is_read", false);
 
     if (!error) {
-      setReadNotifications(prev => [...notifications.map(n => ({ ...n, is_read: true, read_at: readAt })), ...prev]);
+      addReadNotifications(unreadNotifications, readAt);
       setNotifications([]);
+      setActiveTab("read");
       window.dispatchEvent(new Event("notificationsUpdated"));
       toast.success("All marked as read");
     }
