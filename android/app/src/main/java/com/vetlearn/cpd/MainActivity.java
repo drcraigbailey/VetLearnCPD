@@ -63,22 +63,27 @@ public class MainActivity extends BridgeActivity {
         for (int i = 0; i < menu.size(); i++) {
             MenuItem item = menu.getItem(i);
             CharSequence title = item.getTitle();
-            if (title == null) continue;
 
-            SpannableString styledTitle = new SpannableString(title);
-            styledTitle.setSpan(
-                new ForegroundColorSpan(VETLEARN_MENU_TEXT_COLOR),
-                0,
-                styledTitle.length(),
-                Spanned.SPAN_INCLUSIVE_INCLUSIVE
-            );
-            styledTitle.setSpan(
-                new StyleSpan(Typeface.BOLD),
-                0,
-                styledTitle.length(),
-                Spanned.SPAN_INCLUSIVE_INCLUSIVE
-            );
-            item.setTitle(styledTitle);
+            if (title != null) {
+                SpannableString styledTitle = new SpannableString(title);
+                styledTitle.setSpan(
+                    new ForegroundColorSpan(VETLEARN_MENU_TEXT_COLOR),
+                    0,
+                    styledTitle.length(),
+                    Spanned.SPAN_INCLUSIVE_INCLUSIVE
+                );
+                styledTitle.setSpan(
+                    new StyleSpan(Typeface.BOLD),
+                    0,
+                    styledTitle.length(),
+                    Spanned.SPAN_INCLUSIVE_INCLUSIVE
+                );
+                item.setTitle(styledTitle);
+            }
+
+            if (item.hasSubMenu()) {
+                styleSelectionMenu(item.getSubMenu());
+            }
         }
     }
 
