@@ -7,14 +7,50 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@color/colorSplash</item>
         <item name="android:colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">#0B3760</item>
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="android:colorControlNormal">#FFFFFF</item>
         <item name="android:textColorPrimary">#0B3760</item>
         <item name="android:textColorSecondary">#2F4858</item>
         <item name="android:textColorPrimaryInverse">#FFFFFF</item>
+        <item name="android:textColorSecondaryInverse">#E8F8F5</item>
         <item name="android:textColorHighlight">#5571CFC2</item>
+        <item name="android:popupBackground">#0B3760</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
+        <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
+        <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
+        <item name="actionModeBackground">#0B3760</item>
+        <item name="android:actionModeBackground">#0B3760</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
+        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
+        <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
+    </style>
+
+    <style name="VetLearnNativeActionMode" parent="Widget.AppCompat.ActionMode">
+        <item name="background">#0B3760</item>
+        <item name="android:background">#0B3760</item>
+        <item name="titleTextStyle">@style/VetLearnNativeActionModeTitle</item>
+        <item name="subtitleTextStyle">@style/VetLearnNativeActionModeSubtitle</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
+        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
+        <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
+    </style>
+
+    <style name="VetLearnNativeActionModeTitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="VetLearnNativeActionModeSubtitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
+        <item name="android:textColor">#E8F8F5</item>
+    </style>
+
+    <style name="VetLearnNativeActionModeMenuText" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>
