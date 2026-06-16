@@ -15,18 +15,21 @@
         <item name="android:forceDarkAllowed">false</item>
         <item name="android:textColorPrimary">@color/colorPrimary</item>
         <item name="android:textColorSecondary">@color/colorPrimaryDark</item>
-        <item name="android:textColorPrimaryInverse">@color/colorPrimary</item>
-        <item name="android:textColorSecondaryInverse">@color/colorPrimaryDark</item>
+        <item name="android:textColorPrimaryInverse">#FFFFFF</item>
+        <item name="android:textColorSecondaryInverse">#E8F8F5</item>
         <item name="android:textColorPrimaryDisableOnly">@color/colorPrimary</item>
-        <item name="android:textColorPrimaryInverseDisableOnly">@color/colorPrimary</item>
+        <item name="android:textColorPrimaryInverseDisableOnly">#FFFFFF</item>
         <item name="android:textColorHighlight">#5571CFC2</item>
-        <item name="android:popupBackground">@android:color/white</item>
-        <item name="colorControlNormal">@color/colorPrimary</item>
-        <item name="android:colorControlNormal">@color/colorPrimary</item>
+        <item name="android:popupBackground">#0B3760</item>
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="android:colorControlNormal">#FFFFFF</item>
         <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
         <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="actionMenuTextColor">@color/colorPrimary</item>
-        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
+        <item name="actionModeBackground">#0B3760</item>
+        <item name="android:actionModeBackground">#0B3760</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
+        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
         <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
     </style>
 
@@ -39,48 +42,52 @@
         <item name="android:textColorSecondary">@color/colorPrimaryDark</item>
         <item name="android:colorAccent">@color/colorAccent</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">@color/colorPrimary</item>
-        <item name="android:colorControlNormal">@color/colorPrimary</item>
-        <item name="android:textColorPrimaryInverse">@color/colorPrimary</item>
-        <item name="android:textColorSecondaryInverse">@color/colorPrimaryDark</item>
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="android:colorControlNormal">#FFFFFF</item>
+        <item name="android:textColorPrimaryInverse">#FFFFFF</item>
+        <item name="android:textColorSecondaryInverse">#E8F8F5</item>
         <item name="android:textColorPrimaryDisableOnly">@color/colorPrimary</item>
-        <item name="android:textColorPrimaryInverseDisableOnly">@color/colorPrimary</item>
+        <item name="android:textColorPrimaryInverseDisableOnly">#FFFFFF</item>
         <item name="android:textColorHighlight">#5571CFC2</item>
-        <item name="android:popupBackground">@android:color/white</item>
+        <item name="android:popupBackground">#0B3760</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
         <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="actionMenuTextColor">@color/colorPrimary</item>
-        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
+        <item name="actionModeBackground">#0B3760</item>
+        <item name="android:actionModeBackground">#0B3760</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
+        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
         <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
     </style>
 
     <!-- Native Android copy / paste toolbar styling.
-         Keep the floating menu light with dark text so WebView selection does not become white-on-white. -->
+         Use a dark VetLearn background so white system text remains visible on Android WebView. -->
     <style name="VetLearnNativeActionMode" parent="Widget.AppCompat.ActionMode">
-        <item name="background">@android:color/white</item>
-        <item name="android:background">@android:color/white</item>
+        <item name="background">#0B3760</item>
+        <item name="android:background">#0B3760</item>
         <item name="titleTextStyle">@style/VetLearnNativeActionModeTitle</item>
         <item name="subtitleTextStyle">@style/VetLearnNativeActionModeSubtitle</item>
-        <item name="actionMenuTextColor">@color/colorPrimary</item>
-        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
+        <item name="actionMenuTextColor">#FFFFFF</item>
+        <item name="android:actionMenuTextColor">#FFFFFF</item>
+        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
         <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
     </style>
 
     <style name="VetLearnNativeActionModeTitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
-        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textColor">#FFFFFF</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="VetLearnNativeActionModeSubtitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
-        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textColor">#E8F8F5</item>
     </style>
 
     <style name="VetLearnNativeActionModeMenuText" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
-        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textColor">#FFFFFF</item>
         <item name="android:textStyle">bold</item>
     </style>
 
