@@ -17,12 +17,12 @@
         <item name="android:textColorSecondary">#2F4858</item>
         <item name="android:textColorPrimaryInverse">#FFFFFF</item>
         <item name="android:textColorHighlight">#5571CFC2</item>
-        <item name="colorControlNormal">#0B3760</item>
-        <item name="android:colorControlNormal">#0B3760</item>
+        <item name="colorControlNormal">@color/colorPrimary</item>
+        <item name="android:colorControlNormal">@color/colorPrimary</item>
         <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
         <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="actionMenuTextColor">#0B3760</item>
-        <item name="android:actionMenuTextColor">#0B3760</item>
+        <item name="actionMenuTextColor">@color/colorPrimary</item>
+        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
     </style>
 
     <!-- Main app theme without action bar -->
@@ -34,8 +34,8 @@
         <item name="android:textColorSecondary">#2F4858</item>
         <item name="android:colorAccent">@color/colorAccent</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">#0B3760</item>
-        <item name="android:colorControlNormal">#0B3760</item>
+        <item name="colorControlNormal">@color/colorPrimary</item>
+        <item name="android:colorControlNormal">@color/colorPrimary</item>
         <item name="android:textColorPrimaryInverse">#FFFFFF</item>
         <item name="android:textColorHighlight">#5571CFC2</item>
         <item name="android:windowLightStatusBar">true</item>
@@ -44,28 +44,28 @@
         <item name="android:forceDarkAllowed">false</item>
         <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
         <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="actionMenuTextColor">#0B3760</item>
-        <item name="android:actionMenuTextColor">#0B3760</item>
+        <item name="actionMenuTextColor">@color/colorPrimary</item>
+        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
     </style>
 
     <!-- Native Android copy / paste toolbar styling.
          Keep the floating menu light with dark text so WebView selection does not become white-on-white. -->
     <style name="VetLearnNativeActionMode" parent="Widget.AppCompat.ActionMode">
-        <item name="background">#FFFFFF</item>
-        <item name="android:background">#FFFFFF</item>
+        <item name="background">@android:color/white</item>
+        <item name="android:background">@android:color/white</item>
         <item name="titleTextStyle">@style/VetLearnNativeActionModeTitle</item>
         <item name="subtitleTextStyle">@style/VetLearnNativeActionModeSubtitle</item>
-        <item name="actionMenuTextColor">#0B3760</item>
-        <item name="android:actionMenuTextColor">#0B3760</item>
+        <item name="actionMenuTextColor">@color/colorPrimary</item>
+        <item name="android:actionMenuTextColor">@color/colorPrimary</item>
     </style>
 
     <style name="VetLearnNativeActionModeTitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
-        <item name="android:textColor">#0B3760</item>
+        <item name="android:textColor">@color/colorPrimary</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="VetLearnNativeActionModeSubtitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
-        <item name="android:textColor">#2F4858</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
     </style>
 
     <!-- Launch / splash screen theme -->
