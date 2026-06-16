@@ -1,6 +1,7 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import logoImage from "../assets/icon.png"
+import { saveOrSharePdf } from "./pdfFile"
 
 const loadImageAsDataUrl = (src) => {
   return new Promise((resolve, reject) => {
@@ -20,7 +21,7 @@ const loadImageAsDataUrl = (src) => {
 }
 
 export const exportDrugHistory = async (history) => {
-  if (!history || history.length === 0) return;
+  if (!history || history.length === 0) return false
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
   let logo = null
@@ -47,12 +48,12 @@ export const exportDrugHistory = async (history) => {
   doc.setLineWidth(0.8)
   doc.line(14, 34, pageWidth - 14, 34)
 
-  let startY = 42;
+  let startY = 42
 
   history.forEach((record, index) => {
     if (startY > doc.internal.pageSize.getHeight() - 40) {
-      doc.addPage();
-      startY = 20;
+      doc.addPage()
+      startY = 20
     }
 
     doc.setTextColor(...navy)
@@ -71,7 +72,7 @@ export const exportDrugHistory = async (history) => {
       d.concentration ? `${d.concentration} mg/ml` : "N/A",
       `${d.totalMg} mg`,
       d.totalMl ? `${d.totalMl} ml` : "N/A"
-    ]);
+    ])
 
     autoTable(doc, {
       startY: startY + 8,
@@ -81,10 +82,13 @@ export const exportDrugHistory = async (history) => {
       styles: { fontSize: 9, cellPadding: 2, textColor: [17, 50, 71] },
       headStyles: { fillColor: [113, 207, 194], textColor: [11, 55, 96] },
       margin: { left: 14, right: 14 }
-    });
+    })
 
-    startY = doc.lastAutoTable.finalY + 12;
-  });
+    startY = doc.lastAutoTable.finalY + 12
+  })
 
-  doc.save("VetLearn-Drug-History.pdf")
+  return saveOrSharePdf(doc, "VetLearn-Drug-History.pdf", {
+    title: "VetLearn Drug History",
+    text: "Your VetLearn drug calculation history PDF is ready.",
+  })
 }
