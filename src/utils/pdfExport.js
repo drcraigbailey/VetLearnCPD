@@ -1,6 +1,7 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import logoImage from "../assets/icon.png"
+import { saveOrSharePdf } from "./pdfFile"
 
 const loadImageAsDataUrl = (src) => {
   return new Promise((resolve, reject) => {
@@ -171,5 +172,8 @@ export const exportCPD = async (history) => {
     },
   })
 
-  doc.save("VetLearn-CPD-Log.pdf")
+  return saveOrSharePdf(doc, "VetLearn-CPD-Log.pdf", {
+    title: "VetLearn CPD Log",
+    text: "Your VetLearn CPD log PDF is ready.",
+  })
 }
