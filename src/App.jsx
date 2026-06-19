@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "re
 import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldCheck, Sun, Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 
+import AndroidClipboardToolbar from "./components/AndroidClipboardToolbar";
 import { HybridToaster } from "./components/CustomToast";
 import FeatureUnavailable from "./components/FeatureUnavailable";
 import FloatingReadingTimer from "./components/FloatingReadingTimer";
@@ -668,7 +669,7 @@ function App() {
     : "min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]";
 
   if (loading) return <LoadingState label="Loading VetLearn..." darkMode={darkMode} fullScreen />;
-  if (!session) return <><HybridToaster darkMode={darkMode} /><AuthPage /></>;
+  if (!session) return <><HybridToaster darkMode={darkMode} /><AndroidClipboardToolbar darkMode={darkMode} /><AuthPage /></>;
 
   const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
   const menuBadgeCount = (canUseFeature(featureAccess, featureKeys.messaging, adminAccess) ? unreadMessageCount : 0)
@@ -691,6 +692,7 @@ function App() {
       <ScrollToTop />
       <RecentRouteTracker user={session.user} />
       <HybridToaster darkMode={darkMode} />
+      <AndroidClipboardToolbar darkMode={darkMode} />
       <div className={shellClass}>
         <AppHeader
           darkMode={darkMode}

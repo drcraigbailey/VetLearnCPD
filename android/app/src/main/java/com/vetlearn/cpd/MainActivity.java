@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(NativeBrowserPlugin.class);
+        registerPlugin(NativeClipboardPlugin.class);
         super.onCreate(savedInstanceState);
         createNotificationChannel();
     }

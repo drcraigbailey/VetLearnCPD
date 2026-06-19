@@ -10,8 +10,8 @@
     <color name="colorPrimary">#0B3760</color>
     <color name="colorPrimaryDark">#062F63</color>
     <color name="colorAccent">#71CFC2</color>
-    <color name="colorActionModeBackground">#FFFFFF</color>
-    <color name="colorActionModeText">#0B3760</color>
+    <color name="colorActionModeBackground">#0B3760</color>
+    <color name="colorActionModeText">#FFFFFF</color>
     <color name="colorActionModeAccent">#71CFC2</color>
     <color name="colorTextHighlight">#6671CFC2</color>
 

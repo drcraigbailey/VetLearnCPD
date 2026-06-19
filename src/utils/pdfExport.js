@@ -1,7 +1,8 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import logoImage from "../assets/icon.png"
 import { saveOrSharePdf } from "./pdfFile"
+
+const logoImage = "/logo.png"
 
 const loadImageAsDataUrl = (src) => {
   return new Promise((resolve, reject) => {

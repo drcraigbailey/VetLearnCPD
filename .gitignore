@@ -30,3 +30,6 @@ dist-ssr
 supabase/.temp/
 .npm-cache/
 firebase-service-account.json
+env
+.env
+.env.local

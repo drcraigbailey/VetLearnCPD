@@ -29,26 +29,26 @@ export default defineConfig({
 
       manifest: {
 
-        name: 'Vet CPD Tracker',
+        name: 'VetLearn CPD',
 
-        short_name: 'VetCPD',
+        short_name: 'VetLearn',
 
-        theme_color: '#2563eb',
+        theme_color: '#71CFC2',
 
-        background_color: '#f8fafc',
+        background_color: '#F9FCFB',
 
         display: 'standalone',
 
         icons: [
 
           {
-            src: 'icon-192.png',
+            src: 'logo.png',
             sizes: '192x192',
             type: 'image/png'
           },
 
           {
-            src: 'icon-512.png',
+            src: 'logo.png',
             sizes: '512x512',
             type: 'image/png'
           }
