@@ -36,6 +36,7 @@ export default function AuthPage(){
   const fieldClass="w-full bg-[#F0F6F5] border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition"
 
   const signupBlocked = mode === "signup" && (!acceptedTerms || !acceptedEmailPrivacy)
+  const allSignupConsentsChecked = acceptedTerms && acceptedEmailPrivacy && marketingOptIn
 
   const setAuthMode = (nextMode) => {
     setMode(nextMode)
@@ -46,6 +47,12 @@ export default function AuthPage(){
       setAcceptedEmailPrivacy(false)
       setMarketingOptIn(false)
     }
+  }
+
+  const setAllSignupConsents = (checked) => {
+    setAcceptedTerms(checked)
+    setAcceptedEmailPrivacy(checked)
+    setMarketingOptIn(checked)
   }
 
   useEffect(() => {
@@ -111,6 +118,18 @@ export default function AuthPage(){
       setLoading(false)
     }
   }
+
+  const googleButton = (
+    <button
+      type="button"
+      onClick={handleGoogleSignIn}
+      disabled={loading || (mode === "signup" && signupBlocked)}
+      className="mb-4 w-full rounded-lg border-2 border-[#DCEDEA] bg-white p-4 font-black text-[#0B3760] flex items-center justify-center gap-3 transition-colors hover:bg-[#F9FCFB] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-lg font-black shadow-sm">G</span>
+      {mode === "signup" ? "Register with Google" : "Continue with Google"}
+    </button>
+  )
 
   const handlePasswordReset=async()=>{
     const cleanEmail=email.trim().toLowerCase()
@@ -264,19 +283,9 @@ export default function AuthPage(){
             </button>
           </div>
 
-          {mode!=="forgot" && (
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="mb-4 w-full rounded-lg border-2 border-[#DCEDEA] bg-white p-4 font-black text-[#0B3760] flex items-center justify-center gap-3 hover:bg-[#F9FCFB] transition-colors"
-            >
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-lg font-black shadow-sm">G</span>
-              Continue with Google
-            </button>
-          )}
+          {mode==="login" && googleButton}
 
-          {mode!=="forgot" && (
+          {mode==="login" && (
             <div className="mb-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
               <span className="h-px flex-1 bg-[#DCEDEA]" />
               <span>Email</span>
@@ -390,6 +399,10 @@ export default function AuthPage(){
 
           {mode==="signup" && (
             <div className="mb-4 space-y-3">
+              <ConsentCheckbox checked={allSignupConsentsChecked} onChange={setAllSignupConsents}>
+                <span className="font-black text-[#0B3760]">Tick all 3</span>
+                <span className="block text-xs opacity-65 mt-1">Accept required notices and opt in to optional VetLearn marketing emails.</span>
+              </ConsentCheckbox>
               <ConsentCheckbox checked={acceptedTerms} onChange={setAcceptedTerms} required>
                 I have read and agree to the <button type="button" className="font-black text-[#0F8F83] underline" onClick={()=>setShowTermsModal(true)}>Terms of Service</button>
               </ConsentCheckbox>
@@ -400,6 +413,7 @@ export default function AuthPage(){
                 I would like to receive optional VetLearn updates, CPD reminders and marketing emails.
                 <span className="block text-xs opacity-65 mt-1">You can unsubscribe from optional emails at any time.</span>
               </ConsentCheckbox>
+              {googleButton}
             </div>
           )}
 

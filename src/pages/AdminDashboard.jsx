@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Crown,
   Database,
+  Download,
   Flag,
   Lock,
   Mail,
@@ -180,13 +181,81 @@ export default function AdminDashboard({ user, darkMode }) {
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter(item =>
-      [item.full_name, item.email, getUserType(item), item.role, item.subscription_tier, item.account_status]
+      [item.full_name, item.email, getUserType(item), item.role, item.subscription_tier, item.account_status, getMarketingOptInStatus(item).label]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(q))
     );
   }, [query, users]);
 
   const isSuperAdmin = adminRole === "super_admin";
+
+  const loadUsersForExport = async () => {
+    const pageSize = 1000;
+    const rows = [];
+
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from("admin_user_overview")
+        .select("*")
+        .order("email", { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        console.error("Admin email export failed", error);
+        toast.error(error.message || "Could not load email export");
+        return null;
+      }
+
+      const page = data || [];
+      rows.push(...page);
+
+      if (page.length < pageSize) break;
+    }
+
+    return rows;
+  };
+
+  const exportEmailList = async (scope) => {
+    setWorking(true);
+    const exportUsers = await loadUsersForExport();
+
+    if (!exportUsers) {
+      setWorking(false);
+      return;
+    }
+
+    const hasMarketingColumn = exportUsers.length === 0 || exportUsers.some(item => Object.prototype.hasOwnProperty.call(item, "marketing_emails_opt_in"));
+    if (scope === "marketing" && !hasMarketingColumn) {
+      toast.error("Run supabase/admin_email_marketing_exports.sql to expose marketing opt-ins in Admin.");
+      setWorking(false);
+      return;
+    }
+
+    const rows = exportUsers
+      .filter(item => item.email)
+      .filter(item => scope !== "marketing" || getMarketingOptInStatus(item).value === true)
+      .map(item => ({
+        email: item.email || "",
+        full_name: item.full_name || "",
+        marketing_emails_opt_in: getMarketingOptInStatus(item).value === true ? "yes" : getMarketingOptInStatus(item).value === false ? "no" : "unknown",
+        marketing_emails_opt_in_at: item.marketing_emails_opt_in_at || "",
+        user_type: getUserType(item),
+        account_status: item.account_status || "active",
+        created_at: item.created_at || ""
+      }));
+
+    if (rows.length === 0) {
+      toast.error(scope === "marketing" ? "No marketing opt-ins found to export" : "No emails found to export");
+      setWorking(false);
+      return;
+    }
+
+    const filename = `vetlearn-${scope === "marketing" ? "marketing-opt-ins" : "all-emails"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCsv(filename, rows);
+    await audit("email_list_exported", null, { scope, count: rows.length });
+    toast.success(`Exported ${rows.length} email${rows.length === 1 ? "" : "s"}`);
+    setWorking(false);
+  };
 
   const audit = async (action, targetUserId = null, details = {}) => {
     await supabase.from("admin_audit_logs").insert({
@@ -430,6 +499,8 @@ export default function AdminDashboard({ user, darkMode }) {
           isSuperAdmin={isSuperAdmin}
           working={working}
           error={usersError}
+          onExportMarketing={() => exportEmailList("marketing")}
+          onExportAllEmails={() => exportEmailList("all")}
         />
       )}
       {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
@@ -512,7 +583,7 @@ function Overview({ stats, error, panelClass, darkMode, onRefresh }) {
   );
 }
 
-function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working, error }) {
+function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working, error, onExportMarketing, onExportAllEmails }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
 
   return (
@@ -521,42 +592,67 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
         <Search size={18} className="opacity-50" />
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search users" className="w-full bg-transparent py-3.5 outline-none" />
       </div>
+      <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          disabled={working}
+          onClick={onExportMarketing}
+          className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition disabled:opacity-50 ${darkMode ? "bg-white/10 text-slate-100 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#D5F0EC]"}`}
+        >
+          <Download size={16} /> Export marketing opt-ins
+        </button>
+        <button
+          type="button"
+          disabled={working}
+          onClick={onExportAllEmails}
+          className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition disabled:opacity-50 ${darkMode ? "bg-white/10 text-slate-100 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#D5F0EC]"}`}
+        >
+          <Download size={16} /> Export all emails
+        </button>
+      </div>
       {error && <AdminDataNotice title="Users could not be loaded" message={error} darkMode={darkMode} />}
       <div className="space-y-5">
-        {users.map(item => (
-          <article key={item.user_id} className={`rounded-2xl border p-5 shadow-[0_10px_28px_rgba(11,55,96,0.05)] ${darkMode ? "border-white/10 bg-white/[0.07]" : "border-[#D6E9E6] bg-white"}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className={`truncate text-xl font-black ${darkMode ? "text-white" : "text-[#0B3552]"}`}>{item.full_name || item.email}</h3>
-                <p className={`mt-1 truncate text-base ${darkMode ? "text-slate-300" : "text-[#667F91]"}`}>{item.email}</p>
+        {users.map(item => {
+          const marketingStatus = getMarketingOptInStatus(item);
+          return (
+            <article key={item.user_id} className={`rounded-2xl border p-5 shadow-[0_10px_28px_rgba(11,55,96,0.05)] ${darkMode ? "border-white/10 bg-white/[0.07]" : "border-[#D6E9E6] bg-white"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className={`truncate text-xl font-black ${darkMode ? "text-white" : "text-[#0B3552]"}`}>{item.full_name || item.email}</h3>
+                  <p className={`mt-1 truncate text-base ${darkMode ? "text-slate-300" : "text-[#667F91]"}`}>{item.email}</p>
+                </div>
+                <StatusBadge status={item.account_status} />
               </div>
-              <StatusBadge status={item.account_status} />
-            </div>
-            <p className={`mt-2 text-sm ${darkMode ? "text-slate-400" : "text-[#8A9CAA]"}`}>
-              Joined {formatAdminDate(item.created_at)} - Last login {formatAdminDate(item.last_sign_in_at)}
-            </p>
+              <p className={`mt-2 text-sm ${darkMode ? "text-slate-400" : "text-[#8A9CAA]"}`}>
+                Joined {formatAdminDate(item.created_at)} - Last login {formatAdminDate(item.last_sign_in_at)}
+              </p>
+              <div className={`mt-3 flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
+                <span className="flex min-w-0 items-center gap-2 font-bold opacity-75"><Mail size={15} /> Marketing emails</span>
+                <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${marketingStatus.className}`}>{marketingStatus.label}</span>
+              </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <select disabled={working} value={getUserType(item)} onChange={event => onUserType(item, event.target.value)} className={`min-w-0 rounded-xl border-0 px-4 py-3.5 text-sm font-black outline-none disabled:opacity-50 ${darkMode ? "bg-[#102C36] text-white" : "bg-[#EFF6F5] text-[#0B3552]"}`}>
-                {userTypeOptions.map(type => <option key={type} value={type}>{userTypeLabels[type]}</option>)}
-              </select>
-              <button
-                disabled={working}
-                onClick={() => onStatus(item, item.account_status === "active" ? "suspended" : "active")}
-                className="rounded-xl bg-[#71CFC2] px-4 py-3.5 text-sm font-black text-[#062F63] shadow-sm transition hover:bg-[#61C4B7] disabled:opacity-50"
-              >
-                {item.account_status === "active" ? "Suspend" : "Reactivate"}
-              </button>
-              <button
-                disabled={working || !isSuperAdmin || item.user_id === currentUserId}
-                onClick={() => setDeleteCandidate(item)}
-                className={`col-span-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-300 hover:bg-red-500/20" : "bg-[#FFF0F1] text-[#E00019] hover:bg-[#FFE5E7]"}`}
-              >
-                <Trash2 size={19} /> Delete user and data
-              </button>
-            </div>
-          </article>
-        ))}
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <select disabled={working} value={getUserType(item)} onChange={event => onUserType(item, event.target.value)} className={`min-w-0 rounded-xl border-0 px-4 py-3.5 text-sm font-black outline-none disabled:opacity-50 ${darkMode ? "bg-[#102C36] text-white" : "bg-[#EFF6F5] text-[#0B3552]"}`}>
+                  {userTypeOptions.map(type => <option key={type} value={type}>{userTypeLabels[type]}</option>)}
+                </select>
+                <button
+                  disabled={working}
+                  onClick={() => onStatus(item, item.account_status === "active" ? "suspended" : "active")}
+                  className="rounded-xl bg-[#71CFC2] px-4 py-3.5 text-sm font-black text-[#062F63] shadow-sm transition hover:bg-[#61C4B7] disabled:opacity-50"
+                >
+                  {item.account_status === "active" ? "Suspend" : "Reactivate"}
+                </button>
+                <button
+                  disabled={working || !isSuperAdmin || item.user_id === currentUserId}
+                  onClick={() => setDeleteCandidate(item)}
+                  className={`col-span-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-300 hover:bg-red-500/20" : "bg-[#FFF0F1] text-[#E00019] hover:bg-[#FFE5E7]"}`}
+                >
+                  <Trash2 size={19} /> Delete user and data
+                </button>
+              </div>
+            </article>
+          );
+        })}
         {!error && users.length === 0 && (
           <div className={`rounded-2xl border p-6 text-center text-sm ${darkMode ? "border-white/10 bg-white/[0.06] text-slate-300" : "border-[#D6E9E6] bg-white text-[#667F91]"}`}>
             {query ? "No users match that search." : "No users were returned by Supabase."}
@@ -775,6 +871,46 @@ function AdminDataNotice({ title, message, darkMode, warning = false }) {
       </div>
     </div>
   );
+}
+
+function getMarketingOptInStatus(item) {
+  if (!Object.prototype.hasOwnProperty.call(item, "marketing_emails_opt_in")) {
+    return {
+      value: null,
+      label: "Unknown",
+      className: "bg-slate-100 text-slate-600"
+    };
+  }
+
+  const rawValue = item.marketing_emails_opt_in;
+  const optedIn = rawValue === true || String(rawValue).toLowerCase() === "true";
+
+  return optedIn
+    ? { value: true, label: "Yes", className: "bg-[#E4F7F3] text-[#0F8F83]" }
+    : { value: false, label: "No", className: "bg-slate-100 text-slate-600" };
+}
+
+function downloadCsv(filename, rows) {
+  const headers = Object.keys(rows[0] || {});
+  const csv = [
+    headers.map(csvEscape).join(","),
+    ...rows.map(row => headers.map(header => csvEscape(row[header])).join(","))
+  ].join("\r\n");
+
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 function StatusBadge({ status }) {

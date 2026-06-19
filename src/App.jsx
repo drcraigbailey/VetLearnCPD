@@ -664,7 +664,7 @@ function App() {
   };
 
   const shellClass = darkMode
-    ? "min-h-screen bg-gradient-to-b from-[#071A24] to-[#0D2D35] text-slate-100"
+    ? "dark min-h-screen bg-gradient-to-b from-[#071A24] to-[#0D2D35] text-slate-100"
     : "min-h-screen bg-gradient-to-b from-[#F9FCFB] to-[#EAF5F3] text-[#113247]";
 
   if (loading) return <LoadingState label="Loading VetLearn..." darkMode={darkMode} fullScreen />;

@@ -28,7 +28,7 @@ import AppPopup, { popupPresets } from "../components/AppPopup";
 import DrugShareModal from "../components/DrugShareModal";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
-import { exportDrugHistory } from "../utils/drugsPdfExport";
+import { exportDrugHistory, generateDrugMonographPdf } from "../utils/drugsPdfExport";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -115,6 +115,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [shareDrugTarget, setShareDrugTarget] = useState(null);
+  const [printingDrugPdf, setPrintingDrugPdf] = useState(false);
 
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [drugForm, setDrugForm] = useState(emptyDrugForm);
@@ -689,6 +690,30 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     toast.success("Drug summary copied");
   };
 
+  const printDrugMonographPdf = async () => {
+    if (!activeDrugName || loadingSummary) {
+      toast.error("Drug details are still loading");
+      return;
+    }
+
+    setPrintingDrugPdf(true);
+    try {
+      await generateDrugMonographPdf({
+        drugName: activeDrugName,
+        drug: activeDrugRecord,
+        doses: activeDrugDoses,
+        summary: activeSummary,
+        noteText,
+        print: true,
+      });
+    } catch (error) {
+      console.error("Drug monograph PDF error:", error);
+      toast.error("Unable to generate PDF");
+    } finally {
+      setPrintingDrugPdf(false);
+    }
+  };
+
   return (
     <div className="pb-8">
       <DrugMonograph
@@ -708,6 +733,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         setNoteText={setNoteText}
         onSaveNote={saveDrugNote}
         onCopy={copyDrugSummary}
+        onPrintPdf={printDrugMonographPdf}
+        printingPdf={printingDrugPdf}
         onEdit={() => startEditDrug(activeDrugDoses[0]?.id)}
         canManageCustom={canUseMyDrugs && activeDrugScope === "custom" && Boolean(activeDrugRecord?.canEdit)}
         canShareCustom={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
@@ -1137,6 +1164,7 @@ function DrugMonograph(props) {
     drugName,
     drug,
     groupedDoses,
+    doses,
     summary,
     loading,
     isFavourite,
@@ -1145,6 +1173,8 @@ function DrugMonograph(props) {
     setNoteText,
     onSaveNote,
     onCopy,
+    onPrintPdf,
+    printingPdf,
     onEdit,
     canManageCustom,
     canShareCustom,
@@ -1177,6 +1207,7 @@ function DrugMonograph(props) {
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
             <ActionButton onClick={onToggleFavourite} active={isFavourite} icon={<Star size={14} className={isFavourite ? "fill-current" : ""} />}>{isFavourite ? "Favourited" : "Favourite"}</ActionButton>
             <ActionButton onClick={onAddToCalculator} icon={<Syringe size={14} />}>Calc Dose</ActionButton>
+            <ActionButton onClick={onPrintPdf} disabled={printingPdf || loading || (!drug && (!doses || doses.length === 0))} icon={printingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}>{printingPdf ? "Preparing" : "Print PDF"}</ActionButton>
             <ActionButton onClick={onCopy} icon={<Copy size={14} />}>Copy</ActionButton>
             {canShareCustom && <ActionButton onClick={onOpenShare} icon={<Share2 size={14} />}>Share</ActionButton>}
             {canManageCustom && <ActionButton onClick={onEdit} icon={<Pencil size={14} />}>Edit</ActionButton>}
@@ -1256,13 +1287,13 @@ function PillLabel({ children }) {
   return <span className="inline-block px-3 py-1 rounded bg-[#E8F8F5] dark:bg-[#71CFC2]/20 text-[#0F8F83] dark:text-[#71CFC2] text-xs font-black uppercase tracking-wider">{children}</span>;
 }
 
-function ActionButton({ children, icon, onClick, active, danger = false }) {
+function ActionButton({ children, icon, onClick, active, danger = false, disabled = false }) {
   const colourClass = danger
     ? "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300"
     : active
       ? "bg-yellow-100 text-yellow-700"
       : "bg-[#E8F8F5] text-[#0B3760]";
-  return <button onClick={onClick} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition ${colourClass}`}>{icon}{children}</button>;
+  return <button onClick={onClick} disabled={disabled} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-55 ${colourClass}`}>{icon}{children}</button>;
 }
 
 function InfoRow({ label, value }) {

@@ -14,6 +14,16 @@ body,
   }
 }
 
+::selection {
+  background: rgba(113, 207, 194, 0.45);
+  color: #062f63;
+}
+
+.dark ::selection {
+  background: rgba(113, 207, 194, 0.5);
+  color: #f8fafc;
+}
+
 .relative.overflow-hidden.bg-gradient-to-br.border.rounded-lg.p-6.mb-6.shadow-sm::after {
   content: "";
   position: absolute;
@@ -267,6 +277,18 @@ button[aria-label^="Open "][class*="bg-[#71CFC2]"] {
 html,
 body,
 #root,
+main,
+article,
+section,
+p,
+span,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 input,
 textarea,
 select,
@@ -286,25 +308,11 @@ select,
   -webkit-tap-highlight-color: rgba(113, 207, 194, 0.35);
 }
 
-input::selection,
-textarea::selection,
-[contenteditable="true"]::selection {
-  background: rgba(113, 207, 194, 0.45);
-  color: #0b3760;
-}
-
 .dark input,
 .dark textarea,
 .dark select,
 .dark [contenteditable="true"] {
   caret-color: #71cfc2;
-}
-
-.dark input::selection,
-.dark textarea::selection,
-.dark [contenteditable="true"]::selection {
-  background: rgba(113, 207, 194, 0.35);
-  color: #ffffff;
 }
 
 button,

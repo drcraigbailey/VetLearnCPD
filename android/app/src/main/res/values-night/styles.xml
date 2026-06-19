@@ -1,56 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Keep native WebView controls and the copy/paste toolbar readable.
-         VetLearn dark mode is rendered by the web app itself. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@color/colorSplash</item>
         <item name="android:colorAccent">@color/colorAccent</item>
-        <item name="colorControlNormal">@color/vetlearn_action_mode_text</item>
-        <item name="android:colorControlNormal">@color/vetlearn_action_mode_text</item>
         <item name="android:textColorPrimary">@color/colorPrimary</item>
         <item name="android:textColorSecondary">#2F4858</item>
-        <item name="android:textColorPrimaryInverse">@color/vetlearn_action_mode_text</item>
-        <item name="android:textColorSecondaryInverse">@color/vetlearn_action_mode_subtitle</item>
-        <item name="android:textColorHighlight">#5571CFC2</item>
-        <item name="android:popupBackground">@color/vetlearn_action_mode_background</item>
         <item name="android:forceDarkAllowed">false</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">@color/vetlearn_action_mode_text</item>
+        <item name="android:navigationBarColor">@color/colorSplash</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="android:actionModeStyle">@style/VetLearnNativeActionMode</item>
-        <item name="actionModeBackground">@color/vetlearn_action_mode_background</item>
-        <item name="android:actionModeBackground">@color/vetlearn_action_mode_background</item>
-        <item name="actionMenuTextColor">@color/vetlearn_action_mode_text</item>
-        <item name="android:actionMenuTextColor">@color/vetlearn_action_mode_text</item>
-        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
-        <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
-    </style>
-
-    <style name="VetLearnNativeActionMode" parent="Widget.AppCompat.ActionMode">
-        <item name="background">@color/vetlearn_action_mode_background</item>
-        <item name="android:background">@color/vetlearn_action_mode_background</item>
-        <item name="titleTextStyle">@style/VetLearnNativeActionModeTitle</item>
-        <item name="subtitleTextStyle">@style/VetLearnNativeActionModeSubtitle</item>
-        <item name="actionMenuTextColor">@color/vetlearn_action_mode_text</item>
-        <item name="android:actionMenuTextColor">@color/vetlearn_action_mode_text</item>
-        <item name="actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
-        <item name="android:actionMenuTextAppearance">@style/VetLearnNativeActionModeMenuText</item>
-    </style>
-
-    <style name="VetLearnNativeActionModeTitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
-        <item name="android:textColor">@color/vetlearn_action_mode_text</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="VetLearnNativeActionModeSubtitle" parent="TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
-        <item name="android:textColor">@color/vetlearn_action_mode_subtitle</item>
-    </style>
-
-    <style name="VetLearnNativeActionModeMenuText" parent="TextAppearance.AppCompat.Widget.ActionMode.Title">
-        <item name="android:textColor">@color/vetlearn_action_mode_text</item>
-        <item name="android:textStyle">bold</item>
+        <item name="actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="android:actionModeStyle">@style/VetLearnActionMode</item>
+        <item name="actionMenuTextColor">@color/colorActionModeText</item>
+        <item name="android:actionMenuTextColor">@color/colorActionModeText</item>
+        <item name="colorControlNormal">@color/colorActionModeText</item>
+        <item name="android:colorControlNormal">@color/colorActionModeText</item>
+        <item name="android:textColorHighlight">@color/colorTextHighlight</item>
     </style>
 </resources>

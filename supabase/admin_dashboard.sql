@@ -229,7 +229,16 @@ select
   p.practice_name,
   coalesce(aur.role::text, 'user') as role,
   coalesce(uas.status::text, 'active') as account_status,
-  coalesce(us.subscription_tier::text, 'free') as subscription_tier
+  coalesce(us.subscription_tier::text, 'free') as subscription_tier,
+  case
+    when lower(coalesce(u.raw_user_meta_data ->> 'marketing_emails_opt_in', 'false')) in ('true', 't', '1', 'yes') then true
+    else false
+  end as marketing_emails_opt_in,
+  case
+    when nullif(u.raw_user_meta_data ->> 'marketing_emails_opt_in_at', '') is not null
+      then (u.raw_user_meta_data ->> 'marketing_emails_opt_in_at')::timestamptz
+    else null
+  end as marketing_emails_opt_in_at
 from auth.users u
 left join public.profiles p on p.id = u.id
 left join public.admin_user_roles aur on aur.user_id = u.id and aur.is_active = true

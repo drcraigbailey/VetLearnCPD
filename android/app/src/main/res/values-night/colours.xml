@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorActionModeBackground">#071A24</color>
+    <color name="colorActionModeText">#F8FAFC</color>
+    <color name="colorActionModeAccent">#71CFC2</color>
+    <color name="colorTextHighlight">#8071CFC2</color>
+</resources>

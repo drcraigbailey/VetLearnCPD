@@ -270,7 +270,16 @@ select
   coalesce(s.subscription_tier::text, 'free') as subscription_tier,
   coalesce(a.status, 'active') as account_status,
   a.reason as account_status_reason,
-  a.updated_at as account_status_updated_at
+  a.updated_at as account_status_updated_at,
+  case
+    when lower(coalesce(u.raw_user_meta_data ->> 'marketing_emails_opt_in', 'false')) in ('true', 't', '1', 'yes') then true
+    else false
+  end as marketing_emails_opt_in,
+  case
+    when nullif(u.raw_user_meta_data ->> 'marketing_emails_opt_in_at', '') is not null
+      then (u.raw_user_meta_data ->> 'marketing_emails_opt_in_at')::timestamptz
+    else null
+  end as marketing_emails_opt_in_at
 from auth.users u
 left join public.profiles p on p.id = u.id
 left join public.admin_user_roles r on r.user_id = u.id and r.is_active = true
