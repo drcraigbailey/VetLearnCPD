@@ -191,10 +191,20 @@ export default function NotificationDrawer({
       await markAsRead(notification);
     }
     onClose();
+    const metadata = notification.metadata || {};
 
     switch (notification.type) {
       case "message":
-        navigate("/messages");
+        navigate(metadata.conversation_id ? `/messages?conversation=${metadata.conversation_id}` : "/messages");
+        break;
+      case "admin_new_signup":
+        navigate("/admin?tab=users");
+        break;
+      case "admin_support_message":
+        navigate(metadata.conversation_id ? `/admin?tab=mailbox&conversation=${metadata.conversation_id}` : "/admin?tab=mailbox");
+        break;
+      case "admin_group_message":
+        navigate("/admin?tab=mailbox");
         break;
       case "connection_request":
       case "connection_accepted":
@@ -214,6 +224,10 @@ export default function NotificationDrawer({
   const getIcon = (type) => {
     switch(type) {
       case "message": return <MessageSquare size={16} />;
+      case "admin_new_signup":
+      case "admin_support_message":
+      case "admin_group_message":
+        return <Bell size={16} />;
       case "share": return <Share2 size={16} />;
       case "connection_request":
       case "connection_accepted": return <UserPlus size={16} />;

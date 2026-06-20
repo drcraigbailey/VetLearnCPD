@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Link } from "react-router-dom";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Bell, Calculator, ClipboardList, KeyRound, Lock, LogOut, MessageSquare, Moon, Settings as SettingsIcon, ShieldCheck, Sun, Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -13,7 +15,7 @@ import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric, syncBiometricSession } from "./utils/biometricAuth";
 import { canUseFeature, defaultFeatureAccess, featureKeys, loadFeatureAccess } from "./utils/featureAccess";
-import { setupPushNotifications } from "./utils/pushNotifications";
+import { hasRecentPushNavigationIntent, setupPushNotifications } from "./utils/pushNotifications";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import AuthPage from "./pages/AuthPage";
@@ -49,6 +51,18 @@ const routeLabels = {
   "/admin": { title: "Admin Dashboard", item_type: "page" }
 };
 
+const adminNotificationTypes = ["admin_new_signup", "admin_support_message", "admin_group_message"];
+
+const getDisplayName = (profile, user, adminAccess = false) => {
+  const profileName = String(profile?.full_name || "").trim();
+  const metadataName = String(user?.user_metadata?.full_name || user?.user_metadata?.name || "").trim();
+  const email = user?.email || "";
+  const adminLikeProfileName = ["admin", "vetlearn support"].includes(profileName.toLowerCase());
+
+  if (adminAccess && adminLikeProfileName && metadataName) return metadataName;
+  return profileName || metadataName || email;
+};
+
 function RecentRouteTracker({ user }) {
   const { pathname } = useLocation();
 
@@ -64,6 +78,50 @@ function RecentRouteTracker({ user }) {
       metadata: { source: "navigation" }
     }).then(() => {});
   }, [pathname, user?.id]);
+
+  return null;
+}
+
+function NativeLaunchHomeRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const locationRef = useRef(location);
+  const backgroundedAtRef = useRef(null);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform?.()) return undefined;
+
+    const goHomeForNormalOpen = () => {
+      window.setTimeout(() => {
+        if (hasRecentPushNavigationIntent()) return;
+        if (locationRef.current.pathname !== "/") navigate("/", { replace: true });
+      }, 900);
+    };
+
+    const initialTimer = window.setTimeout(goHomeForNormalOpen, 900);
+    let appStateListener = null;
+
+    CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+      if (!isActive) {
+        backgroundedAtRef.current = Date.now();
+        return;
+      }
+
+      const backgroundedFor = backgroundedAtRef.current ? Date.now() - backgroundedAtRef.current : 0;
+      if (backgroundedFor > 1500) goHomeForNormalOpen();
+    }).then(listener => {
+      appStateListener = listener;
+    });
+
+    return () => {
+      window.clearTimeout(initialTimer);
+      appStateListener?.remove();
+    };
+  }, [navigate]);
 
   return null;
 }
@@ -420,14 +478,35 @@ function App() {
 
   const loadUnreadMessageCount = async () => {
     if (!session?.user) return;
-    const { data, error } = await supabase
-      .from("conversations")
-      .select("id, messages(id, sender_id, is_read)")
-      .or(`user1_id.eq.${session.user.id},user2_id.eq.${session.user.id}`);
+    const [directResult, participantResult] = await Promise.all([
+      supabase
+        .from("conversations")
+        .select("id, messages(id, sender_id, is_read)")
+        .or(`user1_id.eq.${session.user.id},user2_id.eq.${session.user.id}`),
+      supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", session.user.id)
+    ]);
 
-    if (error) return;
+    if (directResult.error && participantResult.error) return;
 
-    const count = (data || []).reduce((total, conversation) => {
+    const participantConversationIds = [...new Set((participantResult.data || []).map(row => row.conversation_id).filter(Boolean))];
+    let participantConversations = [];
+    if (!participantResult.error && participantConversationIds.length) {
+      const { data } = await supabase
+        .from("conversations")
+        .select("id, messages(id, sender_id, is_read)")
+        .in("id", participantConversationIds);
+      participantConversations = data || [];
+    }
+
+    const merged = new Map();
+    [...(directResult.data || []), ...participantConversations].forEach(conversation => {
+      if (conversation?.id) merged.set(String(conversation.id), conversation);
+    });
+
+    const count = [...merged.values()].reduce((total, conversation) => {
       return total + (conversation.messages || []).filter(message => message.sender_id !== session.user.id && !message.is_read).length;
     }, 0);
 
@@ -671,14 +750,18 @@ function App() {
   if (loading) return <LoadingState label="Loading VetLearn..." darkMode={darkMode} fullScreen />;
   if (!session) return <><HybridToaster darkMode={darkMode} /><AndroidClipboardToolbar darkMode={darkMode} /><AuthPage /></>;
 
-  const displayName = profile?.full_name || session.user.user_metadata?.full_name || session.user.email;
+  const displayName = getDisplayName(profile, session.user, adminAccess);
+  const adminNotificationCount = adminAccess
+    ? notifications.filter(notification => !notification.is_read && adminNotificationTypes.includes(notification.type)).length
+    : 0;
   const menuBadgeCount = (canUseFeature(featureAccess, featureKeys.messaging, adminAccess) ? unreadMessageCount : 0)
-    + (canUseFeature(featureAccess, featureKeys.network, adminAccess) ? pendingRequestCount : 0);
+    + (canUseFeature(featureAccess, featureKeys.network, adminAccess) ? pendingRequestCount : 0)
+    + adminNotificationCount;
   const featureEnabled = (featureKey) => canUseFeature(featureAccess, featureKey, adminAccess);
   const featureRoute = (featureKey, title, element) => featureEnabled(featureKey) ? element : <FeatureUnavailable darkMode={darkMode} title={title} />;
 
   const menuLinks = [
-    ...(adminAccess ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+    ...(adminAccess ? [{ to: "/admin", label: "Admin", icon: ShieldCheck, badge: adminNotificationCount }] : []),
     ...(featureEnabled(featureKeys.clinicalProtocols) ? [{ to: "/protocols", label: "Clinical Protocols", icon: ClipboardList }] : []),
     ...(featureEnabled(featureKeys.clinicalTools) ? [{ to: "/clinical-tools", label: "Clinical Tools", icon: Calculator }] : []),
     ...(featureEnabled(featureKeys.network) ? [{ to: "/network", label: "Network", icon: Users, badge: pendingRequestCount }] : []),
@@ -690,6 +773,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <NativeLaunchHomeRedirect />
       <RecentRouteTracker user={session.user} />
       <HybridToaster darkMode={darkMode} />
       <AndroidClipboardToolbar darkMode={darkMode} />

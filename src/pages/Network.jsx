@@ -58,6 +58,26 @@ const defaultPostForm = {
   existing_urls: []
 };
 
+const isLegacyAdminContactProfile = (profile, supportUserId) => {
+  if (!profile) return false;
+  if (supportUserId && String(profile.id) === String(supportUserId)) return true;
+  return String(profile.full_name || "").trim().toLowerCase() === "admin"
+    && String(profile.title || "").trim().toLowerCase() === "vetlearn support";
+};
+
+const isExternalMediaUrl = (path = "") => /^https?:\/\//i.test(String(path));
+const isInlineMediaUrl = (path = "") => /^data:image\//i.test(String(path));
+const isDirectMediaUrl = (path = "") => isExternalMediaUrl(path) || isInlineMediaUrl(path);
+const isNetworkPostStoragePath = (path = "") => Boolean(path) && !isDirectMediaUrl(path);
+const filterNetworkPostStoragePaths = (paths = []) => paths.filter(isNetworkPostStoragePath);
+
+const networkPostMediaUrl = (path) => {
+  if (!path) return "";
+  if (isDirectMediaUrl(path)) return path;
+  const { data } = supabase.storage.from("network-post-media").getPublicUrl(path);
+  return data?.publicUrl || "";
+};
+
 export default function Network({ user, darkMode = false }) {
   const [activeTab, setActiveTab] = useState("posts");
   const [connections, setConnections] = useState([]);
@@ -66,6 +86,8 @@ export default function Network({ user, darkMode = false }) {
   const [sentRequestDetails, setSentRequestDetails] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [supportUserId, setSupportUserId] = useState(null);
+  const [supportContact, setSupportContact] = useState(null);
   
   const [posts, setPosts] = useState([]);
   const [postSearchQuery, setPostSearchQuery] = useState("");
@@ -91,6 +113,7 @@ export default function Network({ user, darkMode = false }) {
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [selectedColleague, setSelectedColleague] = useState(null);
+  const [selectedAdminContact, setSelectedAdminContact] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   
   const [gdprModalState, setGdprModalState] = useState({ open: false, mode: null });
@@ -106,6 +129,7 @@ export default function Network({ user, darkMode = false }) {
     if (!user) return;
     loadNetworkData();
     loadShareableItems();
+    loadSupportUserId();
 
     const channel = supabase
       .channel(`network-${user.id}`)
@@ -128,7 +152,7 @@ export default function Network({ user, darkMode = false }) {
   useEffect(() => {
     const delay = window.setTimeout(searchColleagues, 400);
     return () => window.clearTimeout(delay);
-  }, [searchQuery, connections, requests, user?.id]);
+  }, [searchQuery, connections, requests, supportUserId, user?.id]);
 
   const networkTabs = [
     { id: "posts", label: "Posts", icon: Newspaper },
@@ -177,6 +201,26 @@ export default function Network({ user, darkMode = false }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadSupportUserId() {
+    setSupportContact({
+      full_name: "Admin",
+      title: "VetLearn Support",
+      practice_name: "VetLearn",
+      location: "In-app support",
+      email: "support@vetlearncpd.com",
+      bio: "Contact Admin for account, subscription, access or VetLearn support queries.",
+      isAdminContact: true
+    });
+
+    const { data, error } = await supabase.rpc("get_admin_support_user_id");
+    if (error || !data) {
+      setSupportUserId(null);
+      return;
+    }
+
+    setSupportUserId(data);
   }
 
   async function loadPosts(term = "", category = "All") {
@@ -246,7 +290,12 @@ export default function Network({ user, darkMode = false }) {
         const { data: prefs } = await supabase.from("user_preferences").select("user_id, app_preferences").in("user_id", candidateIds);
         hiddenProfileIds = new Set((prefs || []).filter(r => r.app_preferences?.privacyMode === true).map(r => r.user_id));
       }
-      setSearchResults((data || []).filter(result => !hiddenProfileIds.has(result.id) && !connections.some(c => c.colleague?.id === result.id) && !requests.some(r => r.requester?.id === result.id)));
+      setSearchResults((data || []).filter(result =>
+        !isLegacyAdminContactProfile(result, supportUserId)
+        && !hiddenProfileIds.has(result.id)
+        && !connections.some(c => c.colleague?.id === result.id)
+        && !requests.some(r => r.requester?.id === result.id)
+      ));
     }
     setSearching(false);
   }
@@ -331,12 +380,36 @@ export default function Network({ user, darkMode = false }) {
 
   const uploadImagesToStorage = async (files) => {
     const paths = [];
+    let useInlineFallback = false;
     for (const file of files) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const path = `${user.id}/${Date.now()}_${safeName}`;
-      const { error } = await supabase.storage.from("network-post-media").upload(path, file, { upsert: true });
-      if (!error) paths.push(path);
-      else toast.error(`Failed to upload ${file.name}`);
+      if (useInlineFallback) {
+        paths.push(await createInlineNetworkPostImage(file));
+        continue;
+      }
+
+      const uploadFile = await prepareNetworkPostImage(file);
+      const safeName = (uploadFile.name || file.name || "image.jpg").replace(/[^a-zA-Z0-9.-]/g, "_");
+      const randomId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `${user.id}/${randomId}_${safeName}`;
+      const { error } = await supabase.storage
+        .from("network-post-media")
+        .upload(path, uploadFile, {
+          upsert: false,
+          contentType: uploadFile.type || file.type || "image/jpeg",
+          cacheControl: "3600"
+        });
+
+      if (error) {
+        console.error("Network post media upload failed", { fileName: file.name, size: file.size, type: file.type, error });
+        if (isStorageSchemaError(error)) {
+          useInlineFallback = true;
+          paths.push(await createInlineNetworkPostImage(file));
+          continue;
+        }
+        throw new Error(getNetworkPostUploadErrorMessage(error, file.name));
+      }
+
+      paths.push(path);
     }
     return paths;
   };
@@ -359,31 +432,39 @@ export default function Network({ user, darkMode = false }) {
 
   const executeCreatePost = async () => {
     setPostSaving(true);
-    const uploadedPaths = await uploadImagesToStorage(postForm.images);
-    
-    const { data, error } = await supabase.from("network_posts").insert({
-      author_id: user.id,
-      body: postForm.body.trim() || null,
-      shared_type: postForm.shared_type || null,
-      shared_title: postForm.shared_title.trim() || null,
-      shared_url: postForm.shared_url.trim() || null,
-      shared_payload: postForm.shared_payload || null,
-      attachment_urls: uploadedPaths,
-      visibility: postForm.visibility,
-      post_category: postForm.post_category
-    }).select(`id, author_id, body, shared_type, shared_title, shared_url, shared_payload, attachment_urls, visibility, post_category, created_at, updated_at, author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)`).single();
+    let uploadedPaths = [];
+    try {
+      uploadedPaths = await uploadImagesToStorage(postForm.images);
 
-    setPostSaving(false);
-    if (error) {
-      setPostsAvailable(false);
-      return toast.error("Could not create post. Run updated SQL.");
+      const { data, error } = await supabase.from("network_posts").insert({
+        author_id: user.id,
+        body: postForm.body.trim() || null,
+        shared_type: postForm.shared_type || null,
+        shared_title: postForm.shared_title.trim() || null,
+        shared_url: postForm.shared_url.trim() || null,
+        shared_payload: postForm.shared_payload || null,
+        attachment_urls: uploadedPaths,
+        visibility: postForm.visibility,
+        post_category: postForm.post_category
+      }).select(`id, author_id, body, shared_type, shared_title, shared_url, shared_payload, attachment_urls, visibility, post_category, created_at, updated_at, author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)`).single();
+
+      if (error) {
+        const storagePaths = filterNetworkPostStoragePaths(uploadedPaths);
+        if (storagePaths.length) await supabase.storage.from("network-post-media").remove(storagePaths);
+        setPostsAvailable(false);
+        throw new Error("Could not create post. Run updated SQL.");
+      }
+
+      setPosts(prev => [data, ...prev]);
+      setPostForm(defaultPostForm);
+      setComposerOpen(false);
+      setPostsAvailable(true);
+      toast.success("Post shared");
+    } catch (error) {
+      toast.error(error.message || "Could not create post");
+    } finally {
+      setPostSaving(false);
     }
-    
-    setPosts(prev => [data, ...prev]);
-    setPostForm(defaultPostForm);
-    setComposerOpen(false);
-    setPostsAvailable(true);
-    toast.success("Post shared");
   };
 
   const startEditingPost = (post) => {
@@ -410,30 +491,42 @@ export default function Network({ user, darkMode = false }) {
 
   const executeUpdatePost = async () => {
     setPostUpdating(true);
-    if (imagesToDelete.length > 0) {
-      await supabase.storage.from("network-post-media").remove(imagesToDelete);
+    let newUploadedPaths = [];
+    try {
+      newUploadedPaths = await uploadImagesToStorage(editForm.images);
+      const finalAttachmentUrls = [...editForm.existing_urls, ...newUploadedPaths];
+
+      const { data, error } = await supabase.from("network_posts").update({
+        body: editForm.body.trim() || null,
+        shared_type: editForm.shared_type || null,
+        shared_title: editForm.shared_title.trim() || null,
+        shared_url: editForm.shared_url.trim() || null,
+        shared_payload: editForm.shared_payload || null,
+        attachment_urls: finalAttachmentUrls,
+        visibility: editForm.visibility,
+        post_category: editForm.post_category,
+        updated_at: new Date().toISOString()
+      }).eq("id", editingPostId).eq("author_id", user.id).select(`id, author_id, body, shared_type, shared_title, shared_url, shared_payload, attachment_urls, visibility, post_category, created_at, updated_at, author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)`).single();
+
+      if (error) {
+        const storagePaths = filterNetworkPostStoragePaths(newUploadedPaths);
+        if (storagePaths.length) await supabase.storage.from("network-post-media").remove(storagePaths);
+        throw new Error(error.message || "Could not update post");
+      }
+
+      const storageImagesToDelete = filterNetworkPostStoragePaths(imagesToDelete);
+      if (storageImagesToDelete.length > 0) {
+        await supabase.storage.from("network-post-media").remove(storageImagesToDelete);
+      }
+
+      setPosts(prev => prev.map(p => p.id === editingPostId ? data : p));
+      cancelEditingPost();
+      toast.success("Post updated");
+    } catch (error) {
+      toast.error(error.message || "Could not update post");
+    } finally {
+      setPostUpdating(false);
     }
-    
-    const newUploadedPaths = await uploadImagesToStorage(editForm.images);
-    const finalAttachmentUrls = [...editForm.existing_urls, ...newUploadedPaths];
-
-    const { data, error } = await supabase.from("network_posts").update({
-      body: editForm.body.trim() || null,
-      shared_type: editForm.shared_type || null,
-      shared_title: editForm.shared_title.trim() || null,
-      shared_url: editForm.shared_url.trim() || null,
-      shared_payload: editForm.shared_payload || null,
-      attachment_urls: finalAttachmentUrls,
-      visibility: editForm.visibility,
-      post_category: editForm.post_category,
-      updated_at: new Date().toISOString()
-    }).eq("id", editingPostId).eq("author_id", user.id).select(`id, author_id, body, shared_type, shared_title, shared_url, shared_payload, attachment_urls, visibility, post_category, created_at, updated_at, author:profiles!network_posts_author_id_fkey(id, full_name, title, avatar_url)`).single();
-
-    setPostUpdating(false);
-    if (error) return toast.error("Could not update post");
-    setPosts(prev => prev.map(p => p.id === editingPostId ? data : p));
-    cancelEditingPost();
-    toast.success("Post updated");
   };
 
   const deletePost = async (postId) => {
@@ -441,8 +534,9 @@ export default function Network({ user, darkMode = false }) {
     const { error } = await supabase.from("network_posts").update({ is_deleted: true }).eq("id", postId).eq("author_id", user.id);
     if (error) return toast.error("Could not delete post");
     
-    if (postToDelete?.attachment_urls?.length > 0) {
-      await supabase.storage.from("network-post-media").remove(postToDelete.attachment_urls);
+    const storagePaths = filterNetworkPostStoragePaths(postToDelete?.attachment_urls || []);
+    if (storagePaths.length > 0) {
+      await supabase.storage.from("network-post-media").remove(storagePaths);
     }
     
     setPosts(prev => prev.filter(p => p.id !== postId));
@@ -488,6 +582,7 @@ export default function Network({ user, darkMode = false }) {
   return (
     <div className="pb-8">
       {selectedColleague && <ColleagueProfileModal colleague={selectedColleague} loading={profileLoading} darkMode={darkMode} onClose={() => setSelectedColleague(null)} />}
+      {selectedAdminContact && <AdminContactModal contact={selectedAdminContact} darkMode={darkMode} onClose={() => setSelectedAdminContact(null)} />}
       {sharedViewer && <SharedAttachmentModal post={sharedViewer} user={user} darkMode={darkMode} onClose={() => setSharedViewer(null)} />}
       {fullImagePreview && <PostImagePreviewModal url={fullImagePreview} darkMode={darkMode} onClose={() => setFullImagePreview(null)} />}
       
@@ -572,9 +667,9 @@ export default function Network({ user, darkMode = false }) {
 
       {activeTab === "colleagues" && (
         <ColleaguesTab 
-          requests={requests} connections={connections} panelClass={panelClass} 
+          requests={requests} connections={connections} supportContact={supportContact} supportUserId={supportUserId} panelClass={panelClass}
           darkMode={darkMode} busyId={busyId} onRespond={handleRespond} 
-          onOpenProfile={openColleagueProfile} onRemoveConnection={requestRemoveConnection}
+          onOpenProfile={openColleagueProfile} onOpenAdminContact={setSelectedAdminContact} onRemoveConnection={requestRemoveConnection}
         />
       )}
       
@@ -839,16 +934,44 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
   const opensSharedModal = ["caselog", "protocol", "drug", "cpd", "resource"].includes(post.shared_type);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadUrls() {
-      if (!post.attachment_urls?.length) return;
-      const { data } = await supabase.storage.from('network-post-media').createSignedUrls(post.attachment_urls, 7 * 24 * 3600);
-      if (data) {
-        const urlMap = {};
-        data.forEach(item => { if (item.signedUrl) urlMap[item.path] = item.signedUrl; });
-        setImageUrls(urlMap);
+      const paths = post.attachment_urls || [];
+      if (!paths.length) {
+        setImageUrls({});
+        return;
       }
+
+      const urlMap = {};
+      const storagePaths = [];
+      const storageIndexes = [];
+      paths.forEach((path, index) => {
+        if (isDirectMediaUrl(path)) {
+          urlMap[path] = path;
+        } else {
+          storagePaths.push(path);
+          storageIndexes.push(index);
+          urlMap[path] = networkPostMediaUrl(path);
+        }
+      });
+
+      if (storagePaths.length) {
+        const { data, error } = await supabase.storage.from("network-post-media").createSignedUrls(storagePaths, 7 * 24 * 3600);
+        if (!error && data) {
+          data.forEach((item, index) => {
+            const path = item.path || storagePaths[index];
+            const originalPath = paths[storageIndexes[index]] || path;
+            if (item.signedUrl) urlMap[originalPath] = item.signedUrl;
+          });
+        }
+      }
+
+      if (!cancelled) setImageUrls(urlMap);
     }
     loadUrls();
+    return () => {
+      cancelled = true;
+    };
   }, [post.attachment_urls]);
 
   if (editing) {
@@ -1163,12 +1286,86 @@ function normaliseSharedUrl(url = "") {
   return trimmed;
 }
 
+async function prepareNetworkPostImage(file, options = {}) {
+  const { forceCompress = false, maxSide = 1800, quality = 0.82 } = options;
+  if (!file?.type?.startsWith("image/")) return file;
+  if (!forceCompress && file.size < 2.5 * 1024 * 1024) return file;
+
+  try {
+    const url = URL.createObjectURL(file);
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+    URL.revokeObjectURL(url);
+
+    if (!blob || (!forceCompress && blob.size >= file.size)) return file;
+    const nextName = String(file.name || "image.jpg").replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], nextName, { type: "image/jpeg" });
+  } catch (error) {
+    console.warn("Could not compress network post image; uploading original", error);
+    return file;
+  }
+}
+
+async function createInlineNetworkPostImage(file) {
+  const inlineFile = await prepareNetworkPostImage(file, {
+    forceCompress: true,
+    maxSide: 1200,
+    quality: 0.72
+  });
+  return fileToDataUrl(inlineFile);
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function isStorageSchemaError(error) {
+  const raw = String(error?.message || error?.error_description || "").toLowerCase();
+  return raw.includes("schema") && (raw.includes("invalid") || raw.includes("incompatible"));
+}
+
+function getNetworkPostUploadErrorMessage(error, fileName = "image") {
+  const raw = String(error?.message || error?.error_description || "Upload failed");
+  const lower = raw.toLowerCase();
+  if (lower.includes("bucket") || lower.includes("not found")) {
+    return `Failed to upload ${fileName}: media storage is not ready. Run supabase/network_post_media_storage.sql.`;
+  }
+  if (lower.includes("row-level") || lower.includes("policy") || lower.includes("permission") || lower.includes("unauthorized")) {
+    return `Failed to upload ${fileName}: storage permission blocked. Re-run the network post media SQL.`;
+  }
+  if (lower.includes("payload") || lower.includes("too large") || lower.includes("exceeded") || lower.includes("size")) {
+    return `Failed to upload ${fileName}: the image is too large. Try a smaller image.`;
+  }
+  return `Failed to upload ${fileName}: ${raw}`;
+}
+
 function formatDate(value) {
   if (!value) return "Just now";
   return new Date(value).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function ColleaguesTab({ requests, connections, panelClass, darkMode, busyId, onRespond, onOpenProfile, onRemoveConnection }) {
+function ColleaguesTab({ requests, connections, supportContact, supportUserId, panelClass, darkMode, busyId, onRespond, onOpenProfile, onOpenAdminContact, onRemoveConnection }) {
+  const visibleConnections = connections.filter(c => !isLegacyAdminContactProfile(c.colleague, supportUserId));
+
   return (
     <div className="space-y-6">
       {requests.length > 0 && (
@@ -1192,11 +1389,29 @@ function ColleaguesTab({ requests, connections, panelClass, darkMode, busyId, on
       )}
       <div>
         <h3 className="text-sm font-black uppercase tracking-widest opacity-60 mb-3 flex items-center gap-2"><Users size={16}/> My Colleagues</h3>
-        {connections.length === 0 ? (
+        <div className="space-y-2">
+          {supportContact && (
+            <div className={`${panelClass} flex justify-between items-center gap-4 border-l-4 border-[#71CFC2]`}>
+              <button onClick={() => onOpenAdminContact(supportContact)} className="min-w-0 flex-1 text-left flex items-center gap-3">
+                <div className="h-11 w-11 rounded-full bg-[#71CFC2] text-[#062F63] grid place-items-center shrink-0 overflow-hidden font-black">
+                  {supportContact.avatar_url ? <img src={supportContact.avatar_url} alt="" className="h-full w-full object-cover" /> : "A"}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold truncate">Admin</div>
+                  <div className="text-xs opacity-60 truncate">Connected to everyone - VetLearn support</div>
+                </div>
+              </button>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => onOpenAdminContact(supportContact)} className={`h-10 rounded-full px-4 text-xs font-black transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}>Contact</button>
+                <Link to="/messages?admin=1" className={`h-10 w-10 rounded-full grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}><MessageSquare size={18} /></Link>
+              </div>
+            </div>
+          )}
+
+          {visibleConnections.length === 0 && !supportContact ? (
           <div className={`${panelClass} text-center opacity-60 py-8`}>You haven't added any colleagues yet.</div>
         ) : (
-          <div className="space-y-2">
-            {connections.map(c => (
+            visibleConnections.map(c => (
               <div key={c.connection_id} className={`${panelClass} flex justify-between items-center gap-4`}>
                 <button onClick={() => onOpenProfile(c.colleague)} className="min-w-0 flex-1 text-left flex items-center gap-3">
                   <div className="h-11 w-11 rounded-full bg-[#E8F8F5] text-[#0F8F83] grid place-items-center shrink-0 overflow-hidden font-black">
@@ -1212,9 +1427,52 @@ function ColleaguesTab({ requests, connections, panelClass, darkMode, busyId, on
                   <IconButton icon={busyId === c.connection_id ? Loader2 : Trash2} variant="danger" darkMode={darkMode} disabled={busyId === c.connection_id} onClick={() => onRemoveConnection(c)} />
                 </div>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminContactModal({ contact, darkMode, onClose }) {
+  const modalClass = darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]";
+  const softClass = darkMode ? "bg-white/10 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]";
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+      <div className={`w-full max-w-md max-h-[88vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl ${modalClass}`}>
+        <div className="flex justify-between items-start gap-3 mb-5">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="h-16 w-16 rounded-2xl bg-[#71CFC2] text-[#062F63] grid place-items-center shrink-0 overflow-hidden text-2xl font-black">
+              {contact?.avatar_url ? <img src={contact.avatar_url} alt="" className="h-full w-full object-cover" /> : "A"}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-2xl font-black leading-tight truncate">Admin</h2>
+              <p className="text-sm opacity-65">{contact?.title || "VetLearn Support"}</p>
+            </div>
           </div>
-        )}
+          <IconButton icon={X} label="Close admin contact" darkMode={darkMode} onClick={onClose} />
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            <ProfileRow icon={<Briefcase size={16} />} label="Team" value={contact?.practice_name || "VetLearn"} softClass={softClass} />
+            <ProfileRow icon={<MapPin size={16} />} label="Availability" value={contact?.location || "In-app support"} softClass={softClass} />
+            <ProfileRow icon={<Mail size={16} />} label="Email" value={contact?.email} softClass={softClass} />
+            <ProfileRow icon={<Phone size={16} />} label="Phone" value={contact?.mobile || contact?.phone} softClass={softClass} />
+            <ProfileRow icon={<Globe size={16} />} label="Website" value={contact?.website} softClass={softClass} isLink />
+          </div>
+
+          <section className={`rounded-lg border p-4 ${softClass}`}>
+            <h3 className="text-xs font-black uppercase tracking-widest opacity-50 mb-2">Contact Admin</h3>
+            <p className="text-sm leading-6 opacity-80 whitespace-pre-wrap">{contact?.bio || "Message Admin for account, subscription, access or VetLearn support queries."}</p>
+          </section>
+
+          <Link to="/messages?admin=1" className="w-full rounded-lg bg-[#71CFC2] text-[#062F63] p-3 font-black flex items-center justify-center gap-2 transition hover:opacity-90">
+            <MessageSquare size={18} /> Message Admin
+          </Link>
+        </div>
       </div>
     </div>
   );

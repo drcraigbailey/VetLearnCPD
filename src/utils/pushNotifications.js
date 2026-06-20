@@ -5,6 +5,8 @@ let setupPromise = null;
 let listenerUserId = null;
 let settingsListenerUserId = null;
 let lastPushContext = null;
+const PUSH_NAVIGATION_KEY = "vetlearn-last-push-navigation-at";
+const PUSH_NAVIGATION_TTL_MS = 15000;
 
 const logPush = (...parts) => console.log("[VetLearn Push]", ...parts);
 
@@ -50,6 +52,52 @@ const ensureAndroidChannel = async (PushNotifications, platform) => {
 };
 
 const isPromptState = (receive) => String(receive || "").startsWith("prompt");
+
+export const markPushNavigationIntent = () => {
+  if (typeof window === "undefined") return;
+  const timestamp = String(Date.now());
+  try {
+    window.sessionStorage?.setItem(PUSH_NAVIGATION_KEY, timestamp);
+    window.localStorage?.setItem(PUSH_NAVIGATION_KEY, timestamp);
+  } catch (error) {
+    console.warn("Could not mark push navigation intent:", error?.message || error);
+  }
+};
+
+export const hasRecentPushNavigationIntent = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.sessionStorage?.getItem(PUSH_NAVIGATION_KEY) || window.localStorage?.getItem(PUSH_NAVIGATION_KEY);
+    const timestamp = Number(raw || 0);
+    return Number.isFinite(timestamp) && Date.now() - timestamp < PUSH_NAVIGATION_TTL_MS;
+  } catch {
+    return false;
+  }
+};
+
+const routeWithPushMarker = (route) => {
+  const fallback = "/messages";
+  try {
+    const url = new URL(route || fallback, window.location.origin);
+    url.searchParams.set("fromPush", "1");
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+};
+
+const getPushRoute = (data = {}) => {
+  if (data.route) return String(data.route);
+  if (data.conversation_id) return `/messages?conversation=${encodeURIComponent(String(data.conversation_id))}`;
+  if (data.type === "admin_support_message" || data.type === "admin_group_message") return "/admin?tab=mailbox";
+  return "/messages";
+};
+
+const openPushRoute = (data = {}) => {
+  const route = routeWithPushMarker(getPushRoute(data));
+  markPushNavigationIntent();
+  window.location.href = route;
+};
 
 export const getPushNotificationPreference = async (userId) => {
   if (!userId) return false;
@@ -123,9 +171,7 @@ const attachPushListeners = async (PushNotifications, user, platform) => {
   });
 
   await PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-    const conversationId = notification?.notification?.data?.conversation_id;
-    if (conversationId) window.location.href = `/messages?conversation=${conversationId}`;
-    else window.location.href = "/messages";
+    openPushRoute(notification?.notification?.data || {});
   });
 };
 
@@ -228,22 +274,44 @@ export const setupPushNotifications = async (user, options = {}) => {
 
 export const getLastPushContext = () => lastPushContext;
 
-export const sendMessagePushNotification = async ({ recipientId, title, body, messageId, conversationId }) => {
+export const sendMessagePushNotification = async ({ recipientId, title, body, messageId, conversationId, route, type = "message" }) => {
   if (!recipientId) return;
 
   try {
     const { error } = await supabase.functions.invoke("send-message-push", {
       body: {
         recipient_id: recipientId,
+        notification_type: type,
         title: title || "New VetLearn message",
         body: body || "You have a new VetLearn message.",
         message_id: messageId ? String(messageId) : null,
-        conversation_id: conversationId ? String(conversationId) : null
+        conversation_id: conversationId ? String(conversationId) : null,
+        route: route || (conversationId ? `/messages?conversation=${conversationId}` : "/messages")
       }
     });
 
     if (error) console.warn("Phone push notification was not sent:", error.message);
   } catch (error) {
     console.warn("Phone push notification fallback used:", error.message || error);
+  }
+};
+
+export const sendAdminSupportPushNotification = async ({ title, body, messageId, conversationId }) => {
+  try {
+    const { error } = await supabase.functions.invoke("send-message-push", {
+      body: {
+        admin_support_broadcast: true,
+        notification_type: "admin_support_message",
+        title: title || "New Admin message",
+        body: body || "A user sent Admin a message.",
+        message_id: messageId ? String(messageId) : null,
+        conversation_id: conversationId ? String(conversationId) : null,
+        route: conversationId ? `/admin?tab=mailbox&conversation=${conversationId}` : "/admin?tab=mailbox"
+      }
+    });
+
+    if (error) console.warn("Admin support phone push was not sent:", error.message);
+  } catch (error) {
+    console.warn("Admin support phone push fallback used:", error.message || error);
   }
 };

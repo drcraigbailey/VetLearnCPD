@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Bell, Briefcase, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Target, Trash2, Upload, UserRound } from "lucide-react";
+import { Bell, Briefcase, CheckCircle2, CreditCard, Crown, FileText, Globe, GraduationCap, Image as ImageIcon, KeyRound, Loader2, Lock, Mail, MapPin, Phone, Save, Shield, Sparkles, Target, Trash2, Upload, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import PageBanner from "../components/PageBanner";
 import LoadingState from "../components/LoadingState";
@@ -76,6 +76,13 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const [profileForm, setProfileForm] = useState(profileDefaults);
   const [aiPrefs, setAiPrefs] = useState(aiDefaults);
   const [appPrefs, setAppPrefs] = useState({ notifications: true, privacyMode: false, biometricUnlock: false, theme: darkMode ? "dark" : "light", cpdTargetHours: DEFAULT_CPD_TARGET_HOURS });
+  const [planInfo, setPlanInfo] = useState({
+    currentTier: "free",
+    subscription: null,
+    plans: [],
+    features: [],
+    matrix: []
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -113,10 +120,14 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
   const loadSettings = async () => {
     setLoading(true);
-    const [profileRes, prefsRes, biometricSupport] = await Promise.all([
+    const [profileRes, prefsRes, biometricSupport, planRes, featureRes, planFeatureRes, userTypeRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle(),
-      isBiometricAvailable()
+      isBiometricAvailable(),
+      supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
+      supabase.from("app_features").select("*").eq("is_active", true).order("name", { ascending: true }),
+      supabase.from("subscription_feature_access").select("*"),
+      supabase.from("user_type_feature_access").select("*")
     ]);
 
     if (!profileRes.error && profileRes.data) {
@@ -160,7 +171,36 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
 
     setBiometricAvailable(biometricSupport);
     setBiometricEnabled(isBiometricEnabled(user.id));
+    await loadPlanInfo({ planRes, featureRes, planFeatureRes, userTypeRes });
     setLoading(false);
+  };
+
+  const loadPlanInfo = async ({ planRes, featureRes, planFeatureRes, userTypeRes } = {}) => {
+    const [typeRes, subscriptionRes] = await Promise.all([
+      supabase.rpc("effective_user_type", { target_user_id: user.id }),
+      supabase.from("user_subscriptions").select("*").eq("user_id", user.id).maybeSingle()
+    ]);
+
+    const subscriptionTier = subscriptionRes.data?.subscription_tier || "free";
+    const currentTier = !typeRes.error && typeRes.data ? typeRes.data : subscriptionTier;
+    setPlanInfo({
+      currentTier,
+      subscription: subscriptionRes.data || null,
+      plans: planRes && !planRes.error ? planRes.data || [] : [],
+      features: featureRes && !featureRes.error ? featureRes.data || [] : [],
+      matrix: [
+        ...((planFeatureRes && !planFeatureRes.error ? planFeatureRes.data || [] : []).map(item => ({
+          tier: item.subscription_tier,
+          feature_key: item.feature_key,
+          is_enabled: item.is_enabled
+        }))),
+        ...((userTypeRes && !userTypeRes.error ? userTypeRes.data || [] : []).map(item => ({
+          tier: item.user_type,
+          feature_key: item.feature_key,
+          is_enabled: item.is_enabled
+        })))
+      ]
+    });
   };
 
   const updateProfile = (field, value) => setProfileForm(prev => ({ ...prev, [field]: value }));
@@ -358,6 +398,7 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
   const tabs = [
     { id: "profile", label: "Profile", icon: UserRound },
     { id: "professional", label: "Professional", icon: Briefcase },
+    { id: "plan", label: "Plan", icon: Crown },
     { id: "ai", label: "AI", icon: Sparkles },
     { id: "app", label: "App", icon: Lock },
     { id: "docs", label: "Privacy", icon: FileText }
@@ -441,6 +482,14 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
             </div>
             <SaveButton saving={saving} onClick={saveProfile} label="Save Professional Information" />
           </section>
+        )}
+
+        {activeTab === "plan" && (
+          <PlanSubscriptionPanel
+            panelClass={panelClass}
+            darkMode={darkMode}
+            planInfo={planInfo}
+          />
         )}
 
         {activeTab === "ai" && (
@@ -643,4 +692,128 @@ function SaveButton({ saving, onClick, label }) {
       {label}
     </button>
   );
+}
+
+function PlanSubscriptionPanel({ panelClass, darkMode, planInfo }) {
+  const plans = [...(planInfo.plans || [])].filter(plan => plan.is_active !== false);
+  const currentTier = planInfo.currentTier || planInfo.subscription?.subscription_tier || "free";
+  const currentPlan = plans.find(plan => plan.tier === currentTier) || { tier: currentTier, name: tierLabel(currentTier), description: "Your current VetLearn access." };
+  const included = (planInfo.features || []).filter(feature => featureEnabledForTier(planInfo.matrix, currentTier, feature.feature_key));
+  const locked = (planInfo.features || []).filter(feature => {
+    if (featureEnabledForTier(planInfo.matrix, currentTier, feature.feature_key)) return false;
+    return plans.some(plan => plan.tier !== currentTier && featureEnabledForTier(planInfo.matrix, plan.tier, feature.feature_key));
+  });
+  const canCancel = currentTier !== "free" && ["active", "trialing"].includes(planInfo.subscription?.status || "active");
+
+  const actionClass = "rounded-lg bg-[#71CFC2] px-4 py-3 text-sm font-black text-[#062F63] disabled:opacity-50";
+
+  return (
+    <section className={panelClass}>
+      <SectionTitle icon={<CreditCard size={20} />} title="Plan & Subscription" subtitle="Your VetLearn tier and included features." darkMode={darkMode} />
+
+      <div className={`mb-4 rounded-2xl border p-5 ${darkMode ? "border-white/10 bg-black/20" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.12em] opacity-60">Current Plan</p>
+            <h3 className="mt-1 text-2xl font-black">{currentPlan.name || tierLabel(currentTier)}</h3>
+            <p className="mt-1 text-sm opacity-65">{currentPlan.description || "No description yet."}</p>
+          </div>
+          <span className="rounded-full bg-[#71CFC2] px-3 py-1 text-xs font-black text-[#062F63]">{currentTier}</span>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => toast("Upgrade checkout is ready for payment-provider wiring.")}
+            className={actionClass}
+          >
+            <Crown size={16} className="inline mr-2" /> Upgrade
+          </button>
+          {canCancel && (
+            <button
+              type="button"
+              onClick={() => toast("Cancellation will connect to the payment provider when billing is enabled.")}
+              className={`rounded-lg px-4 py-3 text-sm font-black ${darkMode ? "bg-white/10 text-slate-100" : "bg-white text-[#0B3760]"}`}
+            >
+              Cancel Subscription
+            </button>
+          )}
+        </div>
+        {/* TODO: Replace these placeholder actions with Stripe or the chosen payment provider checkout/customer-portal flow. */}
+      </div>
+
+      <div className="grid gap-4">
+        <FeatureList
+          title="Included"
+          icon={<CheckCircle2 size={17} />}
+          features={included}
+          emptyText="No features are currently enabled for this tier."
+          darkMode={darkMode}
+        />
+        <FeatureList
+          title="Locked"
+          icon={<Lock size={17} />}
+          features={locked}
+          emptyText="No locked features found."
+          darkMode={darkMode}
+          muted
+        />
+      </div>
+
+      {plans.length > 0 && (
+        <div className="mt-5 grid gap-3">
+          <h3 className="font-black">Available Plans</h3>
+          {plans.map(plan => (
+            <div key={plan.tier} className={`rounded-xl border p-4 ${plan.tier === currentTier ? "border-[#71CFC2]" : darkMode ? "border-white/10" : "border-[#DCEDEA]"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="font-black">{plan.name || tierLabel(plan.tier)}</h4>
+                  <p className="mt-1 text-xs opacity-65">{plan.description}</p>
+                </div>
+                <span className="text-right text-sm font-black text-[#0F8F83]">{priceLabel(plan)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FeatureList({ title, icon, features, emptyText, darkMode, muted = false }) {
+  return (
+    <div className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+      <div className="mb-3 flex items-center gap-2 font-black">
+        <span className={muted ? "opacity-60" : "text-[#0F8F83]"}>{icon}</span>
+        {title}
+      </div>
+      {features.length === 0 ? (
+        <p className="text-sm opacity-60">{emptyText}</p>
+      ) : (
+        <div className="grid gap-2">
+          {features.map(feature => (
+            <div key={feature.feature_key} className={`rounded-lg px-3 py-2 text-sm font-bold ${muted ? darkMode ? "bg-black/20 text-slate-300" : "bg-white text-[#667F91]" : darkMode ? "bg-black/20" : "bg-white"}`}>
+              {feature.name || feature.feature_key}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function featureEnabledForTier(matrix, tier, featureKey) {
+  const matches = (matrix || []).filter(item => item.tier === tier && item.feature_key === featureKey);
+  return matches.length > 0 ? matches[matches.length - 1].is_enabled === true : false;
+}
+
+function tierLabel(tier) {
+  return String(tier || "free").replaceAll("_", " ").replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function priceLabel(plan) {
+  const monthly = Number(plan.monthly_price_pence || 0);
+  const yearly = Number(plan.yearly_price_pence || 0);
+  if (monthly <= 0 && yearly <= 0) return "Free";
+  if (monthly > 0) return `£${(monthly / 100).toFixed(2)}/mo`;
+  return `£${(yearly / 100).toFixed(2)}/yr`;
 }

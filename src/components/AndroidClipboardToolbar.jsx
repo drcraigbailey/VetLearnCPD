@@ -11,6 +11,9 @@ const LONG_PRESS_MOVE_TOLERANCE = 12;
 export default function AndroidClipboardToolbar({ darkMode = false }) {
   const editableRef = useRef(null);
   const targetRef = useRef(null);
+  const toolbarNodeRef = useRef(null);
+  const toolbarVisibleRef = useRef(false);
+  const dismissedSelectionTextRef = useRef("");
   const hideTimerRef = useRef(null);
   const longPressRef = useRef(null);
   const editableMenuRequestedRef = useRef(false);
@@ -33,14 +36,24 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
   }, [darkMode]);
 
   useEffect(() => {
+    toolbarVisibleRef.current = Boolean(toolbar);
+  }, [toolbar]);
+
+  useEffect(() => {
     if (!shouldUseClipboardToolbar()) return undefined;
 
     const update = () => window.setTimeout(() => updateToolbar(), 0);
+    const dismissToolbar = () => {
+      dismissedSelectionTextRef.current = window.getSelection()?.toString() || "";
+      editableMenuRequestedRef.current = false;
+      setToolbar(null);
+    };
     const onFocusIn = (event) => {
       const editable = getEditableElement(event.target);
       if (!editable) return;
       editableRef.current = editable;
       targetRef.current = editable;
+      dismissedSelectionTextRef.current = "";
       editableMenuRequestedRef.current = false;
       setToolbar(null);
     };
@@ -53,10 +66,15 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
       }, 180);
     };
     const onInput = () => {
+      dismissedSelectionTextRef.current = "";
       editableMenuRequestedRef.current = false;
       update();
     };
     const onPointerDown = (event) => {
+      if (toolbarVisibleRef.current && !toolbarNodeRef.current?.contains(event.target)) {
+        dismissToolbar();
+      }
+
       if (event.pointerType === "mouse") return;
       const editable = getEditableElement(event.target);
       const textBlock = editable || getTextBlockElement(event.target);
@@ -67,6 +85,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
       const startY = event.clientY;
       const timer = window.setTimeout(() => {
         if (!document.contains(textBlock)) return;
+        dismissedSelectionTextRef.current = "";
         targetRef.current = textBlock;
         if (editable) {
           editableRef.current = editable;
@@ -100,6 +119,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
       if (!textBlock) return;
 
       event.preventDefault();
+      dismissedSelectionTextRef.current = "";
       targetRef.current = textBlock;
       if (editable) {
         editableRef.current = editable;
@@ -147,7 +167,9 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
       : getEditableElement(document.activeElement);
 
     if (editable) {
-      const hasSelection = getEditableSelectionText(editable).length > 0;
+      const selectionText = getEditableSelectionText(editable);
+      const editableText = getEditableText(editable);
+      const hasSelection = selectionText.length > 0;
       const shouldShowEditableToolbar = hasSelection || allowEditableMenu || editableMenuRequestedRef.current;
       if (!shouldShowEditableToolbar) {
         setToolbar(null);
@@ -160,7 +182,8 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
         editable: true,
         writable: isWritableEditable(editable),
         hasSelection,
-        textAvailable: getEditableText(editable).length > 0,
+        textAvailable: editableText.length > 0,
+        selectionText,
         fallbackText: "",
         position: getBottomToolbarPosition()
       });
@@ -170,11 +193,17 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
     const selection = window.getSelection();
     const selectedText = selection?.toString() || "";
     if (selectedText.trim()) {
+      if (selectedText === dismissedSelectionTextRef.current) {
+        setToolbar(null);
+        return;
+      }
+      dismissedSelectionTextRef.current = "";
       setToolbar({
         editable: false,
         writable: false,
         hasSelection: true,
         textAvailable: true,
+        selectionText: selectedText,
         fallbackText: "",
         position: getBottomToolbarPosition()
       });
@@ -183,11 +212,17 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
 
     const fallbackText = getElementText(fallbackElement || targetRef.current);
     if (fallbackText) {
+      if (fallbackText === dismissedSelectionTextRef.current) {
+        setToolbar(null);
+        return;
+      }
+      dismissedSelectionTextRef.current = "";
       setToolbar({
         editable: false,
         writable: false,
         hasSelection: false,
         textAvailable: true,
+        selectionText: "",
         fallbackText,
         position: getBottomToolbarPosition()
       });
@@ -202,8 +237,8 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
   const copy = async () => {
     const editable = editableRef.current;
     const text = toolbar.editable
-      ? getEditableSelectionText(editable) || getEditableText(editable)
-      : window.getSelection()?.toString() || toolbar.fallbackText || "";
+      ? getEditableSelectionText(editable) || toolbar.selectionText || getEditableText(editable)
+      : window.getSelection()?.toString() || toolbar.selectionText || toolbar.fallbackText || "";
     if (!text) return;
     await writeClipboard(text);
     toast.success("Copied");
@@ -243,6 +278,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
 
   const selectAll = () => {
     const editable = editableRef.current;
+    dismissedSelectionTextRef.current = "";
     if (toolbar.editable && editable) {
       selectEditableText(editable);
       updateToolbar({ allowEditableMenu: true });
@@ -264,7 +300,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
         transform: "translateZ(0)"
       }}
     >
-      <div className={`flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border p-1.5 ${theme.bar}`}>
+      <div ref={toolbarNodeRef} className={`flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border p-1.5 ${theme.bar}`}>
         {toolbar.editable && (
           <ToolbarButton className={theme.primary} icon={<Clipboard size={16} />} onClick={paste} disabled={!toolbar.writable}>
             Paste
@@ -288,12 +324,35 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
 }
 
 function ToolbarButton({ children, className, disabled, icon, onClick }) {
+  const touchHandledRef = useRef(false);
+  const runAction = (event) => {
+    if (disabled) return;
+    onClick?.(event);
+  };
+  const handlePointerDown = (event) => {
+    if (event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.stopPropagation();
+    touchHandledRef.current = true;
+    runAction(event);
+  };
+  const handleClick = (event) => {
+    if (touchHandledRef.current) {
+      touchHandledRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    runAction(event);
+  };
+
   return (
     <button
       type="button"
       className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-black ${className}`}
       disabled={disabled}
-      onClick={onClick}
+      onPointerDown={handlePointerDown}
+      onClick={handleClick}
     >
       {icon}
       <span>{children}</span>

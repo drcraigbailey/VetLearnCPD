@@ -36,95 +36,151 @@ Deno.serve(async (req) => {
     const { data: authData, error: authError } = await userClient.auth.getUser();
     if (authError || !authData.user) return json({ error: "Not signed in" }, 401);
 
-    const { recipient_id, title, body, message_id, conversation_id } = await req.json();
-    if (!recipient_id) return json({ error: "recipient_id is required" }, 400);
-    if (recipient_id === authData.user.id) return json({ sent: 0, notification_created: false, skipped: true, reason: "self" });
+    const payload = await req.json();
+    const {
+      recipient_id,
+      title,
+      body,
+      message_id,
+      conversation_id,
+      notification_type,
+      type,
+      route,
+      admin_support_broadcast
+    } = payload;
 
-    const messageTitle = title || "New message";
-    const messageBody = body || "You have a new VetLearn message.";
+    let recipientIds = recipient_id ? [String(recipient_id)] : [];
+    let messageId = message_id ? String(message_id) : null;
+    let conversationId = conversation_id ? String(conversation_id) : null;
+    let notificationType = String(notification_type || type || "message");
+    let messageTitle = title || "New message";
+    let messageBody = body || "You have a new VetLearn message.";
+    let notificationRoute = route || (conversationId ? `/messages?conversation=${conversationId}` : "/messages");
 
-    const notificationResult = await createInAppNotification(adminClient, {
-      recipientId: recipient_id,
-      senderId: authData.user.id,
-      title: messageTitle,
-      body: messageBody,
-      messageId: message_id,
-      conversationId: conversation_id
-    });
-
-    const { data: prefs } = await adminClient
-      .from("user_preferences")
-      .select("app_preferences")
-      .eq("user_id", recipient_id)
-      .maybeSingle();
-
-    if (prefs?.app_preferences?.notifications === false) {
-      return json({ sent: 0, notification_created: notificationResult.created, skipped: true, reason: "recipient disabled phone notifications" });
-    }
-
-    if (!firebaseProjectId || !firebaseClientEmail || !firebasePrivateKey) {
-      return json({
-        sent: 0,
-        notification_created: notificationResult.created,
-        skipped: true,
-        reason: "Missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY secret"
+    if (admin_support_broadcast) {
+      const supportTarget = await resolveAdminSupportBroadcast(adminClient, {
+        senderId: authData.user.id,
+        messageId,
+        conversationId
       });
+
+      if (supportTarget.error) return json({ error: supportTarget.error }, supportTarget.status || 400);
+      recipientIds = supportTarget.recipientIds;
+      messageId = supportTarget.messageId || messageId;
+      conversationId = supportTarget.conversationId || conversationId;
+      notificationType = "admin_support_message";
+      messageTitle = title || "New Admin message";
+      messageBody = body || "A user sent Admin a message.";
+      notificationRoute = route || `/admin?tab=mailbox${conversationId ? `&conversation=${conversationId}` : ""}`;
     }
 
-    const { data: tokens, error: tokenError } = await adminClient
-      .from("device_push_tokens")
-      .select("token")
-      .eq("user_id", recipient_id);
+    recipientIds = [...new Set(recipientIds.filter((id) => id && id !== authData.user.id))];
+    if (recipientIds.length === 0) return json({ sent: 0, notification_created: false, skipped: true, reason: "no recipients" });
 
-    if (tokenError) return json({ error: tokenError.message, notification_created: notificationResult.created }, 500);
+    let accessToken = "";
+    let sent = 0;
+    let failed = 0;
+    let attempted = 0;
+    let notificationCreated = false;
+    const details: unknown[] = [];
 
-    const uniqueTokens = [...new Set((tokens || []).map((row) => row.token).filter(Boolean))];
-    if (uniqueTokens.length === 0) {
-      return json({ sent: 0, notification_created: notificationResult.created, skipped: true, reason: "no registered devices" });
-    }
+    for (const recipientId of recipientIds) {
+      const notificationResult = await createInAppNotification(adminClient, {
+        recipientId,
+        senderId: authData.user.id,
+        title: messageTitle,
+        body: messageBody,
+        messageId,
+        conversationId,
+        notificationType,
+        route: notificationRoute
+      });
+      notificationCreated = notificationCreated || Boolean(notificationResult.created || notificationResult.updated);
 
-    const accessToken = await getGoogleAccessToken({
-      clientEmail: firebaseClientEmail,
-      privateKey: firebasePrivateKey
-    });
+      const { data: prefs } = await adminClient
+        .from("user_preferences")
+        .select("app_preferences")
+        .eq("user_id", recipientId)
+        .maybeSingle();
 
-    const messageData = {
-      type: "message",
-      message_id: message_id ? String(message_id) : "",
-      conversation_id: conversation_id ? String(conversation_id) : "",
-      route: "/messages"
-    };
+      if (prefs?.app_preferences?.notifications === false) {
+        details.push({ recipient_id: recipientId, sent: 0, skipped: true, reason: "recipient disabled phone notifications" });
+        continue;
+      }
 
-    const results = await Promise.allSettled(uniqueTokens.map((token) => sendFcmV1({
-      token,
-      accessToken,
-      projectId: firebaseProjectId,
-      title: messageTitle,
-      body: messageBody,
-      data: messageData
-    })));
+      if (!firebaseProjectId || !firebaseClientEmail || !firebasePrivateKey) {
+        details.push({ recipient_id: recipientId, sent: 0, skipped: true, reason: "Missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY secret" });
+        continue;
+      }
 
-    const failedTokens: string[] = [];
-    const detail = results.map((result, index) => {
-      if (result.status === "fulfilled") return result.value;
-      failedTokens.push(uniqueTokens[index]);
-      return { ok: false, error: result.reason?.message || String(result.reason) };
-    });
-
-    if (failedTokens.length > 0) {
-      await adminClient
+      const { data: tokens, error: tokenError } = await adminClient
         .from("device_push_tokens")
-        .delete()
-        .eq("user_id", recipient_id)
-        .in("token", failedTokens);
+        .select("token")
+        .eq("user_id", recipientId);
+
+      if (tokenError) {
+        details.push({ recipient_id: recipientId, error: tokenError.message });
+        continue;
+      }
+
+      const uniqueTokens = [...new Set((tokens || []).map((row) => row.token).filter(Boolean))];
+      if (uniqueTokens.length === 0) {
+        details.push({ recipient_id: recipientId, sent: 0, skipped: true, reason: "no registered devices" });
+        continue;
+      }
+
+      if (!accessToken) {
+        accessToken = await getGoogleAccessToken({
+          clientEmail: firebaseClientEmail,
+          privateKey: firebasePrivateKey
+        });
+      }
+
+      const messageData = {
+        type: notificationType,
+        message_id: messageId || "",
+        conversation_id: conversationId || "",
+        route: notificationRoute
+      };
+
+      const results = await Promise.allSettled(uniqueTokens.map((token) => sendFcmV1({
+        token,
+        accessToken,
+        projectId: firebaseProjectId,
+        title: messageTitle,
+        body: messageBody,
+        data: messageData
+      })));
+
+      const failedTokens: string[] = [];
+      const successful = results.filter((result, index) => {
+        if (result.status === "fulfilled") return true;
+        failedTokens.push(uniqueTokens[index]);
+        return false;
+      }).length;
+
+      if (failedTokens.length > 0) {
+        await adminClient
+          .from("device_push_tokens")
+          .delete()
+          .eq("user_id", recipientId)
+          .in("token", failedTokens);
+      }
+
+      sent += successful;
+      failed += failedTokens.length;
+      attempted += uniqueTokens.length;
+      details.push({ recipient_id: recipientId, sent: successful, failed: failedTokens.length, attempted: uniqueTokens.length });
     }
 
     return json({
       ok: true,
-      notification_created: notificationResult.created,
-      sent: detail.filter((item) => item.ok).length,
-      failed: failedTokens.length,
-      attempted: uniqueTokens.length
+      notification_created: notificationCreated,
+      sent,
+      failed,
+      attempted,
+      recipients: recipientIds.length,
+      details
     });
   } catch (error) {
     console.error("send-message-push failed", error);
@@ -139,9 +195,13 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
   body: string;
   messageId?: string | null;
   conversationId?: string | null;
+  notificationType?: string;
+  route?: string | null;
 }) {
   const messageId = details.messageId ? String(details.messageId) : null;
   const conversationId = details.conversationId ? String(details.conversationId) : null;
+  const notificationType = details.notificationType || "message";
+  const route = details.route || (conversationId ? `/messages?conversation=${conversationId}` : "/messages");
 
   if (messageId) {
     const { data: message, error: messageError } = await adminClient
@@ -157,28 +217,55 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
 
   const payload = {
     user_id: details.recipientId,
-    type: "message",
+    type: notificationType,
     title: details.title,
     message: details.body,
-    sender_id: details.senderId,
-    related_record_id: messageId,
     related_id: messageId,
     metadata: {
       message_id: messageId,
-      conversation_id: conversationId
+      conversation_id: conversationId,
+      sender_id: details.senderId,
+      route
     },
     is_read: false,
     created_at: new Date().toISOString()
   };
 
+  if (messageId) {
+    const { data: existing } = await adminClient
+      .from("notifications")
+      .select("id")
+      .eq("user_id", details.recipientId)
+      .eq("type", notificationType)
+      .eq("related_id", messageId)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await adminClient
+        .from("notifications")
+        .update({
+          title: payload.title,
+          message: payload.message,
+          metadata: payload.metadata,
+          is_read: false,
+          read_at: null,
+          created_at: payload.created_at
+        })
+        .eq("id", existing.id);
+
+      if (!error) return { created: false, updated: true };
+      console.error("Could not update in-app notification", error);
+    }
+  }
+
   const { error } = await adminClient.from("notifications").insert(payload);
-  if (!error) return { created: true };
+  if (!error) return { created: true, updated: false };
 
   console.error("Could not create in-app notification", error);
 
   const fallbackPayload = {
     user_id: details.recipientId,
-    type: "message",
+    type: notificationType,
     message: details.body,
     related_id: messageId,
     is_read: false
@@ -191,6 +278,48 @@ async function createInAppNotification(adminClient: ReturnType<typeof createClie
   }
 
   return { created: true };
+}
+
+async function resolveAdminSupportBroadcast(adminClient: ReturnType<typeof createClient>, details: {
+  senderId: string;
+  messageId?: string | null;
+  conversationId?: string | null;
+}) {
+  if (!details.messageId) return { error: "message_id is required for Admin support pushes", status: 400, recipientIds: [] as string[] };
+
+  const { data: message, error: messageError } = await adminClient
+    .from("messages")
+    .select("id, conversation_id, sender_id")
+    .eq("id", details.messageId)
+    .maybeSingle();
+
+  if (messageError) return { error: messageError.message, status: 500, recipientIds: [] as string[] };
+  if (!message) return { error: "Message not found", status: 404, recipientIds: [] as string[] };
+  if (message.sender_id !== details.senderId) return { error: "Cannot push a message sent by another user", status: 403, recipientIds: [] as string[] };
+
+  const conversationId = String(message.conversation_id || details.conversationId || "");
+  const { data: statusRow, error: statusError } = await adminClient
+    .from("admin_support_conversation_status")
+    .select("conversation_id")
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+
+  if (statusError) return { error: statusError.message, status: 500, recipientIds: [] as string[] };
+  if (!statusRow) return { error: "Not an Admin support conversation", status: 403, recipientIds: [] as string[] };
+
+  const { data: admins, error: adminError } = await adminClient
+    .from("admin_user_roles")
+    .select("user_id")
+    .eq("is_active", true)
+    .in("role", ["admin", "super_admin"]);
+
+  if (adminError) return { error: adminError.message, status: 500, recipientIds: [] as string[] };
+
+  return {
+    recipientIds: [...new Set((admins || []).map((row) => String(row.user_id)).filter(Boolean))],
+    messageId: String(message.id),
+    conversationId
+  };
 }
 
 async function sendFcmV1({ token, accessToken, projectId, title, body, data }: {

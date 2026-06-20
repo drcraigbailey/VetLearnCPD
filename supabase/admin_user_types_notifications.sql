@@ -326,6 +326,7 @@ $$;
 grant execute on function public.admin_analytics_status() to authenticated;
 
 alter table if exists public.notifications add column if not exists related_id text;
+alter table if exists public.notifications add column if not exists metadata jsonb not null default '{}'::jsonb;
 alter table if exists public.notifications add column if not exists read_at timestamptz;
 
 create unique index if not exists notifications_user_type_related_unique
@@ -413,23 +414,73 @@ set search_path = public
 as $$
 declare
   recipient_id uuid;
+  recipient_ids uuid[];
+  notification_id text;
+  sender_name text;
+  preview text;
+  sender_is_admin_support boolean := false;
 begin
-  select case
-    when c.user1_id = new.sender_id then c.user2_id
-    else c.user1_id
-  end into recipient_id
-  from public.conversations c
-  where c.id = new.conversation_id;
-
-  if recipient_id is not null and recipient_id <> new.sender_id then
-    perform public.create_deduped_notification(
-      recipient_id,
-      'message',
-      'New message',
-      'You have a new VetLearn message.',
-      new.id::text
-    );
+  if to_regclass('public.admin_support_conversation_status') is not null then
+    select exists (
+      select 1
+      from public.admin_support_conversation_status status
+      join public.admin_user_roles aur on aur.user_id = new.sender_id
+      where status.conversation_id = new.conversation_id
+        and aur.is_active = true
+        and aur.role in ('admin', 'super_admin')
+    )
+    into sender_is_admin_support;
   end if;
+
+  if sender_is_admin_support then
+    sender_name := 'Admin';
+  else
+    select coalesce(nullif(p.full_name, ''), u.email, 'A colleague')
+    into sender_name
+    from auth.users u
+    left join public.profiles p on p.id = u.id
+    where u.id = new.sender_id;
+  end if;
+
+  preview := left(coalesce(new.content, ''), 140);
+
+  select array_agg(distinct cp.user_id)
+  into recipient_ids
+  from public.conversation_participants cp
+  where cp.conversation_id = new.conversation_id
+    and cp.user_id <> new.sender_id;
+
+  if recipient_ids is null then
+    select case
+      when c.user1_id = new.sender_id then c.user2_id
+      else c.user1_id
+    end into recipient_id
+    from public.conversations c
+    where c.id = new.conversation_id;
+
+    recipient_ids := array[recipient_id];
+  end if;
+
+  foreach recipient_id in array recipient_ids loop
+    if recipient_id is not null and recipient_id <> new.sender_id then
+      notification_id := public.create_deduped_notification(
+        recipient_id,
+        'message',
+        'New message',
+        coalesce(sender_name, 'A colleague') || case when preview <> '' then ': ' || preview else ' sent you a message.' end,
+        new.id::text
+      );
+
+      update public.notifications
+      set metadata = jsonb_build_object(
+        'message_id', new.id,
+        'conversation_id', new.conversation_id,
+        'sender_id', new.sender_id,
+        'route', '/messages?conversation=' || new.conversation_id::text
+      )
+      where id::text = notification_id;
+    end if;
+  end loop;
 
   return new;
 end;

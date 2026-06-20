@@ -13,7 +13,7 @@ export default defineConfig({
     VitePWA({
 
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: null,
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,

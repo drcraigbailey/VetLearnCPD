@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
+import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import {
   AlertTriangle,
   BarChart3,
@@ -8,17 +12,24 @@ import {
   Database,
   Download,
   Flag,
+  Inbox,
+  FileText,
   Lock,
   Mail,
   MessageSquare,
+  Paperclip,
   RefreshCw,
+  Reply,
+  Save,
   Search,
   Send,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
-  Users
+  Users,
+  X,
+  Image as ImageIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -27,6 +38,7 @@ import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
+import { sendMessagePushNotification } from "../utils/pushNotifications";
 
 const adminTabs = [
   { id: "overview", label: "Overview", icon: BarChart3 },
@@ -34,10 +46,15 @@ const adminTabs = [
   { id: "permissions", label: "Permissions", icon: ShieldCheck },
   { id: "features", label: "Features", icon: Flag },
   { id: "subscriptions", label: "Subscriptions", icon: Crown },
-  { id: "messaging", label: "Messaging", icon: MessageSquare },
+  { id: "messages", label: "Admin Emails", icon: Mail },
+  { id: "mailbox", label: "Mailbox", icon: Inbox },
   { id: "audit", label: "Site Analytics", icon: Lock },
   { id: "settings", label: "Settings", icon: Settings }
 ];
+
+const ADMIN_ALERT_TYPES = ["admin_new_signup", "admin_support_message", "admin_group_message"];
+const ADMIN_USER_ALERT_TYPES = ["admin_new_signup"];
+const ADMIN_MAILBOX_ALERT_TYPES = ["admin_support_message", "admin_group_message"];
 
 const featureLabels = {
   clinical_tools: "Clinical Tools",
@@ -67,15 +84,108 @@ const userTypeLabels = {
   super_admin: "Super Admin"
 };
 
+const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
+
+const normaliseAttachments = (attachments) => (Array.isArray(attachments) ? attachments : []);
+
+const formatFileSize = (size) => {
+  if (!size) return "";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+function AdminMessageAttachmentList({ attachments, darkMode }) {
+  const cleanAttachments = normaliseAttachments(attachments);
+  const [signedUrls, setSignedUrls] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const paths = cleanAttachments.map(item => item.path).filter(Boolean);
+    if (!paths.length) {
+      setSignedUrls({});
+      return;
+    }
+
+    supabase.storage
+      .from(MESSAGE_ATTACHMENT_BUCKET)
+      .createSignedUrls(paths, 60 * 60)
+      .then(({ data, error }) => {
+        if (cancelled || error) return;
+        const urls = {};
+        (data || []).forEach(item => {
+          if (item.path && item.signedUrl) urls[item.path] = item.signedUrl;
+        });
+        setSignedUrls(urls);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [JSON.stringify(cleanAttachments.map(item => item.path || item.name))]);
+
+  if (!cleanAttachments.length) return null;
+
+  return (
+    <div className="mt-2 space-y-2">
+      {cleanAttachments.map((attachment, index) => {
+        const signedUrl = attachment.path ? signedUrls[attachment.path] : null;
+        const isImage = attachment.type?.startsWith("image/");
+        const label = attachment.name || "Attachment";
+        return (
+          <a
+            key={`${attachment.path || label}-${index}`}
+            href={signedUrl || undefined}
+            target="_blank"
+            rel="noreferrer"
+            className={`flex items-center gap-3 rounded-lg border p-2 text-xs font-bold transition ${darkMode ? "border-white/10 bg-white/10 text-white hover:bg-white/15" : "border-[#DCEDEA] bg-[#F0F6F5] text-[#113247] hover:bg-white"}`}
+          >
+            {isImage && signedUrl ? (
+              <img src={signedUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
+            ) : (
+              <span className={`grid h-12 w-12 place-items-center rounded-md ${darkMode ? "bg-black/20" : "bg-white"}`}>
+                {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">{label}</span>
+              {attachment.size ? <span className="block text-[10px] font-semibold opacity-55">{formatFileSize(attachment.size)}</span> : null}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+const normaliseAdminTab = (tab) => adminTabs.some(item => item.id === tab) ? tab : "overview";
+
 export default function AdminDashboard({ user, darkMode }) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(normaliseAdminTab(searchParams.get("tab")));
   const [loading, setLoading] = useState(true);
   const [adminRole, setAdminRole] = useState(null);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
+  const [appFeatures, setAppFeatures] = useState([]);
   const [featureMatrix, setFeatureMatrix] = useState([]);
+  const [subscriptionFeatureMatrix, setSubscriptionFeatureMatrix] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [adminMessages, setAdminMessages] = useState([]);
+  const [adminAlerts, setAdminAlerts] = useState([]);
+  const [supportThreads, setSupportThreads] = useState([]);
+  const [selectedSupportThread, setSelectedSupportThread] = useState(null);
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [supportFilter, setSupportFilter] = useState("all");
+  const [supportReply, setSupportReply] = useState("");
+  const [supportReplyAttachments, setSupportReplyAttachments] = useState([]);
+  const [supportThreadToDelete, setSupportThreadToDelete] = useState(null);
+  const [supportComposeOpen, setSupportComposeOpen] = useState(false);
+  const [supportComposeQuery, setSupportComposeQuery] = useState("");
+  const [supportComposeRecipientIds, setSupportComposeRecipientIds] = useState([]);
+  const [supportComposeBody, setSupportComposeBody] = useState("");
+  const [supportComposeAttachments, setSupportComposeAttachments] = useState([]);
+  const [supportLoading, setSupportLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState({ title: "", body: "", audience: "all" });
   const [working, setWorking] = useState(false);
@@ -85,6 +195,38 @@ export default function AdminDashboard({ user, darkMode }) {
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
     : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
+
+  const markAdminAlertsRead = async (types) => {
+    const unreadIds = adminAlerts
+      .filter(item => types.includes(item.type))
+      .map(item => item.id);
+
+    if (unreadIds.length === 0) return;
+
+    const readAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true, read_at: readAt })
+      .eq("user_id", user.id)
+      .in("id", unreadIds);
+
+    if (!error) {
+      setAdminAlerts(prev => prev.filter(item => !unreadIds.includes(item.id)));
+      window.dispatchEvent(new Event("notificationsUpdated"));
+    }
+  };
+
+  const selectAdminTab = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tabId);
+      if (tabId !== "mailbox") next.delete("conversation");
+      return next;
+    }, { replace: true });
+    if (tabId === "users") markAdminAlertsRead(ADMIN_USER_ALERT_TYPES);
+    if (tabId === "mailbox") markAdminAlertsRead(ADMIN_MAILBOX_ALERT_TYPES);
+  };
 
   const loadAdminData = async () => {
     setLoading(true);
@@ -110,7 +252,7 @@ export default function AdminDashboard({ user, darkMode }) {
 
     setAdminRole(roleRes.data.role);
 
-    const [statsRes, usersRes, subRes, adminMessagesRes] = await Promise.all([
+    const [statsRes, usersRes, subRes, adminMessagesRes, featuresRes, subFeatureRes, supportThreadsRes, adminAlertsRes] = await Promise.all([
       supabase.rpc("admin_dashboard_stats"),
       supabase.from("admin_user_overview").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
@@ -119,7 +261,16 @@ export default function AdminDashboard({ user, darkMode }) {
         .select("id, title, message, type, is_read, created_at, related_id")
         .eq("type", "admin_announcement")
         .order("created_at", { ascending: false })
-        .limit(500)
+        .limit(500),
+      supabase.from("app_features").select("*").order("name", { ascending: true }),
+      supabase.from("subscription_feature_access").select("*").order("subscription_tier", { ascending: true }),
+      supabase.from("admin_support_mailbox").select("*").order("last_message_at", { ascending: false, nullsFirst: false }),
+      supabase
+        .from("notifications")
+        .select("id, type, related_id, metadata, is_read, created_at")
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .in("type", ADMIN_ALERT_TYPES)
     ]);
 
     const featureRes = await supabase
@@ -151,11 +302,7 @@ export default function AdminDashboard({ user, darkMode }) {
     if (!featureRes.error) {
       setFeatureMatrix(featureRes.data || []);
     } else {
-      const fallback = await supabase
-        .from("subscription_feature_access")
-        .select("*")
-        .order("subscription_tier", { ascending: true });
-      setFeatureMatrix((fallback.data || []).map(item => ({
+      setFeatureMatrix((subFeatureRes.data || []).map(item => ({
         user_type: item.subscription_tier,
         feature_key: item.feature_key,
         is_enabled: item.is_enabled,
@@ -165,7 +312,27 @@ export default function AdminDashboard({ user, darkMode }) {
     }
     if (!subRes.error) setSubscriptions(subRes.data || []);
     else console.error("Admin subscriptions failed to load", subRes.error);
-
+    if (!featuresRes.error) setAppFeatures(featuresRes.data || []);
+    else console.error("Admin features failed to load", featuresRes.error);
+    if (!subFeatureRes.error) setSubscriptionFeatureMatrix(subFeatureRes.data || []);
+    else console.error("Subscription feature access failed to load", subFeatureRes.error);
+    if (!supportThreadsRes.error) {
+      const threads = supportThreadsRes.data || [];
+      setSupportThreads(threads);
+      const conversationParam = searchParams.get("conversation");
+      if (conversationParam) {
+        const selected = threads.find(item => String(item.conversation_id) === String(conversationParam));
+        if (selected) selectSupportThread(selected);
+      }
+    } else {
+      console.error("Admin support mailbox failed to load", supportThreadsRes.error);
+      setSupportThreads([]);
+    }
+    if (!adminAlertsRes.error) setAdminAlerts(adminAlertsRes.data || []);
+    else {
+      console.error("Admin alerts failed to load", adminAlertsRes.error);
+      setAdminAlerts([]);
+    }
     setLoading(false);
   };
 
@@ -177,6 +344,32 @@ export default function AdminDashboard({ user, darkMode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && adminTabs.some(item => item.id === tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!adminRole) return;
+    if (activeTab === "users") markAdminAlertsRead(ADMIN_USER_ALERT_TYPES);
+    if (activeTab === "mailbox") markAdminAlertsRead(ADMIN_MAILBOX_ALERT_TYPES);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, adminRole]);
+
+  const adminAlertCounts = useMemo(() => ({
+    users: adminAlerts.filter(item => ADMIN_USER_ALERT_TYPES.includes(item.type)).length,
+    mailbox: adminAlerts.filter(item => ADMIN_MAILBOX_ALERT_TYPES.includes(item.type)).length,
+    total: adminAlerts.length
+  }), [adminAlerts]);
+
+  const getAdminTabBadgeCount = (tabId) => {
+    if (tabId === "users") return adminAlertCounts.users;
+    if (tabId === "mailbox") return adminAlertCounts.mailbox;
+    return 0;
+  };
+
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return users;
@@ -186,6 +379,15 @@ export default function AdminDashboard({ user, darkMode }) {
         .some(value => String(value).toLowerCase().includes(q))
     );
   }, [query, users]);
+
+  const filteredSupportThreads = useMemo(() => {
+    return supportThreads.filter(thread => {
+      if (supportFilter === "unread") return Number(thread.unread_count || 0) > 0;
+      if (supportFilter === "resolved") return thread.status === "resolved" || thread.status === "closed";
+      if (supportFilter === "open") return !["resolved", "closed"].includes(thread.status);
+      return true;
+    });
+  }, [supportFilter, supportThreads]);
 
   const isSuperAdmin = adminRole === "super_admin";
 
@@ -251,7 +453,7 @@ export default function AdminDashboard({ user, darkMode }) {
     }
 
     const filename = `vetlearn-${scope === "marketing" ? "marketing-opt-ins" : "all-emails"}-${new Date().toISOString().slice(0, 10)}.csv`;
-    downloadCsv(filename, rows);
+    await exportCsvFile(filename, rows);
     await audit("email_list_exported", null, { scope, count: rows.length });
     toast.success(`Exported ${rows.length} email${rows.length === 1 ? "" : "s"}`);
     setWorking(false);
@@ -437,6 +639,260 @@ export default function AdminDashboard({ user, darkMode }) {
     setWorking(false);
   };
 
+  const updatePlanField = (tier, field, value) => {
+    setSubscriptions(prev => prev.map(plan => plan.tier === tier ? { ...plan, [field]: value } : plan));
+  };
+
+  const savePlan = async (plan) => {
+    setWorking(true);
+    const { error } = await supabase
+      .from("subscription_plans")
+      .upsert({
+        tier: plan.tier,
+        name: plan.name || plan.tier,
+        description: plan.description || "",
+        monthly_price_pence: Number(plan.monthly_price_pence || 0),
+        yearly_price_pence: Number(plan.yearly_price_pence || 0),
+        is_active: plan.is_active !== false,
+        sort_order: Number(plan.sort_order || 0),
+        updated_at: new Date().toISOString()
+      }, { onConflict: "tier" });
+
+    if (error) {
+      toast.error(error.message || "Could not save plan");
+    } else {
+      await audit("subscription_plan_updated", null, { tier: plan.tier });
+      toast.success("Plan saved");
+      loadAdminData();
+    }
+    setWorking(false);
+  };
+
+  const togglePlanFeature = async (tier, featureKey, enabled) => {
+    setWorking(true);
+    const updates = [
+      supabase
+        .from("subscription_feature_access")
+        .upsert({ subscription_tier: tier, feature_key: featureKey, is_enabled: enabled, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "subscription_tier,feature_key" })
+    ];
+
+    if (userTypeOptions.includes(tier)) {
+      updates.push(
+        supabase
+          .from("user_type_feature_access")
+          .upsert({ user_type: tier, feature_key: featureKey, is_enabled: enabled, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "user_type,feature_key" })
+      );
+    }
+
+    const results = await Promise.all(updates);
+    const error = results.find(result => result.error)?.error;
+
+    if (error) {
+      toast.error(error.message || "Could not update plan feature");
+    } else {
+      await audit("subscription_feature_changed", null, { tier, featureKey, enabled });
+      toast.success("Plan feature updated");
+      loadAdminData();
+    }
+    setWorking(false);
+  };
+
+  const loadSupportMessages = async (conversationId) => {
+    if (!conversationId) return;
+    setSupportLoading(true);
+    const { data, error } = await supabase.rpc("admin_get_support_messages", { conversation_uuid: conversationId });
+
+    if (error) {
+      console.error("Support messages failed to load", error);
+      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not load support messages");
+      setSupportMessages([]);
+    } else {
+      setSupportMessages(data || []);
+      await supabase.rpc("admin_mark_support_conversation_read", { conversation_uuid: conversationId });
+      window.dispatchEvent(new Event("notificationsUpdated"));
+    }
+    setSupportLoading(false);
+  };
+
+  const selectSupportThread = (thread) => {
+    setSelectedSupportThread(thread);
+    setSupportReply("");
+    setSupportReplyAttachments([]);
+    if (thread?.conversation_id) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", "mailbox");
+        next.set("conversation", thread.conversation_id);
+        return next;
+      }, { replace: true });
+      loadSupportMessages(thread.conversation_id);
+    }
+  };
+
+  const uploadSupportReplyAttachments = async (conversationId, files) => {
+    const uploaded = [];
+    for (const file of files) {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const randomId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `${conversationId}/${randomId}-${cleanName}`;
+      const { error } = await supabase.storage
+        .from(MESSAGE_ATTACHMENT_BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
+      if (error) throw error;
+      uploaded.push({ path, name: file.name, type: file.type, size: file.size });
+    }
+    return uploaded;
+  };
+
+  const sendSupportReply = async () => {
+    if (!selectedSupportThread?.conversation_id || (!supportReply.trim() && supportReplyAttachments.length === 0)) return;
+    setWorking(true);
+    const cachedReply = supportReply;
+    const cachedAttachments = supportReplyAttachments;
+    setSupportReply("");
+    setSupportReplyAttachments([]);
+
+    try {
+      const attachments = cachedAttachments.length ? await uploadSupportReplyAttachments(selectedSupportThread.conversation_id, cachedAttachments) : [];
+      const { data: messageId, error } = await supabase.rpc("admin_support_reply", {
+        conversation_uuid: selectedSupportThread.conversation_id,
+        reply_body: cachedReply.trim(),
+        reply_attachments: attachments
+      });
+
+      if (error) throw error;
+      await sendMessagePushNotification({
+        recipientId: selectedSupportThread.user_id,
+        title: "New message from Admin",
+        body: cachedReply.trim() || "Admin sent an attachment.",
+        messageId,
+        conversationId: selectedSupportThread.conversation_id,
+        route: `/messages?conversation=${selectedSupportThread.conversation_id}`
+      });
+      await audit("admin_support_reply_sent", selectedSupportThread.user_id, { conversation_id: selectedSupportThread.conversation_id });
+      toast.success("Reply sent");
+      await loadSupportMessages(selectedSupportThread.conversation_id);
+      loadAdminData();
+    } catch (error) {
+      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send reply");
+      setSupportReply(cachedReply);
+      setSupportReplyAttachments(cachedAttachments);
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const sendSupportCompose = async () => {
+    const recipientIds = [...new Set(supportComposeRecipientIds)];
+    if (recipientIds.length === 0) return toast.error("Choose at least one user");
+    if (!supportComposeBody.trim() && supportComposeAttachments.length === 0) return toast.error("Write a message or add an attachment");
+
+    setWorking(true);
+    const cachedBody = supportComposeBody;
+    const cachedAttachments = supportComposeAttachments;
+
+    try {
+      for (const recipientId of recipientIds) {
+        const { data: conversationId, error: conversationError } = await supabase.rpc("admin_get_or_create_support_conversation_for_user", {
+          target_user_id: recipientId
+        });
+        if (conversationError) throw conversationError;
+
+        const attachments = cachedAttachments.length ? await uploadSupportReplyAttachments(conversationId, cachedAttachments) : [];
+        const { data: messageId, error: replyError } = await supabase.rpc("admin_support_reply", {
+          conversation_uuid: conversationId,
+          reply_body: cachedBody.trim(),
+          reply_attachments: attachments
+        });
+        if (replyError) throw replyError;
+
+        await sendMessagePushNotification({
+          recipientId,
+          title: "New message from Admin",
+          body: cachedBody.trim() || "Admin sent an attachment.",
+          messageId,
+          conversationId,
+          route: `/messages?conversation=${conversationId}`
+        });
+      }
+
+      await audit("admin_support_message_sent", recipientIds.length === 1 ? recipientIds[0] : null, { count: recipientIds.length });
+      toast.success(`Admin message sent to ${recipientIds.length} user${recipientIds.length === 1 ? "" : "s"}`);
+      setSupportComposeBody("");
+      setSupportComposeAttachments([]);
+      setSupportComposeRecipientIds([]);
+      setSupportComposeQuery("");
+      setSupportComposeOpen(false);
+      loadAdminData();
+    } catch (error) {
+      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send admin message");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const updateSupportStatus = async (thread, status) => {
+    if (!thread?.conversation_id) return;
+    setWorking(true);
+    const { error } = await supabase.rpc("admin_set_support_conversation_status", {
+      conversation_uuid: thread.conversation_id,
+      next_status: status
+    });
+
+    if (error) toast.error(error.message || "Could not update support status");
+    else {
+      await audit("admin_support_status_changed", thread.user_id, { conversation_id: thread.conversation_id, status });
+      toast.success(status === "open" ? "Thread reopened" : "Thread marked resolved");
+      loadAdminData();
+    }
+    setWorking(false);
+  };
+
+  const deleteSupportThread = async (thread) => {
+    if (!thread?.conversation_id) return;
+    setWorking(true);
+    try {
+      const { data: messageRows, error: messagesError } = await supabase.rpc("admin_get_support_messages", {
+        conversation_uuid: thread.conversation_id
+      });
+      if (messagesError) throw messagesError;
+
+      const attachmentPaths = (messageRows || [])
+        .flatMap(item => normaliseAttachments(item.attachments))
+        .map(item => item.path)
+        .filter(Boolean);
+
+      const { error } = await supabase.rpc("admin_delete_support_conversation", {
+        conversation_uuid: thread.conversation_id
+      });
+      if (error) throw error;
+
+      if (attachmentPaths.length) {
+        await supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).remove(attachmentPaths);
+      }
+
+      setSupportThreads(prev => prev.filter(item => item.conversation_id !== thread.conversation_id));
+      if (selectedSupportThread?.conversation_id === thread.conversation_id) {
+        setSelectedSupportThread(null);
+        setSupportMessages([]);
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.set("tab", "mailbox");
+          next.delete("conversation");
+          return next;
+        }, { replace: true });
+      }
+      await audit("admin_support_thread_deleted", thread.user_id, { conversation_id: thread.conversation_id });
+      toast.success("Mailbox thread deleted");
+      setSupportThreadToDelete(null);
+      loadAdminData();
+    } catch (error) {
+      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not delete mailbox thread");
+    } finally {
+      setWorking(false);
+    }
+  };
+
   if (loading) return <LoadingState label="Loading admin dashboard..." darkMode={darkMode} />;
 
   if (!adminRole) {
@@ -462,23 +918,32 @@ export default function AdminDashboard({ user, darkMode }) {
         title="Admin Dashboard"
         subtitle="Manage users, permissions, subscriptions, app content and system activity."
         darkMode={darkMode}
-        badges={[{ label: adminRole === "super_admin" ? "Super Admin" : "Admin", icon: <ShieldCheck size={14} />, accent: true }]}
+        badges={[
+          { label: adminRole === "super_admin" ? "Super Admin" : "Admin", icon: <ShieldCheck size={14} />, accent: true },
+          ...(adminAlertCounts.total > 0 ? [{ label: `${adminAlertCounts.total} new`, icon: <Bell size={14} />, accent: true }] : [])
+        ]}
       />
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {adminTabs.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
+          const badgeCount = getAdminTabBadgeCount(tab.id);
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 rounded-full px-4 py-3 text-sm font-black flex items-center gap-2 ${
+              onClick={() => selectAdminTab(tab.id)}
+              className={`relative shrink-0 rounded-full px-4 py-3 text-sm font-black flex items-center gap-2 ${
                 active ? "bg-[#71CFC2] text-[#062F63] shadow-lg" : darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"
               }`}
             >
               <Icon size={16} />
               {tab.label}
+              {badgeCount > 0 && (
+                <span className="ml-1 grid min-w-[18px] h-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
+                  {badgeCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -505,10 +970,88 @@ export default function AdminDashboard({ user, darkMode }) {
       )}
       {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
       {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
-      {activeTab === "subscriptions" && <SubscriptionsPanel panelClass={panelClass} darkMode={darkMode} subscriptions={subscriptions} />}
-      {activeTab === "messaging" && <MessagingPanel panelClass={panelClass} darkMode={darkMode} message={message} setMessage={setMessage} onSend={sendAdminMessage} working={working} history={adminMessages} onDeleteHistory={deleteAdminMessage} />}
+      {activeTab === "subscriptions" && (
+        <SubscriptionsPanel
+          panelClass={panelClass}
+          darkMode={darkMode}
+          subscriptions={subscriptions}
+          features={appFeatures}
+          userTypeMatrix={featureMatrix}
+          subscriptionMatrix={subscriptionFeatureMatrix}
+          onPlanField={updatePlanField}
+          onSavePlan={savePlan}
+          onToggleFeature={togglePlanFeature}
+          working={working}
+        />
+      )}
+      {activeTab === "messages" && (
+        <MessagingPanel
+          panelClass={panelClass}
+          darkMode={darkMode}
+          message={message}
+          setMessage={setMessage}
+          onSend={sendAdminMessage}
+          working={working}
+          history={adminMessages}
+          onDeleteHistory={deleteAdminMessage}
+        />
+      )}
+      {activeTab === "mailbox" && (
+        <MailboxPanel
+          panelClass={panelClass}
+          darkMode={darkMode}
+          threads={filteredSupportThreads}
+          allThreads={supportThreads}
+          filter={supportFilter}
+          setFilter={setSupportFilter}
+          selectedThread={selectedSupportThread}
+          onSelectThread={selectSupportThread}
+          messages={supportMessages}
+          loading={supportLoading}
+          reply={supportReply}
+          setReply={setSupportReply}
+          replyAttachments={supportReplyAttachments}
+          setReplyAttachments={setSupportReplyAttachments}
+          users={users}
+          composeOpen={supportComposeOpen}
+          setComposeOpen={setSupportComposeOpen}
+          composeQuery={supportComposeQuery}
+          setComposeQuery={setSupportComposeQuery}
+          composeRecipientIds={supportComposeRecipientIds}
+          setComposeRecipientIds={setSupportComposeRecipientIds}
+          composeBody={supportComposeBody}
+          setComposeBody={setSupportComposeBody}
+          composeAttachments={supportComposeAttachments}
+          setComposeAttachments={setSupportComposeAttachments}
+          onSendCompose={sendSupportCompose}
+          onReply={sendSupportReply}
+          onStatus={updateSupportStatus}
+          onRequestDeleteThread={setSupportThreadToDelete}
+          working={working}
+        />
+      )}
       {activeTab === "audit" && <AdminActivityExplorer darkMode={darkMode} />}
       {activeTab === "settings" && <AdminSettings panelClass={panelClass} />}
+
+      {supportThreadToDelete && (
+        <AppPopup
+          open={!!supportThreadToDelete}
+          onClose={() => !working && setSupportThreadToDelete(null)}
+          darkMode={darkMode}
+          {...popupPresets.deleteConversation({
+            colleagueName: supportThreadToDelete.sender_name || "this user",
+            title: "Delete mailbox thread?",
+            message: "This will delete the whole Admin mailbox thread and all messages inside it.",
+            footerLabel: "ADMIN MAILBOX",
+            primaryLabel: "Delete thread",
+            onPrimary: () => deleteSupportThread(supportThreadToDelete),
+            onSecondary: () => setSupportThreadToDelete(null),
+            primaryLoading: working,
+            primaryDisabled: working,
+            secondaryDisabled: working
+          })}
+        />
+      )}
     </div>
   );
 }
@@ -727,20 +1270,396 @@ function FeaturesPanel({ panelClass, darkMode, matrix, onToggle, working }) {
   );
 }
 
-function SubscriptionsPanel({ panelClass, darkMode, subscriptions }) {
+function SubscriptionsPanel({ panelClass, darkMode, subscriptions, features, userTypeMatrix, subscriptionMatrix, onPlanField, onSavePlan, onToggleFeature, working }) {
+  const [priceDrafts, setPriceDrafts] = useState({});
+  const lookup = (tier, featureKey) => {
+    const typeValue = userTypeMatrix.find(item => (item.user_type || item.subscription_tier) === tier && item.feature_key === featureKey)?.is_enabled;
+    if (typeValue !== undefined) return typeValue;
+    return subscriptionMatrix.find(item => item.subscription_tier === tier && item.feature_key === featureKey)?.is_enabled ?? false;
+  };
+  const priceKey = (tier, field) => `${tier}:${field}`;
+  const priceValue = (tier, field, pence) => priceDrafts[priceKey(tier, field)] ?? penceToPounds(pence);
+  const updatePrice = (tier, field, value) => {
+    if (!/^\d*(\.\d{0,2})?$/.test(value)) return;
+    setPriceDrafts(prev => ({ ...prev, [priceKey(tier, field)]: value }));
+    onPlanField(tier, field, value === "" ? 0 : poundsToPence(value));
+  };
+  const normalisePrice = (tier, field) => {
+    setPriceDrafts(prev => {
+      const next = { ...prev };
+      delete next[priceKey(tier, field)];
+      return next;
+    });
+  };
+
   return (
     <section className={panelClass}>
-      <h2 className="text-xl font-black mb-3">Subscription Foundation</h2>
-      <p className="text-sm opacity-65 leading-6 mb-4">Paid plan records remain separate from Admin and Super Admin permission roles.</p>
-      <div className="space-y-3">
+      <h2 className="text-xl font-black mb-3">Plans & Pricing</h2>
+      <p className="text-sm opacity-65 leading-6 mb-4">Edit plan names, pricing and included features. Admin and Super Admin remain internal permission roles.</p>
+      <div className="space-y-4">
         {subscriptions.map(plan => (
-          <div key={plan.tier} className={`rounded-lg p-4 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
-            <div className="flex items-center justify-between gap-3"><h3 className="font-black capitalize">{plan.name}</h3><span className="text-xs font-black text-[#0F8F83]">{plan.tier}</span></div>
-            <p className="text-sm opacity-65 mt-1">{plan.description || "No description yet."}</p>
-          </div>
+          <article key={plan.tier} className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="rounded-full bg-[#71CFC2] px-3 py-1 text-xs font-black text-[#062F63]">{plan.tier}</span>
+              <label className="flex items-center gap-2 text-xs font-black">
+                <input type="checkbox" checked={plan.is_active !== false} onChange={event => onPlanField(plan.tier, "is_active", event.target.checked)} />
+                Available to users
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input value={plan.name || ""} onChange={event => onPlanField(plan.tier, "name", event.target.value)} placeholder="Plan name" className={`rounded-lg p-3 text-sm font-bold outline-none ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#113247]"}`} />
+              <input type="number" step="1" value={plan.sort_order ?? 0} onChange={event => onPlanField(plan.tier, "sort_order", event.target.value)} placeholder="Sort order" className={`rounded-lg p-3 text-sm font-bold outline-none ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#113247]"}`} />
+              <label className="text-xs font-black uppercase tracking-[0.12em] opacity-70">
+                Monthly GBP
+                <input type="text" inputMode="decimal" value={priceValue(plan.tier, "monthly_price_pence", plan.monthly_price_pence)} onChange={event => updatePrice(plan.tier, "monthly_price_pence", event.target.value)} onBlur={() => normalisePrice(plan.tier, "monthly_price_pence")} className={`mt-1 w-full rounded-lg p-3 text-sm font-bold outline-none ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#113247]"}`} />
+              </label>
+              <label className="text-xs font-black uppercase tracking-[0.12em] opacity-70">
+                Annual GBP
+                <input type="text" inputMode="decimal" value={priceValue(plan.tier, "yearly_price_pence", plan.yearly_price_pence)} onChange={event => updatePrice(plan.tier, "yearly_price_pence", event.target.value)} onBlur={() => normalisePrice(plan.tier, "yearly_price_pence")} className={`mt-1 w-full rounded-lg p-3 text-sm font-bold outline-none ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#113247]"}`} />
+              </label>
+            </div>
+            <textarea value={plan.description || ""} onChange={event => onPlanField(plan.tier, "description", event.target.value)} placeholder="Plan description" rows={3} className={`mt-3 w-full rounded-lg p-3 text-sm outline-none ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#113247]"}`} />
+
+            <div className="mt-4">
+              <h3 className="mb-2 text-sm font-black">Included Features</h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {features.map(feature => {
+                  const enabled = lookup(plan.tier, feature.feature_key);
+                  return (
+                    <button
+                      key={feature.feature_key}
+                      type="button"
+                      disabled={working}
+                      onClick={() => onToggleFeature(plan.tier, feature.feature_key, !enabled)}
+                      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-xs font-black transition disabled:opacity-50 ${enabled ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-black/20 text-slate-300" : "bg-white text-[#667F91]"}`}
+                    >
+                      <span className="truncate">{feature.name || feature.feature_key}</span>
+                      <span>{enabled ? "On" : "Off"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button disabled={working} onClick={() => onSavePlan(plan)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#0B3760] p-3 text-sm font-black text-white disabled:opacity-50">
+              <Save size={16} /> Save Plan
+            </button>
+          </article>
         ))}
+        {subscriptions.length === 0 && <div className={`rounded-lg p-4 text-sm opacity-65 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>No subscription plans found. Run the admin dashboard SQL setup first.</div>}
       </div>
     </section>
+  );
+}
+
+function MailboxPanel({
+  panelClass,
+  darkMode,
+  threads,
+  allThreads,
+  filter,
+  setFilter,
+  selectedThread,
+  onSelectThread,
+  messages,
+  loading,
+  reply,
+  setReply,
+  replyAttachments,
+  setReplyAttachments,
+  users,
+  composeOpen,
+  setComposeOpen,
+  composeQuery,
+  setComposeQuery,
+  composeRecipientIds,
+  setComposeRecipientIds,
+  composeBody,
+  setComposeBody,
+  composeAttachments,
+  setComposeAttachments,
+  onSendCompose,
+  onReply,
+  onStatus,
+  onRequestDeleteThread,
+  working
+}) {
+  const filterClass = (value) => `rounded-full px-3 py-2 text-xs font-black transition ${
+    filter === value ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"
+  }`;
+  const attachmentInputRef = useRef(null);
+  const composeAttachmentInputRef = useRef(null);
+  const selectableUsers = useMemo(() => {
+    const q = composeQuery.trim().toLowerCase();
+    return (users || [])
+      .filter(item => item.user_id && item.email)
+      .filter(item => {
+        if (!q) return true;
+        return [item.full_name, item.email, getUserType(item)]
+          .filter(Boolean)
+          .some(value => String(value).toLowerCase().includes(q));
+      })
+      .slice(0, 40);
+  }, [composeQuery, users]);
+  const selectedRecipients = useMemo(() => {
+    const selected = new Set(composeRecipientIds);
+    return (users || []).filter(item => selected.has(item.user_id));
+  }, [composeRecipientIds, users]);
+
+  const toggleRecipient = (userId) => {
+    setComposeRecipientIds(prev => prev.includes(userId)
+      ? prev.filter(id => id !== userId)
+      : [...prev, userId]
+    );
+  };
+
+  const addAttachments = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) setReplyAttachments(prev => [...prev, ...files].slice(0, 6));
+    event.target.value = "";
+  };
+  const addComposeAttachments = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) setComposeAttachments(prev => [...prev, ...files].slice(0, 6));
+    event.target.value = "";
+  };
+
+  return (
+    <div className="space-y-5">
+      <section className={panelClass}>
+        <div className="flex items-start gap-3 mb-4">
+          <Inbox className="text-[#0F8F83] shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-black">Admin Mailbox</h2>
+            <p className="text-sm opacity-65">Handle user messages sent to Admin.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setComposeOpen(open => !open)}
+            className="shrink-0 rounded-lg bg-[#71CFC2] px-3 py-2 text-xs font-black text-[#062F63]"
+          >
+            {composeOpen ? "Close" : "New message"}
+          </button>
+        </div>
+
+        {composeOpen && (
+          <div className={`mb-5 rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F4F9F8]"}`}>
+            <div className="mb-3 flex items-start gap-3">
+              <Send className="mt-0.5 shrink-0 text-[#0F8F83]" size={18} />
+              <div>
+                <h3 className="font-black">New Admin message</h3>
+                <p className="text-xs leading-5 opacity-65">Select one user or multiple users to send the same Admin message.</p>
+              </div>
+            </div>
+
+            <div className={`mb-3 flex items-center gap-2 rounded-xl border px-3 ${darkMode ? "border-white/10 bg-black/20" : "border-[#D6E9E6] bg-white"}`}>
+              <Search size={16} className="opacity-50" />
+              <input
+                value={composeQuery}
+                onChange={event => setComposeQuery(event.target.value)}
+                placeholder="Search users to message"
+                className="w-full bg-transparent py-3 text-sm outline-none"
+              />
+            </div>
+
+            {selectedRecipients.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {selectedRecipients.map(item => (
+                  <button
+                    key={item.user_id}
+                    type="button"
+                    onClick={() => toggleRecipient(item.user_id)}
+                    className={`flex max-w-full items-center gap-2 rounded-full px-3 py-2 text-xs font-black ${darkMode ? "bg-[#71CFC2]/20 text-[#71CFC2]" : "bg-[#E4F7F3] text-[#0F8F83]"}`}
+                  >
+                    <span className="max-w-[180px] truncate">{item.full_name || item.email}</span>
+                    <X size={13} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="mb-3 grid max-h-48 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              {selectableUsers.map(item => {
+                const selected = composeRecipientIds.includes(item.user_id);
+                return (
+                  <button
+                    key={item.user_id}
+                    type="button"
+                    onClick={() => toggleRecipient(item.user_id)}
+                    className={`rounded-xl border p-3 text-left transition ${selected ? "border-[#71CFC2] bg-[#71CFC2]/15" : darkMode ? "border-white/10 bg-black/20" : "border-[#DCEDEA] bg-white"}`}
+                  >
+                    <span className="block truncate text-sm font-black">{item.full_name || item.email}</span>
+                    <span className="block truncate text-xs opacity-60">{item.email}</span>
+                  </button>
+                );
+              })}
+              {selectableUsers.length === 0 && (
+                <div className={`rounded-xl p-4 text-sm opacity-65 ${darkMode ? "bg-black/20" : "bg-white"}`}>No users match that search.</div>
+              )}
+            </div>
+
+            {composeAttachments.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {composeAttachments.map((file, index) => (
+                  <button
+                    key={`${file.name}-${index}`}
+                    type="button"
+                    onClick={() => setComposeAttachments(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+                    className={`flex max-w-full items-center gap-2 rounded-full px-3 py-2 text-xs font-bold ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#113247]"}`}
+                  >
+                    <Paperclip size={13} />
+                    <span className="max-w-[180px] truncate">{file.name}</span>
+                    <X size={13} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <textarea
+              value={composeBody}
+              onChange={event => setComposeBody(event.target.value)}
+              placeholder="Write as Admin..."
+              rows={4}
+              className={`w-full rounded-lg p-3 text-sm outline-none ${darkMode ? "bg-[#071A24] text-white placeholder:text-slate-400" : "bg-white text-[#113247]"}`}
+            />
+            <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr]">
+              <input ref={composeAttachmentInputRef} type="file" multiple className="hidden" onChange={addComposeAttachments} />
+              <button type="button" onClick={() => composeAttachmentInputRef.current?.click()} className={`rounded-lg px-4 py-3 text-sm font-black ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                <Paperclip size={16} className="inline-block mr-2" /> Attach
+              </button>
+              <button disabled={working || composeRecipientIds.length === 0 || (!composeBody.trim() && composeAttachments.length === 0)} onClick={onSendCompose} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#71CFC2] p-3 text-sm font-black text-[#062F63] disabled:opacity-50">
+                <Send size={16} /> Send Admin message
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button className={filterClass("all")} onClick={() => setFilter("all")}>All ({allThreads.length})</button>
+          <button className={filterClass("unread")} onClick={() => setFilter("unread")}>Unread</button>
+          <button className={filterClass("open")} onClick={() => setFilter("open")}>Open</button>
+          <button className={filterClass("resolved")} onClick={() => setFilter("resolved")}>Resolved</button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="space-y-3">
+            {threads.map(thread => {
+              const selected = selectedThread?.conversation_id === thread.conversation_id;
+              return (
+                <div
+                  key={thread.conversation_id}
+                  className={`relative rounded-xl border p-4 pr-14 transition ${selected ? "border-[#71CFC2] bg-[#71CFC2]/15" : darkMode ? "border-white/10 bg-white/10 hover:bg-white/15" : "border-[#DCEDEA] bg-white hover:bg-[#F4F9F8]"}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectThread(thread)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-black">{thread.sender_name || "Unknown user"}</h3>
+                        <p className="truncate text-xs opacity-60">{thread.sender_email || thread.sender_title || "Admin conversation"}</p>
+                      </div>
+                      {Number(thread.unread_count || 0) > 0 && <span className="rounded-full bg-red-500 px-2 py-1 text-xs font-black text-white">{thread.unread_count}</span>}
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm opacity-75">{thread.last_message || "No messages yet."}</p>
+                    <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.12em] opacity-55">
+                      <span>{thread.status || "open"}</span>
+                      <span>{thread.last_message_at ? new Date(thread.last_message_at).toLocaleDateString("en-GB") : "No date"}</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={working}
+                    onClick={() => onRequestDeleteThread(thread)}
+                    className={`absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg transition disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`}
+                    aria-label={`Delete mailbox thread from ${thread.sender_name || "user"}`}
+                    title="Delete mailbox thread"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
+            {threads.length === 0 && <div className={`rounded-xl p-4 text-sm opacity-65 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>No support threads for this filter.</div>}
+          </div>
+
+          <div className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-black/20" : "border-[#DCEDEA] bg-white"}`}>
+            {!selectedThread ? (
+              <div className="grid min-h-72 place-items-center text-center text-sm opacity-60">Select a support thread.</div>
+            ) : (
+              <div className="flex min-h-72 flex-col">
+                <div className="mb-4 flex items-start justify-between gap-3 border-b border-inherit pb-3">
+                  <div>
+                    <h3 className="text-lg font-black">{selectedThread.sender_name}</h3>
+                    <p className="text-xs opacity-60">{selectedThread.sender_email}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button disabled={working} onClick={() => onStatus(selectedThread, selectedThread.status === "resolved" ? "open" : "resolved")} className={`rounded-lg px-3 py-2 text-xs font-black disabled:opacity-50 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                      {selectedThread.status === "resolved" ? "Reopen" : "Resolve"}
+                    </button>
+                    <button disabled={working} onClick={() => onRequestDeleteThread(selectedThread)} className={`grid h-9 w-9 place-items-center rounded-lg disabled:opacity-50 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} aria-label="Delete mailbox thread" title="Delete mailbox thread">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-80 flex-1 space-y-3 overflow-y-auto pr-1">
+                  {loading ? (
+                    <div className="py-8 text-center text-sm opacity-60">Loading messages...</div>
+                  ) : messages.length === 0 ? (
+                    <div className="py-8 text-center text-sm opacity-60">No messages in this thread.</div>
+                  ) : messages.map(item => {
+                    const isSupport = item.sender_is_admin === true;
+                    const displaySenderName = isSupport ? "Admin" : (item.sender_name || "Unknown user");
+                    return (
+                      <div key={item.id} className={`flex ${isSupport ? "justify-end" : "justify-start"}`}>
+                        <div className={`group relative max-w-[82%] rounded-2xl px-4 py-3 text-sm ${isSupport ? "bg-[#71CFC2] text-[#062F63]" : darkMode ? "bg-white/10 text-white" : "bg-[#F0F6F5] text-[#113247]"}`}>
+                          <div className="mb-1">
+                            <span className="min-w-0 truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-55">{displaySenderName}</span>
+                          </div>
+                          {item.content ? <div className="whitespace-pre-wrap pr-2">{item.content}</div> : null}
+                          <AdminMessageAttachmentList attachments={item.attachments} darkMode={darkMode} />
+                          <div className="mt-2 text-[10px] opacity-50">{new Date(item.created_at).toLocaleString("en-GB")}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 border-t border-inherit pt-4">
+                  {replyAttachments.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {replyAttachments.map((file, index) => (
+                        <button
+                          key={`${file.name}-${index}`}
+                          type="button"
+                          onClick={() => setReplyAttachments(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+                          className={`flex max-w-full items-center gap-2 rounded-full px-3 py-2 text-xs font-bold ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#113247]"}`}
+                        >
+                          <Paperclip size={13} />
+                          <span className="max-w-[180px] truncate">{file.name}</span>
+                          <X size={13} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <textarea value={reply} onChange={event => setReply(event.target.value)} placeholder="Reply as Admin..." rows={3} className={`w-full rounded-lg p-3 text-sm outline-none ${darkMode ? "bg-[#071A24] text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"}`} />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr]">
+                    <input ref={attachmentInputRef} type="file" multiple className="hidden" onChange={addAttachments} />
+                    <button type="button" onClick={() => attachmentInputRef.current?.click()} className={`rounded-lg px-4 py-3 text-sm font-black ${darkMode ? "bg-white/10 text-white" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                      <Paperclip size={16} className="inline-block mr-2" /> Attach
+                    </button>
+                    <button disabled={working || (!reply.trim() && replyAttachments.length === 0)} onClick={onReply} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#71CFC2] p-3 text-sm font-black text-[#062F63] disabled:opacity-50">
+                      <Reply size={16} /> Send Reply
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -890,27 +1809,63 @@ function getMarketingOptInStatus(item) {
     : { value: false, label: "No", className: "bg-slate-100 text-slate-600" };
 }
 
-function downloadCsv(filename, rows) {
+async function exportCsvFile(filename, rows) {
   const headers = Object.keys(rows[0] || {});
   const csv = [
     headers.map(csvEscape).join(","),
     ...rows.map(row => headers.map(header => csvEscape(row[header])).join(","))
   ].join("\r\n");
+  const csvWithBom = `\uFEFF${csv}`;
 
-  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  if (Capacitor.isNativePlatform?.()) {
+    const result = await Filesystem.writeFile({
+      path: `vetlearn-exports/${filename}`,
+      data: csvWithBom,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+      recursive: true
+    });
+
+    const canShare = await Share.canShare().catch(() => ({ value: false }));
+    if (canShare.value) {
+      await Share.share({
+        title: "VetLearn email export",
+        text: "CSV export from VetLearn.",
+        url: result.uri,
+        files: [result.uri],
+        dialogTitle: "Save or share CSV"
+      });
+      return;
+    }
+  }
+
+  const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 }
 
 function csvEscape(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function penceToPounds(value) {
+  const pence = Number(value || 0);
+  return Number.isFinite(pence) ? (pence / 100).toFixed(2) : "0.00";
+}
+
+function poundsToPence(value) {
+  const pounds = Number(value || 0);
+  return Number.isFinite(pounds) ? Math.round(pounds * 100) : 0;
 }
 
 function StatusBadge({ status }) {
