@@ -313,7 +313,10 @@
     const label = normalise(button.textContent);
     if (!label.includes("send") && !label.includes("reply")) return;
 
-    const area = button.closest("form")?.querySelector(`textarea:has(+ *)`) || button.closest("form")?.querySelector("textarea") || button.parentElement?.parentElement?.querySelector("textarea");
+    const area = button.closest("form")?.querySelector("textarea")
+      || button.parentElement?.parentElement?.querySelector("textarea")
+      || button.closest("section")?.querySelector('textarea[placeholder="Reply as Admin..."], textarea[placeholder="Write as Admin..."]');
+
     if (area && (area.placeholder === "Type a message..." || area.placeholder === "Write as Admin..." || area.placeholder === "Reply as Admin...")) {
       prefixTextAreaWithType(area);
     }
