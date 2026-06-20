@@ -44,8 +44,11 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
 
     const update = () => window.setTimeout(() => updateToolbar(), 0);
     const dismissToolbar = () => {
-      dismissedSelectionTextRef.current = window.getSelection()?.toString() || "";
+      const selectedText = window.getSelection()?.toString() || "";
+      dismissedSelectionTextRef.current = selectedText || getElementText(targetRef.current);
       editableMenuRequestedRef.current = false;
+      clearActiveSelection(editableRef.current);
+      targetRef.current = null;
       setToolbar(null);
     };
     const onFocusIn = (event) => {
@@ -60,8 +63,10 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
     const onFocusOut = () => {
       window.clearTimeout(hideTimerRef.current);
       hideTimerRef.current = window.setTimeout(() => {
+        clearActiveSelection(editableRef.current);
         editableRef.current = null;
         editableMenuRequestedRef.current = false;
+        targetRef.current = null;
         setToolbar(null);
       }, 180);
     };
@@ -242,6 +247,8 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
     if (!text) return;
     await writeClipboard(text);
     toast.success("Copied");
+    clearActiveSelection(editable);
+    targetRef.current = null;
     setToolbar(null);
   };
 
@@ -258,6 +265,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
     await writeClipboard(selected);
     deleteEditableSelection(editable);
     toast.success("Cut");
+    targetRef.current = null;
     setToolbar(null);
   };
 
@@ -273,6 +281,7 @@ export default function AndroidClipboardToolbar({ darkMode = false }) {
 
     insertEditableText(editable, text);
     editableMenuRequestedRef.current = false;
+    targetRef.current = null;
     setToolbar(null);
   };
 
@@ -455,6 +464,24 @@ function selectElementText(element) {
   const selection = window.getSelection();
   selection?.removeAllRanges();
   selection?.addRange(range);
+}
+
+function clearActiveSelection(editable) {
+  if (editable instanceof HTMLInputElement || editable instanceof HTMLTextAreaElement) {
+    const position = editable.selectionEnd ?? editable.value.length;
+    try {
+      editable.setSelectionRange(position, position);
+    } catch {
+      // Some input types do not support text selection ranges.
+    }
+    editable.blur();
+    return;
+  }
+
+  window.getSelection()?.removeAllRanges();
+  if (editable?.contains?.(document.activeElement)) {
+    document.activeElement?.blur?.();
+  }
 }
 
 function insertEditableText(element, text) {

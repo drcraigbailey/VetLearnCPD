@@ -1,0 +1,2573 @@
+{
+  "tag": "VetLearn Exotics Seed v10",
+  "drugs": [
+    {
+      "name": "Chloramphenicol",
+      "species": "Ferret",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "PO/SC/IM/IV",
+      "dose_min": 25,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Rabbit",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "PO/SC",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Mouse",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "IM/PO",
+      "dose_min": 50,
+      "dose_max": 200,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Rodent",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "IV/IM/SC/PO",
+      "dose_min": 30,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Primate",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "SC/IM/IV",
+      "dose_min": 25,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Sugar Glider",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "PO",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Hedgehog",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "PO/SC/IM/IV",
+      "dose_min": 30,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Bird",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "IV/IM/PO",
+      "dose_min": 50,
+      "dose_max": 75,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Pigeon",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Reptile",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "IM/SC/PO",
+      "dose_min": 40,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chloramphenicol",
+      "species": "Amphibian",
+      "category": "Antibiotic",
+      "indication": "Restricted-use broad-spectrum antimicrobial for selected deep, ocular, CNS or resistant infections",
+      "route": "SC/IM/Intracoelomic",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use only where specifically indicated. Human safety precautions are essential.",
+      "formulary_page": 62,
+      "authorised": false,
+      "search_terms": [
+        "chloramphenicol",
+        "Chloromycetin",
+        "broad spectrum",
+        "ocular",
+        "CNS",
+        "chytridiomycosis"
+      ],
+      "species_priority": 70,
+      "route_priority": 10,
+      "formulation": "Oral capsules; injectable powder; ophthalmic 0.5% drops or 1% ointment",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chlorhexidine",
+      "species": "Small Mammal",
+      "category": "Dermatology",
+      "indication": "Topical antiseptic/skin cleanser or wound flush",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q8h or as directed",
+      "notes": "Use 0.5-2% for skin; 0.05% aqueous solution may be used as a wound flush. Continue dermatophyte treatment beyond apparent cure as appropriate.",
+      "formulary_page": 63,
+      "authorised": false,
+      "search_terms": [
+        "chlorhexidine",
+        "antiseptic",
+        "Malaseb",
+        "Hibiscrub",
+        "wound flush",
+        "dermatophytosis"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Topical shampoos, scrubs, wipes, sprays and dilute aqueous solutions",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chlorhexidine",
+      "species": "Bird",
+      "category": "Dermatology",
+      "indication": "Topical antiseptic/skin cleanser or wound flush",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "2-3 times weekly initially",
+      "notes": "Topical shampoo/skin use. Reduce frequency once infection is controlled.",
+      "formulary_page": 63,
+      "authorised": false,
+      "search_terms": [
+        "chlorhexidine",
+        "antiseptic",
+        "Malaseb",
+        "Hibiscrub",
+        "wound flush",
+        "dermatophytosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Topical shampoos, scrubs, wipes, sprays and dilute aqueous solutions",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chlorhexidine",
+      "species": "Reptile",
+      "category": "Dermatology",
+      "indication": "Topical antiseptic/skin cleanser or wound flush",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q24h as wound flush",
+      "notes": "Use dilute 0.05% aqueous solution as a wound flush where appropriate.",
+      "formulary_page": 63,
+      "authorised": false,
+      "search_terms": [
+        "chlorhexidine",
+        "antiseptic",
+        "Malaseb",
+        "Hibiscrub",
+        "wound flush",
+        "dermatophytosis"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Topical shampoos, scrubs, wipes, sprays and dilute aqueous solutions",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Chlorhexidine",
+      "species": "Fish",
+      "category": "Dermatology",
+      "indication": "Topical antiseptic/skin cleanser or wound flush",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Sparingly, preparation only",
+      "notes": "Use very dilute 0.025% solution sparingly to reduce gross contamination only; avoid routine therapeutic bathing.",
+      "formulary_page": 63,
+      "authorised": false,
+      "search_terms": [
+        "chlorhexidine",
+        "antiseptic",
+        "Malaseb",
+        "Hibiscrub",
+        "wound flush",
+        "dermatophytosis"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Topical shampoos, scrubs, wipes, sprays and dilute aqueous solutions",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Timolol",
+      "species": "Rabbit",
+      "category": "Ophthalmology",
+      "indication": "Glaucoma / reduction of aqueous humour production",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop per eye q12h",
+      "notes": "Topical beta-blocker. Consider 0.25% in smaller patients to reduce systemic absorption risk.",
+      "formulary_page": 262,
+      "authorised": false,
+      "search_terms": [
+        "timolol",
+        "glaucoma",
+        "ocular hypertension",
+        "beta blocker"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.25% or 0.5%; combinations with dorzolamide exist",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Dorzolamide",
+      "species": "Rabbit",
+      "category": "Ophthalmology",
+      "indication": "Glaucoma / reduction of aqueous humour production",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop per eye q8-12h",
+      "notes": "Topical carbonic anhydrase inhibitor for glaucoma/ocular hypertension.",
+      "formulary_page": 98,
+      "authorised": false,
+      "search_terms": [
+        "dorzolamide",
+        "Trusopt",
+        "CoSopt",
+        "glaucoma",
+        "carbonic anhydrase inhibitor"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 2% drops; combination with timolol available",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Dorzolamide",
+      "species": "Rat",
+      "category": "Ophthalmology",
+      "indication": "Glaucoma / reduction of aqueous humour production",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop per eye q12h",
+      "notes": "Use diluted 1% solution where appropriate; topical row not calculator suitable.",
+      "formulary_page": 98,
+      "authorised": false,
+      "search_terms": [
+        "dorzolamide",
+        "Trusopt",
+        "CoSopt",
+        "glaucoma",
+        "carbonic anhydrase inhibitor"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 2% drops; combination with timolol available",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Dorzolamide",
+      "species": "Bird",
+      "category": "Ophthalmology",
+      "indication": "Glaucoma / reduction of aqueous humour production",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop per eye q12h",
+      "notes": "Reported in avian glaucoma/ocular hypertension management; monitor response and irritation.",
+      "formulary_page": 98,
+      "authorised": false,
+      "search_terms": [
+        "dorzolamide",
+        "Trusopt",
+        "CoSopt",
+        "glaucoma",
+        "carbonic anhydrase inhibitor"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 2% drops; combination with timolol available",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Moxifloxacin",
+      "species": "Small Mammal",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q12h",
+      "notes": "Reserve topical fluoroquinolone use for appropriate cases, ideally guided by culture or clinical need.",
+      "formulary_page": 194,
+      "authorised": false,
+      "search_terms": [
+        "moxifloxacin",
+        "Moxivig",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.5% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Moxifloxacin",
+      "species": "Bird",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q12h",
+      "notes": "Reserve topical fluoroquinolone use for appropriate cases, ideally guided by culture or clinical need.",
+      "formulary_page": 194,
+      "authorised": false,
+      "search_terms": [
+        "moxifloxacin",
+        "Moxivig",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.5% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Moxifloxacin",
+      "species": "Reptile",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q12h",
+      "notes": "Reserve topical fluoroquinolone use for appropriate cases, ideally guided by culture or clinical need.",
+      "formulary_page": 194,
+      "authorised": false,
+      "search_terms": [
+        "moxifloxacin",
+        "Moxivig",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.5% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Ofloxacin",
+      "species": "Small Mammal",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q6h",
+      "notes": "Loading option may be used in severe ocular cases: q15min for 4 doses, then continue per plan.",
+      "formulary_page": 200,
+      "authorised": false,
+      "search_terms": [
+        "ofloxacin",
+        "Exocin",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.3% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Ofloxacin",
+      "species": "Bird",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q12h",
+      "notes": "Topical ocular use for selected bacterial eye infections.",
+      "formulary_page": 200,
+      "authorised": false,
+      "search_terms": [
+        "ofloxacin",
+        "Exocin",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.3% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Ofloxacin",
+      "species": "Reptile",
+      "category": "Ophthalmology",
+      "indication": "Topical treatment of selected bacterial ocular infection",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop in affected eye q8-12h",
+      "notes": "Topical ocular use for selected bacterial eye infections.",
+      "formulary_page": 200,
+      "authorised": false,
+      "search_terms": [
+        "ofloxacin",
+        "Exocin",
+        "ocular",
+        "fluoroquinolone",
+        "Pseudomonas"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.3% solution",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Ferret",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IV/IM/SC",
+      "dose_min": 2,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Rabbit",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "SC/IM/IV",
+      "dose_min": 4,
+      "dose_max": 8,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Guinea Pig",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "SC",
+      "dose_min": 6,
+      "dose_max": 6,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Rodent",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "SC/IM",
+      "dose_min": 2,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Primate",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IM/IV",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Sugar Glider",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "SC/IM",
+      "dose_min": 1.5,
+      "dose_max": 2.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Hedgehog",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "SC/IM",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Bird",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IV/IM",
+      "dose_min": 2,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-12h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Chelonian",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q72h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Snake",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 1.5,
+      "dose_max": 2.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q72-96h species dependent",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Amphibian",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 3,
+      "dose_max": 3,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 70,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Gentamicin",
+      "species": "Fish",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 2.5,
+      "dose_max": 3,
+      "dose_unit": "mg/kg",
+      "frequency": "q2-3 days",
+      "notes": "Ensure hydration and renal function. Avoid use if safer alternatives are suitable.",
+      "formulary_page": 135,
+      "authorised": false,
+      "search_terms": [
+        "gentamicin",
+        "aminoglycoside",
+        "Gram negative",
+        "Pseudomonas",
+        "nebulisation"
+      ],
+      "species_priority": 80,
+      "route_priority": 10,
+      "formulation": "Injectable and topical preparations vary; ophthalmic/otic preparations exist",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Tobramycin",
+      "species": "Bird",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative/Pseudomonas infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 2.5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Concurrent fluid support is advised where hydration is poor or uncertain.",
+      "formulary_page": 262,
+      "authorised": false,
+      "search_terms": [
+        "tobramycin",
+        "aminoglycoside",
+        "Pseudomonas",
+        "Gram negative"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable 40 mg/ml",
+      "concentration": 40,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Tobramycin",
+      "species": "Reptile",
+      "category": "Antibiotic",
+      "indication": "Culture-supported Gram-negative/Pseudomonas infection where aminoglycoside use is justified",
+      "route": "IM",
+      "dose_min": 2.5,
+      "dose_max": 2.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-72h",
+      "notes": "Concurrent fluid support is advised where hydration is poor or uncertain.",
+      "formulary_page": 262,
+      "authorised": false,
+      "search_terms": [
+        "tobramycin",
+        "aminoglycoside",
+        "Pseudomonas",
+        "Gram negative"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Injectable 40 mg/ml",
+      "concentration": 40,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Silver sulfadiazine",
+      "species": "Small Mammal",
+      "category": "Dermatology",
+      "indication": "Topical antibacterial/antifungal wound or burn management",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q12-24h",
+      "notes": "Apply sparingly to wounds. For resistant Pseudomonas/refractory Malassezia otitis, dilute 1:1 with sterile water for topical use.",
+      "formulary_page": 247,
+      "authorised": false,
+      "search_terms": [
+        "silver sulfadiazine",
+        "Flamazine",
+        "burns",
+        "flystrike",
+        "wounds",
+        "Pseudomonas"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Topical 1% cream",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Silver sulfadiazine",
+      "species": "Bird",
+      "category": "Dermatology",
+      "indication": "Topical antibacterial/antifungal wound or burn management",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Initially as needed, then daily",
+      "notes": "Apply antiseptically to burns/skin infection; reduce as healing occurs.",
+      "formulary_page": 247,
+      "authorised": false,
+      "search_terms": [
+        "silver sulfadiazine",
+        "Flamazine",
+        "burns",
+        "flystrike",
+        "wounds",
+        "Pseudomonas"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Topical 1% cream",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Silver sulfadiazine",
+      "species": "Reptile",
+      "category": "Dermatology",
+      "indication": "Topical antibacterial/antifungal wound or burn management",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q24-72h",
+      "notes": "Topical wound use where appropriate.",
+      "formulary_page": 247,
+      "authorised": false,
+      "search_terms": [
+        "silver sulfadiazine",
+        "Flamazine",
+        "burns",
+        "flystrike",
+        "wounds",
+        "Pseudomonas"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Topical 1% cream",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Silver sulfadiazine",
+      "species": "Amphibian",
+      "category": "Dermatology",
+      "indication": "Topical antibacterial/antifungal wound or burn management",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q24-72h",
+      "notes": "Topical wound use where appropriate; specialist amphibian wound care advised.",
+      "formulary_page": 247,
+      "authorised": false,
+      "search_terms": [
+        "silver sulfadiazine",
+        "Flamazine",
+        "burns",
+        "flystrike",
+        "wounds",
+        "Pseudomonas"
+      ],
+      "species_priority": 70,
+      "route_priority": 30,
+      "formulation": "Topical 1% cream",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Silver sulfadiazine",
+      "species": "Fish",
+      "category": "Dermatology",
+      "indication": "Topical antibacterial/antifungal wound or burn management",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Topical once site out of water 30-60 sec",
+      "notes": "Use for selected localized external wounds; avoid casual use in common carp wound healing.",
+      "formulary_page": 247,
+      "authorised": false,
+      "search_terms": [
+        "silver sulfadiazine",
+        "Flamazine",
+        "burns",
+        "flystrike",
+        "wounds",
+        "Pseudomonas"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Topical 1% cream",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Miconazole",
+      "species": "Rabbit",
+      "category": "Antifungal",
+      "indication": "Topical treatment of dermatophytosis, Malassezia/Candida-associated skin or ear disease, or selected amphibian mycoses",
+      "route": "Otic/topical skin",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q12-24h otic or twice daily skin",
+      "notes": "Use steroid-free preparations where possible. Continue dermatophyte treatment beyond apparent cure and negative cultures.",
+      "formulary_page": 186,
+      "authorised": false,
+      "search_terms": [
+        "miconazole",
+        "Daktarin",
+        "Malaseb",
+        "dermatophytosis",
+        "Malassezia",
+        "chytridiomycosis"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Topical 2% cream/powder/shampoo; otic combinations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Miconazole",
+      "species": "Chinchilla",
+      "category": "Antifungal",
+      "indication": "Topical treatment of dermatophytosis, Malassezia/Candida-associated skin or ear disease, or selected amphibian mycoses",
+      "route": "Dust bath topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "As protocol directs",
+      "notes": "Powder may be added to dust baths for dermatophytosis under clinician direction.",
+      "formulary_page": 186,
+      "authorised": false,
+      "search_terms": [
+        "miconazole",
+        "Daktarin",
+        "Malaseb",
+        "dermatophytosis",
+        "Malassezia",
+        "chytridiomycosis"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Topical 2% cream/powder/shampoo; otic combinations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Miconazole",
+      "species": "Amphibian",
+      "category": "Antifungal",
+      "indication": "Topical treatment of dermatophytosis, Malassezia/Candida-associated skin or ear disease, or selected amphibian mycoses",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Protocol dependent",
+      "notes": "Topical cream or dilute solution has been used for chytridiomycosis; specialist amphibian care advised.",
+      "formulary_page": 186,
+      "authorised": false,
+      "search_terms": [
+        "miconazole",
+        "Daktarin",
+        "Malaseb",
+        "dermatophytosis",
+        "Malassezia",
+        "chytridiomycosis"
+      ],
+      "species_priority": 70,
+      "route_priority": 30,
+      "formulation": "Topical 2% cream/powder/shampoo; otic combinations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Rabbit",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 100000,
+      "dose_max": 100000,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h",
+      "notes": "For GI yeast overgrowth where appropriate.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Chinchilla",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 60000,
+      "dose_max": 90000,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h for 7-10 days",
+      "notes": "For GI yeast overgrowth/candidiasis where appropriate.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Pigeon",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 100000,
+      "dose_max": 100000,
+      "dose_unit": "IU/kg",
+      "frequency": "q24h for 10 days",
+      "notes": "For candidiasis where appropriate.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Passerine",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 5000,
+      "dose_max": 300000,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h",
+      "notes": "Wide reported range; efficacy for macrorhabdiasis is uncertain.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Bird",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 300000,
+      "dose_max": 300000,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h",
+      "notes": "For candidiasis where appropriate.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Reptile",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "PO",
+      "dose_min": 100000,
+      "dose_max": 100000,
+      "dose_unit": "IU/kg",
+      "frequency": "q24h for 10 days",
+      "notes": "For candidiasis where appropriate.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Nystatin",
+      "species": "Amphibian",
+      "category": "Antifungal",
+      "indication": "Candida/GI yeast overgrowth or selected topical mycoses",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "As directed",
+      "notes": "Topical 1% cream for cutaneous mycoses; not calculator suitable.",
+      "formulary_page": 198,
+      "authorised": false,
+      "search_terms": [
+        "nystatin",
+        "Candida",
+        "candidiasis",
+        "macrorhabdus",
+        "yeast"
+      ],
+      "species_priority": 70,
+      "route_priority": 30,
+      "formulation": "Oral suspension 100,000 IU/ml; topical preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Rabbit",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "As directed",
+      "notes": "1% solution for fungal keratitis; topical row not calculator suitable.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Raptor",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "PO",
+      "dose_min": 12.5,
+      "dose_max": 12.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h initially",
+      "notes": "Some protocols reduce to q24h after initial dosing; monitor appetite and hepatic tolerance.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Raptor",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "IM",
+      "dose_min": 12.5,
+      "dose_max": 12.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Parenteral option for urgent cases where appropriate.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Grey Parrot",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "PO",
+      "dose_min": 12,
+      "dose_max": 18,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Often preferred over itraconazole in Grey parrots for aspergillosis; monitor for adverse effects.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Bearded Dragon",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Do not extrapolate to sensitive snake species without checking.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    },
+    {
+      "name": "Voriconazole",
+      "species": "Poison Dart Frog",
+      "category": "Antifungal",
+      "indication": "Aspergillosis, fungal keratitis, dermatomycoses or selected amphibian chytridiomycosis protocols",
+      "route": "Topical spray",
+      "dose_min": 1.25,
+      "dose_max": 1.25,
+      "dose_unit": "micrograms/ml",
+      "frequency": "q24h for 7 days",
+      "notes": "Topical chytridiomycosis protocol; not calculator suitable.",
+      "formulary_page": 284,
+      "authorised": false,
+      "search_terms": [
+        "voriconazole",
+        "Vfend",
+        "aspergillosis",
+        "Grey parrot",
+        "raptor",
+        "bearded dragon",
+        "chytridiomycosis"
+      ],
+      "species_priority": 70,
+      "route_priority": 30,
+      "formulation": "Oral tablets/suspension; injectable powder; topical compounded solutions may be used",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment."
+    }
+  ],
+  "information": [
+    {
+      "drug_name": "Chloramphenicol",
+      "section": "Exotics overview",
+      "content": "Broad-spectrum bacteriostatic antimicrobial with good tissue, ocular and CNS penetration. In exotics it is reserved for specific indications such as resistant infections or deep ocular/CNS disease."
+    },
+    {
+      "drug_name": "Chloramphenicol",
+      "section": "Key caution",
+      "content": "Human exposure carries serious safety concerns. Use gloves and restrict to individual animals where there is a clear indication."
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "section": "Exotics overview",
+      "content": "Topical antiseptic used for skin, wound and surgical-site preparation. It is not consistently effective as a sole antifungal."
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "section": "Key caution",
+      "content": "Do not use in eyes, do not instil into ears if tympanic integrity is unknown, and avoid use in amphibians."
+    },
+    {
+      "drug_name": "Timolol",
+      "section": "Exotics overview",
+      "content": "Topical non-selective beta-blocker used for glaucoma by reducing aqueous humour production."
+    },
+    {
+      "drug_name": "Timolol",
+      "section": "Key caution",
+      "content": "Systemic absorption can cause bradycardia and hypotension. Avoid in uncontrolled heart failure and asthma."
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "section": "Exotics overview",
+      "content": "Topical carbonic anhydrase inhibitor used to reduce aqueous humour production in glaucoma and ocular hypertension."
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "section": "Key caution",
+      "content": "Dorzolamide/timolol combinations may cause miosis and are not ideal for uveitis or anterior lens luxation."
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "section": "Exotics overview",
+      "content": "Fourth-generation topical fluoroquinolone for selected bacterial ocular infections, including some Gram-negative and Gram-positive pathogens."
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "section": "Key caution",
+      "content": "Reserve ophthalmic fluoroquinolones for appropriate infections where narrower options are unsuitable or ineffective."
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "section": "Exotics overview",
+      "content": "Topical fluoroquinolone used when other ocular antibacterial agents are unsuitable or ineffective. It has useful corneal penetration."
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "section": "Key caution",
+      "content": "Reserve for appropriate ocular infections and reassess if response is poor."
+    },
+    {
+      "drug_name": "Gentamicin",
+      "section": "Exotics overview",
+      "content": "Aminoglycoside antibiotic for culture-supported Gram-negative infections and selected topical/nebulised indications. It is concentration-dependent and potentially nephrotoxic."
+    },
+    {
+      "drug_name": "Gentamicin",
+      "section": "Key caution",
+      "content": "Ensure hydration and renal function. Avoid concurrent nephrotoxic, ototoxic or neuromuscular-blocking drugs where possible."
+    },
+    {
+      "drug_name": "Tobramycin",
+      "section": "Exotics overview",
+      "content": "Aminoglycoside antibiotic with particular usefulness against Pseudomonas in selected avian and reptile cases."
+    },
+    {
+      "drug_name": "Tobramycin",
+      "section": "Key caution",
+      "content": "Monitor renal function and hydration; give IV slowly if used intravenously."
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "section": "Exotics overview",
+      "content": "Topical antimicrobial/antifungal cream used for burns, flystrike, wounds and selected external bacterial infections, including fish wounds."
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "section": "Key caution",
+      "content": "Use gloves. Avoid in neonates or pregnant animals and consider hepatic/renal accumulation if large areas are treated."
+    },
+    {
+      "drug_name": "Miconazole",
+      "section": "Exotics overview",
+      "content": "Topical imidazole antifungal for dermatophyte, Malassezia, Candida-associated skin/ear disease and selected amphibian mycoses."
+    },
+    {
+      "drug_name": "Miconazole",
+      "section": "Key caution",
+      "content": "Avoid steroid-containing preparations when steroid exposure is undesirable, especially in rabbits, birds and pregnant animals."
+    },
+    {
+      "drug_name": "Nystatin",
+      "section": "Exotics overview",
+      "content": "Polyene antifungal used mainly for Candida/GI yeast overgrowth and selected topical mycoses. It is not absorbed from the GI tract."
+    },
+    {
+      "drug_name": "Nystatin",
+      "section": "Key caution",
+      "content": "Oral IU/kg rows are not mg/kg calculator rows and should stay out of the standard mg/kg dose calculator."
+    },
+    {
+      "drug_name": "Voriconazole",
+      "section": "Exotics overview",
+      "content": "Triazole antifungal used for aspergillosis, fungal keratitis, dermatomycoses and selected amphibian chytridiomycosis protocols."
+    },
+    {
+      "drug_name": "Voriconazole",
+      "section": "Key caution",
+      "content": "Avoid in pregnancy and liver disease. Macaws, some raptors and some snake species may be particularly sensitive."
+    }
+  ],
+  "warnings": [
+    {
+      "drug_name": "Chloramphenicol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Reserve for specific cases because of resistance and human safety concerns.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloramphenicol",
+      "warning_type": "Safety",
+      "warning_text": "Can cause dose-related bone marrow suppression and has important hepatic enzyme interactions.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Mucosal and skin irritation can occur, especially with stronger or inappropriate preparations.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "warning_type": "Safety",
+      "warning_text": "Do not use in eyes and avoid amphibian skin exposure.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Timolol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Can cause miosis, conjunctival hyperaemia and local irritation.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Timolol",
+      "warning_type": "Safety",
+      "warning_text": "Systemic absorption may cause bradycardia and reduced blood pressure.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Local irritation and blepharitis may occur.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "warning_type": "Safety",
+      "warning_text": "Avoid or use caution with severe hepatic or renal impairment.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Local ocular irritation may occur after application.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "warning_type": "Safety",
+      "warning_text": "Fluoroquinolone stewardship still applies, even for topical therapy.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Local irritation and ocular discomfort may occur.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "warning_type": "Safety",
+      "warning_text": "Fluoroquinolone stewardship applies to ophthalmic use.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Gentamicin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Nephrotoxicity and ototoxicity are clinically important risks.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Gentamicin",
+      "warning_type": "Safety",
+      "warning_text": "Avoid in dehydration or renal compromise unless benefits clearly outweigh risk.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Tobramycin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Aminoglycoside toxicity includes renal, otic and neuromuscular effects.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tobramycin",
+      "warning_type": "Safety",
+      "warning_text": "Do not use ophthalmic product where corneal ulceration is present.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Sulphonamide-sensitive patients may react and systemic absorption can occur over large wounds.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "warning_type": "Safety",
+      "warning_text": "Avoid in neonates and pregnant animals.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Miconazole",
+      "warning_type": "Clinical caution",
+      "warning_text": "Topical preparations vary and some combinations contain corticosteroids or antibiotics.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Miconazole",
+      "warning_type": "Safety",
+      "warning_text": "Do not treat dermatophytosis as a dab-and-dash problem; continue appropriate environmental and duration control.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Nystatin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Efficacy varies by indication; macrorhabdiasis response is uncertain.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Nystatin",
+      "warning_type": "Safety",
+      "warning_text": "Avoid steroid-containing topical combinations when steroid exposure is inappropriate.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Voriconazole",
+      "warning_type": "Clinical caution",
+      "warning_text": "Hepatic and GI adverse effects can occur and some avian/reptile species are sensitive.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Voriconazole",
+      "warning_type": "Safety",
+      "warning_text": "Do not use in cottonmouth snakes or Dumeril’s ground boas.",
+      "species": "All",
+      "severity": "Moderate"
+    }
+  ],
+  "contraindications": [
+    {
+      "drug_name": "Chloramphenicol",
+      "species": "All",
+      "contraindication": "Avoid casual/empirical use where safer alternatives are suitable.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "species": "All",
+      "contraindication": "Eyes, unknown tympanic membrane integrity, or amphibian skin preparation.",
+      "severity": "Moderate",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Timolol",
+      "species": "All",
+      "contraindication": "Uncontrolled heart failure or asthma.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "species": "All",
+      "contraindication": "Severe hepatic or renal impairment; dorzolamide/timolol combination where miosis is undesirable.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "species": "All",
+      "contraindication": "No specific exotic contraindication identified; avoid casual use without indication.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "species": "All",
+      "contraindication": "No specific exotic contraindication identified; avoid use without a clear ocular bacterial indication.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Gentamicin",
+      "species": "All",
+      "contraindication": "Dehydration, significant renal compromise or concurrent avoidable nephrotoxic therapy.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Tobramycin",
+      "species": "All",
+      "contraindication": "Corneal ulceration for ophthalmic tobramycin; dehydration or significant renal compromise for systemic use.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "species": "All",
+      "contraindication": "Neonates or pregnancy; sulphonamide hypersensitivity.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Miconazole",
+      "species": "All",
+      "contraindication": "Use of steroid-containing combinations where steroids are inappropriate.",
+      "severity": "Moderate",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Nystatin",
+      "species": "All",
+      "contraindication": "Steroid-containing combinations where steroid use is inappropriate.",
+      "severity": "Moderate",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    },
+    {
+      "drug_name": "Voriconazole",
+      "species": "All",
+      "contraindication": "Pregnancy, liver disease, cottonmouth snakes or Dumeril’s ground boas.",
+      "severity": "High",
+      "notes": "Use patient-specific assessment and species-specific caution."
+    }
+  ],
+  "adverse_effects": [
+    {
+      "drug_name": "Chloramphenicol",
+      "effect": "Reversible bone marrow suppression, GI signs and rare hypersensitivity reactions.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "effect": "Local irritation, mucosal irritation and potential ototoxicity if misused.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Timolol",
+      "effect": "Local ocular irritation, miosis, bradycardia or hypotension.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "effect": "Local irritation, blepharitis and miosis with timolol-containing combinations.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "effect": "Local ocular irritation or discomfort.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "effect": "Local burning, irritation, hyperaemia or corneal staining may occur.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Gentamicin",
+      "effect": "Renal injury, ototoxicity and neuromuscular blockade potentiation.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Tobramycin",
+      "effect": "Nephrotoxicity, ototoxicity and local irritation depending route.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "effect": "Local irritation, delayed wound healing in some fish contexts and possible sulphonamide reactions.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Miconazole",
+      "effect": "Local irritation or treatment failure if contact time/duration is inadequate.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Nystatin",
+      "effect": "GI upset or local irritation may occur; adverse data in exotics are limited.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    },
+    {
+      "drug_name": "Voriconazole",
+      "effect": "Vomiting/regurgitation, anorexia, depression, hepatic toxicosis, drug eruption or neurological signs in sensitive species.",
+      "frequency": "Occasional or dose/condition dependent",
+      "severity": "Moderate-High"
+    }
+  ],
+  "monitoring": [
+    {
+      "drug_name": "Chloramphenicol",
+      "monitoring_parameter": "Clinical response, CBC where prolonged therapy, liver/renal status and handler safety.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "monitoring_parameter": "Skin/wound response, irritation, dilution accuracy and contact time.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Timolol",
+      "monitoring_parameter": "Intraocular pressure, heart rate, demeanour and respiratory signs.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "monitoring_parameter": "Intraocular pressure, ocular comfort and local inflammation.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "monitoring_parameter": "Ocular discharge, corneal status, culture results if available and clinical response.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "monitoring_parameter": "Ocular comfort, corneal status, discharge and response to therapy.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Gentamicin",
+      "monitoring_parameter": "Hydration, renal values, urinalysis where possible and clinical response.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Tobramycin",
+      "monitoring_parameter": "Renal values, hydration, urine sediment where practical and clinical response.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "monitoring_parameter": "Wound progress, tissue reaction, treated surface area and signs of delayed healing.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Miconazole",
+      "monitoring_parameter": "Skin/ear response, fungal culture where relevant and product ingredients.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Nystatin",
+      "monitoring_parameter": "Appetite, faecal output, lesion response and candidiasis signs.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    },
+    {
+      "drug_name": "Voriconazole",
+      "monitoring_parameter": "Appetite, weight, hepatic values where feasible and species-specific adverse signs.",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Escalate or stop if adverse effects occur."
+    }
+  ],
+  "pearls": [
+    {
+      "drug_name": "Chloramphenicol",
+      "pearl": "Chloramphenicol is a useful locked cupboard drug, not a sweet jar antimicrobial."
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "pearl": "Chlorhexidine is a cleaner, not a magic antifungal cloak. Dilution is the spellbook."
+    },
+    {
+      "drug_name": "Timolol",
+      "pearl": "A tiny eye drop can still behave like a beta-blocker. Respect the drop dragon."
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "pearl": "Dorzolamide lowers pressure, but angry eyes still need diagnosis, not just more drops."
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "pearl": "Topical fluoroquinolones are not eye glitter. Use them when the bug deserves them."
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "pearl": "Ofloxacin gets into cornea nicely, but culture still outranks guesswork when things go swampy."
+    },
+    {
+      "drug_name": "Gentamicin",
+      "pearl": "Gentamicin is a sharp tool. Hydration is the handle."
+    },
+    {
+      "drug_name": "Tobramycin",
+      "pearl": "Tobramycin may be kinder than gentamicin, but it is still carrying aminoglycoside teeth."
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "pearl": "Silver sulfadiazine is wound armour, not wallpaper. Thin, targeted use wins."
+    },
+    {
+      "drug_name": "Miconazole",
+      "pearl": "Miconazole works best when the environment stops re-seeding the fungus confetti cannon."
+    },
+    {
+      "drug_name": "Nystatin",
+      "pearl": "Nystatin stays mostly in the gut, which is either exactly the point or entirely not the point."
+    },
+    {
+      "drug_name": "Voriconazole",
+      "pearl": "Voriconazole is the fancy antifungal scalpel. Excellent in the right claws, nasty in the wrong snake."
+    }
+  ],
+  "species_warnings": [
+    {
+      "drug_name": "Chloramphenicol",
+      "species": "Human safety",
+      "warning": "Handle with impervious gloves and avoid skin contact because human idiosyncratic aplastic anaemia risk is serious.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Chlorhexidine",
+      "species": "Amphibian",
+      "warning": "Not recommended because amphibian skin damage has been associated with surgical prep agents including chlorhexidine.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Timolol",
+      "species": "Rabbit",
+      "warning": "Use cautiously in very small or cardiopulmonary fragile rabbits due to systemic absorption risk.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Dorzolamide",
+      "species": "Bird",
+      "warning": "Avian evidence is limited to case-based use; monitor response carefully.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Moxifloxacin",
+      "species": "All",
+      "warning": "Category B Restrict antimicrobial; reserve for justified ocular infections.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Ofloxacin",
+      "species": "All",
+      "warning": "Category B Restrict antimicrobial; avoid casual topical use.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Gentamicin",
+      "species": "Small Herbivore",
+      "warning": "Use aminoglycosides cautiously in small herbivores and only where justified.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Tobramycin",
+      "species": "Reptile",
+      "warning": "Concurrent fluid support is advised when hydration is poor or uncertain.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Silver sulfadiazine",
+      "species": "Fish",
+      "warning": "Topical use may delay or worsen wound healing in common carp; use case-specific judgement.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Miconazole",
+      "species": "Rabbit",
+      "warning": "Prefer steroid-free preparations unless there is a specific reason to use a combination product.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Nystatin",
+      "species": "Bird",
+      "warning": "Corticosteroid-free preparations are preferred in birds where topical treatment is needed.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Voriconazole",
+      "species": "Cottonmouth/Dumeril’s Ground Boa",
+      "warning": "Do not use because severe neurological signs and death have been reported in these snake species.",
+      "severity": "High"
+    }
+  ],
+  "interactions": [
+    {
+      "drug_a": "Chloramphenicol",
+      "drug_b": "Phenobarbital",
+      "severity": "Moderate",
+      "mechanism": "Chloramphenicol inhibits hepatic metabolism.",
+      "recommendation": "Monitor for increased phenobarbital effect/toxicity.",
+      "interaction": "Increased phenobarbital exposure risk."
+    },
+    {
+      "drug_a": "Chloramphenicol",
+      "drug_b": "Rifampin",
+      "severity": "Moderate",
+      "mechanism": "Rifampin accelerates chloramphenicol metabolism.",
+      "recommendation": "Avoid if possible or monitor response.",
+      "interaction": "Reduced chloramphenicol exposure risk."
+    },
+    {
+      "drug_a": "Chloramphenicol",
+      "drug_b": "Beta-lactam antibiotics",
+      "severity": "Moderate",
+      "mechanism": "Bacteriostatic action may antagonise bactericidal antimicrobials.",
+      "recommendation": "Avoid combination unless specifically justified.",
+      "interaction": "Reduced antimicrobial effect risk."
+    },
+    {
+      "drug_a": "Timolol",
+      "drug_b": "Verapamil",
+      "severity": "High",
+      "mechanism": "Additive beta-blockade/calcium-channel effects can cause bradycardia or asystole.",
+      "recommendation": "Avoid combination or monitor intensively.",
+      "interaction": "Severe bradycardia/asystole risk."
+    },
+    {
+      "drug_a": "Timolol",
+      "drug_b": "Oral beta-blockers",
+      "severity": "Moderate",
+      "mechanism": "Additive systemic beta-blocking effects.",
+      "recommendation": "Use caution and monitor heart rate/blood pressure.",
+      "interaction": "Bradycardia/hypotension risk."
+    },
+    {
+      "drug_a": "Dorzolamide",
+      "drug_b": "Systemic carbonic anhydrase inhibitors",
+      "severity": "Moderate",
+      "mechanism": "No additional IOP benefit expected with increased systemic risk.",
+      "recommendation": "Avoid routine combination.",
+      "interaction": "No added benefit/increased adverse effect risk."
+    },
+    {
+      "drug_a": "Gentamicin",
+      "drug_b": "Furosemide",
+      "severity": "High",
+      "mechanism": "Additive nephrotoxic and ototoxic risk.",
+      "recommendation": "Avoid where possible; monitor hydration and renal values.",
+      "interaction": "Nephrotoxicity/ototoxicity risk."
+    },
+    {
+      "drug_a": "Gentamicin",
+      "drug_b": "Amphotericin B",
+      "severity": "High",
+      "mechanism": "Additive nephrotoxicity.",
+      "recommendation": "Avoid where possible or monitor intensively.",
+      "interaction": "Renal injury risk."
+    },
+    {
+      "drug_a": "Gentamicin",
+      "drug_b": "Beta-lactam antibiotics",
+      "severity": "Moderate",
+      "mechanism": "In vitro chemical inactivation if mixed; potential synergy if administered separately.",
+      "recommendation": "Do not mix in the same syringe.",
+      "interaction": "Compatibility issue."
+    },
+    {
+      "drug_a": "Gentamicin",
+      "drug_b": "Neuromuscular blockers",
+      "severity": "High",
+      "mechanism": "Aminoglycosides can potentiate neuromuscular blockade.",
+      "recommendation": "Avoid or monitor ventilation and neuromuscular function.",
+      "interaction": "Prolonged blockade/respiratory compromise risk."
+    },
+    {
+      "drug_a": "Tobramycin",
+      "drug_b": "Furosemide",
+      "severity": "High",
+      "mechanism": "Additive nephrotoxic/ototoxic risk.",
+      "recommendation": "Avoid or monitor renal function and hydration.",
+      "interaction": "Nephrotoxicity/ototoxicity risk."
+    },
+    {
+      "drug_a": "Tobramycin",
+      "drug_b": "Beta-lactam antibiotics",
+      "severity": "Moderate",
+      "mechanism": "In vitro inactivation if mixed in the same syringe.",
+      "recommendation": "Administer separately.",
+      "interaction": "Compatibility issue."
+    },
+    {
+      "drug_a": "Voriconazole",
+      "drug_b": "Ciclosporin",
+      "severity": "High",
+      "mechanism": "Azole inhibition can increase ciclosporin exposure.",
+      "recommendation": "Monitor closely and reduce ciclosporin if needed.",
+      "interaction": "Ciclosporin toxicity risk."
+    },
+    {
+      "drug_a": "Voriconazole",
+      "drug_b": "Benzodiazepines",
+      "severity": "Moderate",
+      "mechanism": "Azoles can reduce benzodiazepine metabolism.",
+      "recommendation": "Monitor for prolonged sedation.",
+      "interaction": "Prolonged sedation risk."
+    },
+    {
+      "drug_a": "Voriconazole",
+      "drug_b": "Vincristine",
+      "severity": "High",
+      "mechanism": "Azoles may increase vincristine exposure.",
+      "recommendation": "Avoid or use oncology specialist guidance.",
+      "interaction": "Neurotoxicity/myelosuppression risk."
+    },
+    {
+      "drug_a": "Moxifloxacin",
+      "drug_b": "Other fluoroquinolones",
+      "severity": "Moderate",
+      "mechanism": "Duplicate fluoroquinolone therapy increases selection pressure and adverse effect risk.",
+      "recommendation": "Avoid duplication unless specifically justified.",
+      "interaction": "Stewardship/adverse effect risk."
+    },
+    {
+      "drug_a": "Ofloxacin",
+      "drug_b": "Other fluoroquinolones",
+      "severity": "Moderate",
+      "mechanism": "Duplicate fluoroquinolone therapy increases selection pressure and adverse effect risk.",
+      "recommendation": "Avoid duplication unless specifically justified.",
+      "interaction": "Stewardship/adverse effect risk."
+    },
+    {
+      "drug_a": "Chlorhexidine",
+      "drug_b": "Ophthalmic medications",
+      "severity": "High",
+      "mechanism": "Chlorhexidine is not for ocular use and can irritate/damage ocular tissues.",
+      "recommendation": "Do not use chlorhexidine in eyes.",
+      "interaction": "Severe local irritation/tissue injury risk."
+    }
+  ]
+}

@@ -1,0 +1,3001 @@
+{
+  "tag": "VetLearn Exotics Seed v12",
+  "drugs": [
+    {
+      "name": "Allopurinol",
+      "species": "Bird",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use alongside diagnosis, hydration and dietary/husbandry review.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "gout",
+        "hyperuricaemia",
+        "urate"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets 100 mg, 300 mg",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Allopurinol",
+      "species": "Pigeon",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "Drinking water",
+      "dose_min": 830,
+      "dose_max": 830,
+      "dose_unit": "mg/l",
+      "frequency": "As directed",
+      "notes": "Water-medicated row; not suitable for mg/kg calculator.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "pigeon",
+        "urate",
+        "gout"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets dissolved/prepared for water medication",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Allopurinol",
+      "species": "Psittacine",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "Drinking water",
+      "dose_min": 300,
+      "dose_max": 300,
+      "dose_unit": "mg/l",
+      "frequency": "As directed",
+      "notes": "Water-medicated row; not suitable for mg/kg calculator.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "psittacine",
+        "parrot",
+        "urate"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets dissolved/prepared for water medication",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Allopurinol",
+      "species": "Reptile",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use with hydration, renal assessment and temperature support.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "reptile",
+        "urate",
+        "gout"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Allopurinol",
+      "species": "Chelonian",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "PO",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h for 30 days then q72h",
+      "notes": "Use with hydration and urate monitoring where possible.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "tortoise",
+        "chelonians",
+        "urate",
+        "gout"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Allopurinol",
+      "species": "Green Iguana",
+      "category": "Urology",
+      "indication": "Hyperuricaemia / gout support",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use with hydration and renal assessment.",
+      "formulary_page": 8,
+      "authorised": false,
+      "search_terms": [
+        "allopurinol",
+        "green iguana",
+        "urate",
+        "gout"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Aluminium antacids",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Gastritis/ulcer support or phosphate binding",
+      "route": "PO",
+      "dose_min": 30,
+      "dose_max": 60,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Mix thoroughly with food if used as phosphate binder; monitor phosphate.",
+      "formulary_page": 10,
+      "authorised": false,
+      "search_terms": [
+        "aluminium hydroxide",
+        "antacid",
+        "phosphate binder",
+        "rabbit"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aluminium hydroxide dried gel or compounded preparations",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Aluminium antacids",
+      "species": "Guinea Pig",
+      "category": "Gastrointestinal",
+      "indication": "Hyperphosphataemia support in renal disease",
+      "route": "PO",
+      "dose_min": 20,
+      "dose_max": 40,
+      "dose_unit": "mg/animal",
+      "frequency": "PRN/as directed",
+      "notes": "Fixed animal dose; hidden from calculator.",
+      "formulary_page": 10,
+      "authorised": false,
+      "search_terms": [
+        "aluminium hydroxide",
+        "guinea pig",
+        "phosphate binder"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aluminium hydroxide preparations vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Aluminium antacids",
+      "species": "Bird",
+      "category": "Gastrointestinal",
+      "indication": "Gastritis/ulcer support or phosphate binding",
+      "route": "PO",
+      "dose_min": 30,
+      "dose_max": 90,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Separate from oral fluoroquinolones/tetracyclines.",
+      "formulary_page": 10,
+      "authorised": false,
+      "search_terms": [
+        "aluminium hydroxide",
+        "avian antacid",
+        "phosphate binder"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aluminium hydroxide preparations vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Aluminium antacids",
+      "species": "Reptile",
+      "category": "Gastrointestinal",
+      "indication": "Gastritis/ulcer support or phosphate binding",
+      "route": "PO",
+      "dose_min": 100,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use with hydration and renal assessment.",
+      "formulary_page": 10,
+      "authorised": false,
+      "search_terms": [
+        "aluminium hydroxide",
+        "reptile antacid",
+        "phosphate binder"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aluminium hydroxide preparations vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Benzalkonium chloride",
+      "species": "Exotic Pet",
+      "category": "Dermatology",
+      "indication": "Nebulisation/nasal/sinus/wound flushing at appropriate dilution",
+      "route": "Diluted topical/nebulised",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "As directed",
+      "notes": "Use 1:250 F10 Antiseptic Solution dilution. Not a mg/kg calculator row.",
+      "formulary_page": 32,
+      "authorised": false,
+      "search_terms": [
+        "benzalkonium",
+        "F10",
+        "disinfectant",
+        "flush",
+        "nebulisation"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "F10/benzalkonium formulations vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Benzalkonium chloride",
+      "species": "Fish",
+      "category": "Aquatic",
+      "indication": "External bacterial skin/gill treatment",
+      "route": "Immersion",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/l",
+      "frequency": "5-10 minutes",
+      "notes": "Reduce dose rates by 50% at high temperature or low hardness. Not mg/kg.",
+      "formulary_page": 32,
+      "authorised": false,
+      "search_terms": [
+        "benzalkonium",
+        "fish",
+        "immersion",
+        "gill"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aquatic immersion formulations vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Benzalkonium chloride",
+      "species": "Fish",
+      "category": "Aquatic",
+      "indication": "External bacterial skin/gill treatment",
+      "route": "Prolonged immersion",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/l",
+      "frequency": "As directed",
+      "notes": "Low therapeutic index. Monitor fish closely.",
+      "formulary_page": 32,
+      "authorised": false,
+      "search_terms": [
+        "benzalkonium",
+        "fish",
+        "prolonged immersion"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aquatic immersion formulations vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Benzocaine",
+      "species": "Fish",
+      "category": "Anaesthesia",
+      "indication": "Sedation/immobilisation/anaesthesia of fish",
+      "route": "Immersion",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "To effect",
+      "notes": "Prepare/buffer stock solution, aerate water and test low dose in a small group first.",
+      "formulary_page": 33,
+      "authorised": false,
+      "search_terms": [
+        "benzocaine",
+        "fish anaesthesia",
+        "Optomease"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Benzocaine 200 mg/ml liquid concentrate or powder",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Benzocaine",
+      "species": "Fish",
+      "category": "Euthanasia",
+      "indication": "Fish euthanasia",
+      "route": "Immersion",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "5-10 times anaesthetic concentration; maintain exposure after respiration ceases",
+      "notes": "Use only in line with welfare guidance and local legislation.",
+      "formulary_page": 33,
+      "authorised": false,
+      "search_terms": [
+        "benzocaine",
+        "fish euthanasia"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Benzocaine 200 mg/ml liquid concentrate or powder",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Bismuth salts",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Acute diarrhoea/gastric irritation support",
+      "route": "PO",
+      "dose_min": 17.6,
+      "dose_max": 17.6,
+      "dose_unit": "mg/kg",
+      "frequency": "q4-8h",
+      "notes": "Empirical dosing; avoid long-term use.",
+      "formulary_page": 35,
+      "authorised": false,
+      "search_terms": [
+        "bismuth",
+        "Pepto-Bismol",
+        "ferret diarrhoea"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Bismuth subsalicylate suspension; bismuth chelate tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Bismuth salts",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Acute diarrhoea/gastric irritation support",
+      "route": "PO",
+      "dose_min": 0.3,
+      "dose_max": 0.6,
+      "dose_unit": "ml/kg",
+      "frequency": "q4-6h",
+      "notes": "ml/kg suspension row; hidden from mg/kg calculator.",
+      "formulary_page": 35,
+      "authorised": false,
+      "search_terms": [
+        "bismuth",
+        "rabbit diarrhoea",
+        "Pepto-Bismol"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Bismuth subsalicylate suspension",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Budesonide",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Inflammatory bowel disease support",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/animal",
+      "frequency": "q24h",
+      "notes": "Fixed ferret dose; hidden from calculator. Monitor for steroid effects.",
+      "formulary_page": 37,
+      "authorised": false,
+      "search_terms": [
+        "budesonide",
+        "ferret IBD",
+        "steroid"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/tablets vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Bupivacaine",
+      "species": "Small Mammal",
+      "category": "Analgesia",
+      "indication": "Regional/perineural local anaesthesia",
+      "route": "Perineural/epidural/intrapleural",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h max where appropriate",
+      "notes": "Choose concentration to fit safe volume; do not give IV.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "bupivacaine",
+        "local anaesthetic",
+        "regional block"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable 2.5, 5, 7.5 mg/ml",
+      "concentration": 2.5,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Bupivacaine",
+      "species": "Rabbit",
+      "category": "Analgesia",
+      "indication": "Regional/perineural local anaesthesia",
+      "route": "Perineural/epidural",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h max where appropriate",
+      "notes": "Use lower doses if systemic absorption likely.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "bupivacaine",
+        "rabbit local anaesthetic",
+        "nerve block"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable 2.5, 5, 7.5 mg/ml",
+      "concentration": 2.5,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Bupivacaine",
+      "species": "Bird",
+      "category": "Analgesia",
+      "indication": "Regional/local anaesthesia where appropriate",
+      "route": "Local/regional",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "Use cautiously",
+      "notes": "Concerns exist about prolonged levels after SC use; lidocaine may be safer.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "bupivacaine",
+        "avian local anaesthetic"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable 2.5, 5, 7.5 mg/ml",
+      "concentration": 2.5,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Butylscopolamine",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Antispasmodic analgesia for GI/urinary tract pain while investigating cause",
+      "route": "IV/IM",
+      "dose_min": 0.1,
+      "dose_max": 0.1,
+      "dose_unit": "ml/kg",
+      "frequency": "q12h",
+      "notes": "Buscopan Compositum dose. Do not use for rabbit ileus or obstruction.",
+      "formulary_page": 43,
+      "authorised": false,
+      "search_terms": [
+        "butylscopolamine",
+        "Buscopan",
+        "rabbit GI pain"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Buscopan Compositum: 4 mg/ml butylscopolamine + 500 mg/ml metamizole",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carnidazole",
+      "species": "Pigeon",
+      "category": "Antiprotozoal",
+      "indication": "Trichomoniasis/canker",
+      "route": "PO",
+      "dose_min": 20,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "Once; repeat only if directed",
+      "notes": "Use flock/contact and hygiene management.",
+      "formulary_page": 48,
+      "authorised": false,
+      "search_terms": [
+        "carnidazole",
+        "pigeon canker",
+        "trichomonas"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Carnidazole tablets/capsules vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Ferret",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "Total daily dose",
+      "notes": "Monitor GI signs, hydration and renal status.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "ferret NSAID",
+        "analgesia"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable/tablets vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Rabbit",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "SC",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Avoid dehydration, hypotension and renal disease.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "rabbit NSAID"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable 50 mg/ml commonly",
+      "concentration": 50,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Rabbit",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "PO",
+      "dose_min": 1.5,
+      "dose_max": 1.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite and faecal output.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "rabbit oral NSAID"
+      ],
+      "species_priority": 30,
+      "route_priority": 20,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets/liquid vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Rodent",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "IV/IM/SC/PO",
+      "dose_min": 2,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "Daily dose in one or two divided doses",
+      "notes": "Monitor hydration and GI signs.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "rodent NSAID"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable/tablets vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Bird",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "IM/SC/PO",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use caution in dehydration, shock and renal dysfunction.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "avian NSAID"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable/tablets vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Reptile",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "SC/IM/PO",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "4 mg/kg once then 2 mg/kg q24h",
+      "notes": "Hydration and temperature support are important.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "reptile NSAID"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable/tablets vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Bearded Dragon",
+      "category": "NSAID",
+      "indication": "Pain and inflammation",
+      "route": "IM",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite, hydration and behaviour.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "bearded dragon"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable formulations vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carprofen",
+      "species": "Fish",
+      "category": "NSAID",
+      "indication": "Analgesia/inflammation support",
+      "route": "IM",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "mg/animal",
+      "frequency": "As directed",
+      "notes": "Fixed fish dose row; hidden from calculator.",
+      "formulary_page": 49,
+      "authorised": false,
+      "search_terms": [
+        "carprofen",
+        "fish NSAID"
+      ],
+      "species_priority": 80,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable formulations vary",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Carvedilol",
+      "species": "Rat",
+      "category": "Cardiology",
+      "indication": "Adjunct chronic heart failure / hypertension support",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Stabilise CHF first and monitor for bradycardia/hypotension.",
+      "formulary_page": 50,
+      "authorised": false,
+      "search_terms": [
+        "carvedilol",
+        "rat heart failure",
+        "beta blocker"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Celecoxib",
+      "species": "Rat",
+      "category": "NSAID",
+      "indication": "Pain/inflammation support",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "As directed",
+      "notes": "Monitor GI signs and renal perfusion.",
+      "formulary_page": 58,
+      "authorised": false,
+      "search_terms": [
+        "celecoxib",
+        "rat NSAID",
+        "COX-2"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Celecoxib",
+      "species": "Bird",
+      "category": "NSAID",
+      "indication": "Pain/inflammation support",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor hydration, appetite and renal signs.",
+      "formulary_page": 58,
+      "authorised": false,
+      "search_terms": [
+        "celecoxib",
+        "avian NSAID",
+        "COX-2"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Activated charcoal",
+      "species": "Mammal",
+      "category": "Antidote",
+      "indication": "GI decontamination after selected toxin exposure",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 5,
+      "dose_unit": "g/kg",
+      "frequency": "Once; repeat if indicated",
+      "notes": "g/kg row hidden from mg/kg calculator.",
+      "formulary_page": 59,
+      "authorised": false,
+      "search_terms": [
+        "activated charcoal",
+        "toxins",
+        "poisoning"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Activated charcoal powder or slurry",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Activated charcoal",
+      "species": "Bird",
+      "category": "Antidote",
+      "indication": "GI decontamination after selected toxin exposure",
+      "route": "PO",
+      "dose_min": 3.75,
+      "dose_max": 3.75,
+      "dose_unit": "g/kg",
+      "frequency": "Once; repeat if indicated",
+      "notes": "Do not use before emetics or if aspiration risk is high.",
+      "formulary_page": 59,
+      "authorised": false,
+      "search_terms": [
+        "activated charcoal",
+        "bird toxin",
+        "poisoning"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Activated charcoal powder or slurry",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Activated charcoal",
+      "species": "Chelonian",
+      "category": "Antidote",
+      "indication": "GI decontamination after selected toxin exposure",
+      "route": "Stomach tube",
+      "dose_min": 2,
+      "dose_max": 8,
+      "dose_unit": "g/kg",
+      "frequency": "Once; repeat if indicated",
+      "notes": "Tube carefully and avoid aspiration.",
+      "formulary_page": 59,
+      "authorised": false,
+      "search_terms": [
+        "activated charcoal",
+        "chelonian toxin"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Activated charcoal powder or slurry",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chloramine-T",
+      "species": "Fish",
+      "category": "Aquatic",
+      "indication": "External bacterial/gill disease support",
+      "route": "Immersion",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Protocol/water-quality dependent",
+      "notes": "Aquatic treatment row. Confirm species/water system and local authorisation.",
+      "formulary_page": 61,
+      "authorised": false,
+      "search_terms": [
+        "chloramine-T",
+        "fish",
+        "gill disease",
+        "aquatic"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aquatic immersion preparations",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chloroquine",
+      "species": "Raptor",
+      "category": "Antiprotozoal",
+      "indication": "Avian haemoparasite/protozoal disease where indicated",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "Initial, then lower repeated doses at 6, 24, 48h",
+      "notes": "Specialist avian use; may be combined with primaquine.",
+      "formulary_page": 64,
+      "authorised": false,
+      "search_terms": [
+        "chloroquine",
+        "raptor",
+        "protozoa"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Chloroquine phosphate/diphosphate formulations vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chloroquine",
+      "species": "Tortoise",
+      "category": "Antiprotozoal",
+      "indication": "Protozoal disease where indicated",
+      "route": "PO",
+      "dose_min": 125,
+      "dose_max": 125,
+      "dose_unit": "mg/kg",
+      "frequency": "q48h for 3 doses",
+      "notes": "Specialist reptile use.",
+      "formulary_page": 64,
+      "authorised": false,
+      "search_terms": [
+        "chloroquine",
+        "tortoise",
+        "protozoa"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Chloroquine formulations vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chloroquine",
+      "species": "Fish",
+      "category": "Aquatic",
+      "indication": "Amyloodinium/protozoal treatment",
+      "route": "Immersion",
+      "dose_min": 10,
+      "dose_max": 15,
+      "dose_unit": "mg/l",
+      "frequency": "Protocol dependent",
+      "notes": "Immersion row; hidden from calculator. Salinity and carbon removal matter.",
+      "formulary_page": 64,
+      "authorised": false,
+      "search_terms": [
+        "chloroquine",
+        "fish",
+        "Amyloodinium",
+        "protozoa"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aquatic immersion preparation",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chlorphenamine",
+      "species": "Ferret",
+      "category": "Antihistamine",
+      "indication": "Allergic disease / anaphylaxis support",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "May cause sedation and reduce seizure threshold.",
+      "formulary_page": 65,
+      "authorised": false,
+      "search_terms": [
+        "chlorphenamine",
+        "chlorpheniramine",
+        "ferret allergy"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable 10 mg/ml; oral tablets/syrup",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chlorphenamine",
+      "species": "Rabbit",
+      "category": "Antihistamine",
+      "indication": "Allergic disease / transfusion premedication support",
+      "route": "PO",
+      "dose_min": 0.2,
+      "dose_max": 0.4,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use caution with urinary retention/glaucoma/obstruction risk.",
+      "formulary_page": 65,
+      "authorised": false,
+      "search_terms": [
+        "chlorphenamine",
+        "rabbit allergy",
+        "antihistamine"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets/syrup",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chlorphenamine",
+      "species": "Rodent",
+      "category": "Antihistamine",
+      "indication": "Allergic disease support",
+      "route": "PO",
+      "dose_min": 0.6,
+      "dose_max": 0.6,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor sedation.",
+      "formulary_page": 65,
+      "authorised": false,
+      "search_terms": [
+        "chlorphenamine",
+        "rodent allergy"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets/syrup",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chlorphenamine",
+      "species": "Primate",
+      "category": "Antihistamine",
+      "indication": "Allergic disease support",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor sedation.",
+      "formulary_page": 65,
+      "authorised": false,
+      "search_terms": [
+        "chlorphenamine",
+        "primate allergy"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets/syrup",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Chorionic gonadotrophin",
+      "species": "Ferret",
+      "category": "Reproduction",
+      "indication": "Persistent oestrus support",
+      "route": "IM",
+      "dose_min": 100,
+      "dose_max": 100,
+      "dose_unit": "IU/animal",
+      "frequency": "q14d for 2 doses",
+      "notes": "Fixed dose hidden from calculator.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "hCG",
+        "chorionic gonadotrophin",
+        "ferret oestrus"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1500 IU powder for reconstitution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chorionic gonadotrophin",
+      "species": "Rabbit",
+      "category": "Reproduction",
+      "indication": "Ovulation induction",
+      "route": "IV",
+      "dose_min": 20,
+      "dose_max": 25,
+      "dose_unit": "IU/animal",
+      "frequency": "Once",
+      "notes": "Fixed dose hidden from calculator.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "hCG",
+        "rabbit ovulation"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1500 IU powder for reconstitution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chorionic gonadotrophin",
+      "species": "Guinea Pig",
+      "category": "Reproduction",
+      "indication": "Hormone-responsive ovarian cyst support",
+      "route": "IM",
+      "dose_min": 100,
+      "dose_max": 100,
+      "dose_unit": "IU/kg",
+      "frequency": "Weekly for 3 doses",
+      "notes": "IU/kg row hidden from calculator.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "hCG",
+        "guinea pig ovarian cyst"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1500 IU powder for reconstitution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Chorionic gonadotrophin",
+      "species": "Bird",
+      "category": "Reproduction",
+      "indication": "Egg-laying inhibition support",
+      "route": "IM",
+      "dose_min": 500,
+      "dose_max": 1000,
+      "dose_unit": "IU/kg",
+      "frequency": "Days 1, 3 and 7; repeat q3-6wk if indicated",
+      "notes": "Must be combined with husbandry correction.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "hCG",
+        "bird chronic egg laying"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1500 IU powder for reconstitution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Ciclosporin",
+      "species": "Ferret",
+      "category": "Immunosuppressive",
+      "indication": "Immune-mediated/dermatologic disease support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor for infection, GI effects and interactions.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "ciclosporin",
+        "cyclosporine",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/liquid vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Ciclosporin",
+      "species": "Rabbit",
+      "category": "Immunosuppressive",
+      "indication": "Idiopathic sebaceous adenitis / immune-mediated disease support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite, infection risk and liver/renal values.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "ciclosporin",
+        "rabbit sebaceous adenitis"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/liquid vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Ciclosporin",
+      "species": "Rat",
+      "category": "Immunosuppressive",
+      "indication": "Immune-mediated disease / research-supported use",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor for infection and interactions.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "ciclosporin",
+        "rat immunosuppression"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/liquid vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Ciclosporin",
+      "species": "Bird",
+      "category": "Immunosuppressive",
+      "indication": "Anti-inflammatory/immunomodulatory use where indicated",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 60,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h depending species and target",
+      "notes": "Wide range and toxicity risk; avian specialist dosing advised.",
+      "formulary_page": 66,
+      "authorised": false,
+      "search_terms": [
+        "ciclosporin",
+        "avian immunosuppressive",
+        "parrot"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral capsules/liquid vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Clomipramine",
+      "species": "Rat",
+      "category": "Behaviour",
+      "indication": "Anxiety/compulsive behaviour support",
+      "route": "PO",
+      "dose_min": 16,
+      "dose_max": 32,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use with behaviour modification.",
+      "formulary_page": 74,
+      "authorised": false,
+      "search_terms": [
+        "clomipramine",
+        "rat behaviour",
+        "TCA"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Clomipramine",
+      "species": "Bird",
+      "category": "Behaviour",
+      "indication": "Feather plucking/anxiety-related behaviour support",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 3,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-24h depending protocol",
+      "notes": "Use only with behaviour/husbandry plan and cardiac/seizure caution.",
+      "formulary_page": 74,
+      "authorised": false,
+      "search_terms": [
+        "clomipramine",
+        "bird feather plucking",
+        "anxiety"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Clotrimazole",
+      "species": "Rabbit",
+      "category": "Antifungal",
+      "indication": "Otic superficial fungal infection",
+      "route": "Otic",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "3-5 drops q12h",
+      "notes": "Topical drop row hidden from calculator.",
+      "formulary_page": 75,
+      "authorised": false,
+      "search_terms": [
+        "clotrimazole",
+        "rabbit otic",
+        "Canesten"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1% cream/solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Clotrimazole",
+      "species": "Small Mammal",
+      "category": "Antifungal",
+      "indication": "Superficial dermatophyte/yeast lesion support",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q12h for 3-6 weeks",
+      "notes": "Topical row hidden from calculator.",
+      "formulary_page": 75,
+      "authorised": false,
+      "search_terms": [
+        "clotrimazole",
+        "small mammal ringworm",
+        "topical"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1% cream/solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Clotrimazole",
+      "species": "Bird",
+      "category": "Antifungal",
+      "indication": "Nasal/sinal aspergillosis or superficial fungal lesion support",
+      "route": "Endoscopic/topical/nebulised",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "Applied directly where indicated",
+      "notes": "Specialist/topical row; dose may not translate to systemic calculator use.",
+      "formulary_page": 75,
+      "authorised": false,
+      "search_terms": [
+        "clotrimazole",
+        "avian aspergillosis",
+        "naso-sinal"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1% solution/cream",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Clotrimazole",
+      "species": "Reptile",
+      "category": "Antifungal",
+      "indication": "Superficial fungal lesion support",
+      "route": "Topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "q12h",
+      "notes": "Topical row hidden from calculator.",
+      "formulary_page": 75,
+      "authorised": false,
+      "search_terms": [
+        "clotrimazole",
+        "reptile fungal lesion"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "1% cream/solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Colchicine",
+      "species": "Bird",
+      "category": "Hepatology",
+      "indication": "Hepatic fibrosis support where specialist-directed",
+      "route": "PO",
+      "dose_min": 0.04,
+      "dose_max": 0.04,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use cautiously; adverse reactions are relatively common.",
+      "formulary_page": 77,
+      "authorised": false,
+      "search_terms": [
+        "colchicine",
+        "avian hepatic fibrosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Colchicine",
+      "species": "Rainbow Lorikeet",
+      "category": "Hepatology",
+      "indication": "Polycystic kidney disease/fibrosis support where specialist-directed",
+      "route": "PO",
+      "dose_min": 0.1,
+      "dose_max": 0.1,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "High caution; monitor appetite, CBC and renal/hepatic status.",
+      "formulary_page": 77,
+      "authorised": false,
+      "search_terms": [
+        "colchicine",
+        "rainbow lorikeet"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Colestyramine",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Binding clostridial toxins after dysbiosis/overgrowth",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "g/animal",
+      "frequency": "q24h",
+      "notes": "Mix gently with water and syringe carefully. Fixed dose hidden from calculator.",
+      "formulary_page": 78,
+      "authorised": false,
+      "search_terms": [
+        "colestyramine",
+        "cholestyramine",
+        "rabbit clostridial toxins"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "4 g sachet powder",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Colestyramine",
+      "species": "Guinea Pig",
+      "category": "Gastrointestinal",
+      "indication": "Binding clostridial toxins after dysbiosis/overgrowth",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "g/animal",
+      "frequency": "q24h",
+      "notes": "Fixed dose hidden from calculator.",
+      "formulary_page": 78,
+      "authorised": false,
+      "search_terms": [
+        "colestyramine",
+        "guinea pig toxins"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "4 g sachet powder",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Copper sulphate",
+      "species": "Fish",
+      "category": "Aquatic",
+      "indication": "Protozoan/monogenean ectoparasites and selected fungal/bacterial disease",
+      "route": "Immersion",
+      "dose_min": 0.15,
+      "dose_max": 0.2,
+      "dose_unit": "mg/l free copper",
+      "frequency": "Maintain therapeutic free copper with testing",
+      "notes": "Low therapeutic index; toxic to invertebrates and many plants. Hidden from calculator.",
+      "formulary_page": 78,
+      "authorised": false,
+      "search_terms": [
+        "copper sulphate",
+        "fish",
+        "free copper",
+        "ectoparasites"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Aquatic copper formulations; stock solution may be prepared",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Cyclophosphamide",
+      "species": "Bird",
+      "category": "Oncology",
+      "indication": "Lymphosarcoma chemotherapy protocol component",
+      "route": "Intraosseous",
+      "dose_min": 200,
+      "dose_max": 200,
+      "dose_unit": "mg/m2",
+      "frequency": "q7d",
+      "notes": "Cytotoxic drug; specialist oncology handling and CBC monitoring required.",
+      "formulary_page": 79,
+      "authorised": false,
+      "search_terms": [
+        "cyclophosphamide",
+        "avian lymphosarcoma",
+        "chemotherapy"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable powder; oral tablets",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Cyclophosphamide",
+      "species": "Green Iguana",
+      "category": "Oncology",
+      "indication": "Lymphoma chemotherapy protocol component",
+      "route": "IV",
+      "dose_min": 3,
+      "dose_max": 3,
+      "dose_unit": "mg/kg",
+      "frequency": "q2wk",
+      "notes": "Single case-report style use; specialist oncology only.",
+      "formulary_page": 79,
+      "authorised": false,
+      "search_terms": [
+        "cyclophosphamide",
+        "green iguana lymphoma"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "evidence_notes": "Exotics dosing often uses limited evidence, extrapolation or clinical experience. Use cascade judgement and patient-specific assessment.",
+      "formulation": "Injectable powder",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    }
+  ],
+  "information": [
+    {
+      "drug_name": "Allopurinol",
+      "section": "Exotics overview",
+      "content": "Xanthine oxidase inhibitor used in selected birds and reptiles for hyperuricaemia or gout support, alongside correction of hydration, diet and underlying renal or husbandry issues."
+    },
+    {
+      "drug_name": "Allopurinol",
+      "section": "Key caution",
+      "content": "Treat the patient, not just the uric acid. Hydration, renal assessment, diet and husbandry are often the real battleground."
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "section": "Exotics overview",
+      "content": "Aluminium hydroxide preparations are used as antacids and phosphate binders, especially where renal disease causes hyperphosphataemia."
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "section": "Key caution",
+      "content": "Separate from oral fluoroquinolones, tetracyclines and digoxin. Constipation and reduced appetite can occur."
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "section": "Exotics overview",
+      "content": "Quaternary ammonium disinfectant/antiseptic used at appropriate dilutions for flushing, nebulisation support and selected aquatic external treatments."
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "section": "Key caution",
+      "content": "Low therapeutic index in fish; toxicity increases in warm or soft water. Irritant to skin and eyes."
+    },
+    {
+      "drug_name": "Benzocaine",
+      "section": "Exotics overview",
+      "content": "Fish immersion anaesthetic/euthanasia agent. Effect depends on concentration, exposure time, temperature, species and water chemistry."
+    },
+    {
+      "drug_name": "Benzocaine",
+      "section": "Key caution",
+      "content": "Use water from the animal's system, buffer pH, aerate well and test lower concentrations before treating groups."
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "section": "Exotics overview",
+      "content": "GI cytoprotective/adsorbent used empirically for gastric irritation, ulceration or diarrhoea in selected mammals."
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "section": "Key caution",
+      "content": "Do not use if obstruction, reduced gag/cough reflex, fitting or need for a specific oral antidote is present."
+    },
+    {
+      "drug_name": "Budesonide",
+      "section": "Exotics overview",
+      "content": "Glucocorticoid with high first-pass metabolism in people; used in ferrets for inflammatory bowel disease but systemic steroid effects can still occur."
+    },
+    {
+      "drug_name": "Budesonide",
+      "section": "Key caution",
+      "content": "Avoid intestinal perforation and severe hepatic impairment. Monitor for iatrogenic steroid effects despite first-pass metabolism."
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "section": "Exotics overview",
+      "content": "Long-acting local anaesthetic used for regional, perineural, epidural or intrapleural analgesia. It is slower than lidocaine but longer acting."
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "section": "Key caution",
+      "content": "Never give intravenously. In birds, delayed high plasma levels are a concern, so dose conservatively."
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "section": "Exotics overview",
+      "content": "Antimuscarinic antispasmodic used in rabbits for GI or urinary tract pain only while actively investigating and treating the underlying cause."
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "section": "Key caution",
+      "content": "Contraindicated in intestinal obstruction and not a treatment for rabbit ileus. It must not delay diagnosis."
+    },
+    {
+      "drug_name": "Carnidazole",
+      "section": "Exotics overview",
+      "content": "Nitroimidazole antiprotozoal used mainly in pigeons for trichomoniasis/canker."
+    },
+    {
+      "drug_name": "Carnidazole",
+      "section": "Key caution",
+      "content": "Use with hygiene, contact management and reassessment if signs persist."
+    },
+    {
+      "drug_name": "Carprofen",
+      "section": "Exotics overview",
+      "content": "NSAID used for pain and inflammation in selected mammals, birds, reptiles and fish, with species-specific evidence and caution."
+    },
+    {
+      "drug_name": "Carprofen",
+      "section": "Key caution",
+      "content": "Avoid dehydration, hypotension, renal disease, GI bleeding risk and concurrent steroid/NSAID therapy."
+    },
+    {
+      "drug_name": "Carvedilol",
+      "section": "Exotics overview",
+      "content": "Non-selective beta blocker with alpha-1 blocking effects used only as specialist adjunct cardiac therapy."
+    },
+    {
+      "drug_name": "Carvedilol",
+      "section": "Key caution",
+      "content": "Do not start until heart failure is stabilised. Avoid bradyarrhythmias, bronchial disease and decompensated CHF."
+    },
+    {
+      "drug_name": "Celecoxib",
+      "section": "Exotics overview",
+      "content": "Selective COX-2 inhibitor used experimentally/clinically in rats and birds for inflammation/pain support."
+    },
+    {
+      "drug_name": "Celecoxib",
+      "section": "Key caution",
+      "content": "NSAID precautions still apply: hydration, renal perfusion and GI tolerance matter."
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "section": "Exotics overview",
+      "content": "GI adsorbent used for selected acute poisonings and toxin exposures when aspiration risk and contraindications have been considered."
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "section": "Key caution",
+      "content": "Do not give before emetics or when aspiration risk is high. It binds many oral medicines as well as toxins."
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "section": "Exotics overview",
+      "content": "Aquatic disinfectant/antimicrobial used for selected external fish disease protocols under water-quality specific guidance."
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "section": "Key caution",
+      "content": "Aquatic treatments depend on species, water chemistry and system design. Specialist/aquatic guidance is needed."
+    },
+    {
+      "drug_name": "Chloroquine",
+      "section": "Exotics overview",
+      "content": "Antiprotozoal/antimalarial used in selected raptors, tortoises and fish protozoal disease protocols."
+    },
+    {
+      "drug_name": "Chloroquine",
+      "section": "Key caution",
+      "content": "Toxic to algae and many invertebrates. Do not use in reef tanks."
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "section": "Exotics overview",
+      "content": "H1 antihistamine used for allergic disease, transfusion premedication and early anaphylaxis support in selected mammals."
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "section": "Key caution",
+      "content": "May sedate and may reduce seizure threshold. Use caution with urinary retention, glaucoma or pyloroduodenal obstruction."
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "section": "Exotics overview",
+      "content": "hCG is a reproductive hormone used for ovulation induction, persistent oestrus, ovarian cysts and avian reproductive management."
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "section": "Key caution",
+      "content": "Reconstituted vials lack preservative and should be discarded within 24 hours. Anaphylactoid reactions are possible."
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "section": "Exotics overview",
+      "content": "Calcineurin inhibitor immunosuppressant used for selected immune-mediated or inflammatory disease in exotic mammals and birds."
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "section": "Key caution",
+      "content": "Major interaction nest: azoles, doxycycline, diltiazem, NSAIDs, aminoglycosides, fluoroquinolones and macrocyclic lactones need care."
+    },
+    {
+      "drug_name": "Clomipramine",
+      "section": "Exotics overview",
+      "content": "Tricyclic antidepressant used with behaviour modification for anxiety-related or compulsive behaviours, including feather damaging behaviour in birds."
+    },
+    {
+      "drug_name": "Clomipramine",
+      "section": "Key caution",
+      "content": "Avoid in tricyclic sensitivity; use caution with arrhythmias, epilepsy, glaucoma, constipation and urinary retention."
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "section": "Exotics overview",
+      "content": "Topical imidazole antifungal used for superficial fungal disease and avian naso-sinal fungal lesions where specialist techniques are used."
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "section": "Key caution",
+      "content": "Some topical products contain corticosteroids. Avoid steroid-containing products unless specifically indicated."
+    },
+    {
+      "drug_name": "Colchicine",
+      "section": "Exotics overview",
+      "content": "Anti-fibrotic/anti-inflammatory drug used in selected avian hepatic/fibrotic conditions but with a narrow safety margin."
+    },
+    {
+      "drug_name": "Colchicine",
+      "section": "Key caution",
+      "content": "Adverse reactions are commoner than with many drugs in this batch. Overdose can be fatal."
+    },
+    {
+      "drug_name": "Colestyramine",
+      "section": "Exotics overview",
+      "content": "Ion-exchange resin used in rabbits and susceptible rodents to bind clostridial toxins after GI dysbiosis."
+    },
+    {
+      "drug_name": "Colestyramine",
+      "section": "Key caution",
+      "content": "Can reduce absorption of digoxin, anticoagulants, diuretics, thyroxine and other oral drugs."
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "section": "Exotics overview",
+      "content": "Aquatic copper treatment used for selected fish ectoparasites and fungal/bacterial disease, requiring free-copper monitoring."
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "section": "Key caution",
+      "content": "Low therapeutic index and toxic to invertebrates, elasmobranchs, algae and many plants. Test free copper."
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "section": "Exotics overview",
+      "content": "Alkylating cytotoxic chemotherapy used in specialist oncology protocols for selected exotic birds and reptiles."
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "section": "Key caution",
+      "content": "Cytotoxic. Handle and monitor as chemotherapy; myelosuppression nadir and haemorrhagic cystitis are key hazards."
+    }
+  ],
+  "warnings": [
+    {
+      "drug_name": "Allopurinol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Treat the patient, not just the uric acid. Hydration, renal assessment, diet and husbandry are often the real battleground.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "warning_type": "Clinical caution",
+      "warning_text": "Separate from oral fluoroquinolones, tetracyclines and digoxin. Constipation and reduced appetite can occur.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "warning_type": "Clinical caution",
+      "warning_text": "Low therapeutic index in fish; toxicity increases in warm or soft water. Irritant to skin and eyes.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Benzocaine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Use water from the animal's system, buffer pH, aerate well and test lower concentrations before treating groups.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use if obstruction, reduced gag/cough reflex, fitting or need for a specific oral antidote is present.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Budesonide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid intestinal perforation and severe hepatic impairment. Monitor for iatrogenic steroid effects despite first-pass metabolism.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Never give intravenously. In birds, delayed high plasma levels are a concern, so dose conservatively.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Contraindicated in intestinal obstruction and not a treatment for rabbit ileus. It must not delay diagnosis.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Carnidazole",
+      "warning_type": "Clinical caution",
+      "warning_text": "Use with hygiene, contact management and reassessment if signs persist.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Carprofen",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid dehydration, hypotension, renal disease, GI bleeding risk and concurrent steroid/NSAID therapy.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Carvedilol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not start until heart failure is stabilised. Avoid bradyarrhythmias, bronchial disease and decompensated CHF.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Celecoxib",
+      "warning_type": "Clinical caution",
+      "warning_text": "NSAID precautions still apply: hydration, renal perfusion and GI tolerance matter.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not give before emetics or when aspiration risk is high. It binds many oral medicines as well as toxins.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "warning_type": "Clinical caution",
+      "warning_text": "Aquatic treatments depend on species, water chemistry and system design. Specialist/aquatic guidance is needed.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloroquine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Toxic to algae and many invertebrates. Do not use in reef tanks.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "warning_type": "Clinical caution",
+      "warning_text": "May sedate and may reduce seizure threshold. Use caution with urinary retention, glaucoma or pyloroduodenal obstruction.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Reconstituted vials lack preservative and should be discarded within 24 hours. Anaphylactoid reactions are possible.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Major interaction nest: azoles, doxycycline, diltiazem, NSAIDs, aminoglycosides, fluoroquinolones and macrocyclic lactones need care.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Clomipramine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid in tricyclic sensitivity; use caution with arrhythmias, epilepsy, glaucoma, constipation and urinary retention.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "warning_type": "Clinical caution",
+      "warning_text": "Some topical products contain corticosteroids. Avoid steroid-containing products unless specifically indicated.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Colchicine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Adverse reactions are commoner than with many drugs in this batch. Overdose can be fatal.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Colestyramine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Can reduce absorption of digoxin, anticoagulants, diuretics, thyroxine and other oral drugs.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "warning_type": "Clinical caution",
+      "warning_text": "Low therapeutic index and toxic to invertebrates, elasmobranchs, algae and many plants. Test free copper.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Cytotoxic. Handle and monitor as chemotherapy; myelosuppression nadir and haemorrhagic cystitis are key hazards.",
+      "species": "All",
+      "severity": "High"
+    }
+  ],
+  "contraindications": [
+    {
+      "drug_name": "Bupivacaine",
+      "species": "All",
+      "contraindication": "Intravenous administration or IV regional anaesthesia.",
+      "severity": "High",
+      "notes": "Severe refractory cardiac arrhythmias can occur."
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "species": "Rabbit",
+      "contraindication": "Intestinal obstruction or rabbit ileus.",
+      "severity": "High",
+      "notes": "Use must not delay diagnosis or relief of obstruction."
+    },
+    {
+      "drug_name": "Carprofen",
+      "species": "All",
+      "contraindication": "Dehydration, hypovolaemia, hypotension, GI disease, clotting abnormality, pregnancy, age under 6 weeks or significant renal disease.",
+      "severity": "High",
+      "notes": "NSAID renal/GI risk."
+    },
+    {
+      "drug_name": "Celecoxib",
+      "species": "All",
+      "contraindication": "Dehydration, hypovolaemia, hypotension, GI disease or significant renal disease.",
+      "severity": "High",
+      "notes": "NSAID precautions still apply."
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "species": "All",
+      "contraindication": "Use before emetics, unconscious/fitting patient, reduced cough reflex or high aspiration risk.",
+      "severity": "High",
+      "notes": "Can worsen aspiration risk and bind oral therapies."
+    },
+    {
+      "drug_name": "Chloroquine",
+      "species": "Reef aquarium",
+      "contraindication": "Use in reef tanks or systems containing sensitive invertebrates/algae.",
+      "severity": "High",
+      "notes": "Toxic to many non-target organisms."
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "species": "All",
+      "contraindication": "Use cautiously or avoid in urinary retention, angle-closure glaucoma or pyloroduodenal obstruction.",
+      "severity": "Moderate",
+      "notes": "Antihistamine/anticholinergic concerns."
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "species": "All",
+      "contraindication": "Active serious infection or uncontrolled neoplasia risk without specialist justification.",
+      "severity": "High",
+      "notes": "Immunosuppression risk."
+    },
+    {
+      "drug_name": "Clomipramine",
+      "species": "All",
+      "contraindication": "Tricyclic antidepressant sensitivity.",
+      "severity": "High",
+      "notes": "Use caution in arrhythmia, epilepsy, glaucoma, constipation or urinary retention."
+    },
+    {
+      "drug_name": "Colchicine",
+      "species": "All",
+      "contraindication": "Pregnancy.",
+      "severity": "High",
+      "notes": "Overdose can be fatal."
+    },
+    {
+      "drug_name": "Colestyramine",
+      "species": "All",
+      "contraindication": "Severe constipation or inability to safely administer oral slurry.",
+      "severity": "Moderate",
+      "notes": "May worsen constipation and bind other oral medicines."
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "species": "Fish tank with invertebrates/elasmobranchs",
+      "contraindication": "Use in systems containing invertebrates, elasmobranchs, algae or sensitive plants.",
+      "severity": "High",
+      "notes": "Copper toxicity risk."
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "species": "All",
+      "contraindication": "Severe myelosuppression or inability to perform oncology monitoring/handling.",
+      "severity": "High",
+      "notes": "Cytotoxic therapy requires specialist protocols."
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "species": "All",
+      "contraindication": "Specific oral antidote use, unconscious/fitting patient, reduced cough reflex, intestinal obstruction or planned enterotomy/enterectomy.",
+      "severity": "High",
+      "notes": "Aspiration/interaction/obstruction concerns."
+    },
+    {
+      "drug_name": "Budesonide",
+      "species": "All",
+      "contraindication": "Intestinal perforation or severe hepatic impairment.",
+      "severity": "High",
+      "notes": "Steroid metabolism and perforation risk."
+    },
+    {
+      "drug_name": "Benzocaine",
+      "species": "Amphibian",
+      "contraindication": "Use when safer alternatives such as tricaine are available or apnoea risk cannot be managed.",
+      "severity": "High",
+      "notes": "Can induce apnoea in amphibians."
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "species": "Fish",
+      "contraindication": "Unmeasured water hardness/temperature or inability to monitor immersion concentration.",
+      "severity": "High",
+      "notes": "Low therapeutic index."
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "species": "All",
+      "contraindication": "Known previous anaphylactic reaction to hCG preparation.",
+      "severity": "High",
+      "notes": "Anaphylactoid reactions are possible."
+    }
+  ],
+  "adverse_effects": [
+    {
+      "drug_name": "Allopurinol",
+      "effect": "GI upset or altered urate dynamics; monitor renal status and hydration.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "effect": "Constipation, reduced appetite/bodyweight at high doses, and reduced absorption of other drugs.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "effect": "Irritation and aquatic toxicity if over-concentrated or used in unsuitable water conditions.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Benzocaine",
+      "effect": "Apnoea in amphibians and dose/exposure-related anaesthetic complications in fish.",
+      "frequency": "Dose/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "effect": "Constipation, nausea/vomiting in relevant species, black stools and neurotoxicity with prolonged use.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Budesonide",
+      "effect": "Steroid effects including PU/PD, polyphagia, lethargy, hepatomegaly, muscle loss or immunosuppression.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "effect": "Cardiac arrhythmias and CNS/cardiovascular toxicity if intravascular or overdosed.",
+      "frequency": "Occasional",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "effect": "Dry mouth, constipation, hesitant micturition and local injection reaction.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Carnidazole",
+      "effect": "GI upset or reduced appetite; neurological toxicity possible with nitroimidazole overexposure.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Carprofen",
+      "effect": "GI signs, ulceration/bleeding, renal injury and reduced activity in fish at high dose.",
+      "frequency": "Dose/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Carvedilol",
+      "effect": "Lethargy, diarrhoea, bradycardia, AV block, hypotension, bronchospasm or worsened heart failure.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Celecoxib",
+      "effect": "GI signs, renal perfusion effects and NSAID-associated intolerance.",
+      "frequency": "Dose/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "effect": "Black stools, constipation and reduced absorption of oral medicines.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "effect": "Gill/skin irritation or toxicity if dose or water quality is inappropriate.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloroquine",
+      "effect": "Reduced appetite and aquatic toxicity in invertebrate/algal systems.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "effect": "Mild sedation and possible reduction in seizure threshold.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "effect": "Occasional anaphylactic-type reactions.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "effect": "GI signs, immunosuppression, papillomatosis/gingival effects and increased malignancy risk with systemic treatment.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Clomipramine",
+      "effect": "Vomiting, appetite change, lethargy, arrhythmia risk and CNS interactions.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "effect": "Local irritation possible; steroid-containing combinations add steroid risks.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Colchicine",
+      "effect": "Vomiting, diarrhoea, abdominal pain, myelosuppression, renal damage, myopathy or neuropathy.",
+      "frequency": "Occasional",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Colestyramine",
+      "effect": "Constipation and reduced absorption of oral medicines.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "effect": "Gill toxicity and toxicity to invertebrates/plants if free copper exceeds target.",
+      "frequency": "Dose/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "effect": "Myelosuppression, sterile haemorrhagic cystitis, vomiting, diarrhoea, hepatotoxicity and nephrotoxicity.",
+      "frequency": "Dose/condition dependent",
+      "severity": "High"
+    }
+  ],
+  "monitoring": [
+    {
+      "drug_name": "Allopurinol",
+      "monitoring_parameter": "Urate level where available, hydration, renal status and clinical gout signs",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "monitoring_parameter": "Serum phosphate, appetite, faecal output and spacing from interacting medicines",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "monitoring_parameter": "Dilution accuracy, respiratory tolerance or fish behaviour/gill response",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Benzocaine",
+      "monitoring_parameter": "Stage of anaesthesia, respiration, water pH/temperature and recovery",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "monitoring_parameter": "Hydration, faecal output, abdominal pain and treatment duration",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Budesonide",
+      "monitoring_parameter": "IBD response, appetite, bodyweight, liver enzymes and steroid adverse effects",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "monitoring_parameter": "Block effect, dose/volume, cardiovascular status and signs of local anaesthetic toxicity",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "monitoring_parameter": "Pain, gut sounds/faecal output, urinary obstruction relief and hydration",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Carnidazole",
+      "monitoring_parameter": "Crop/oral lesion response, appetite and flock/contact recurrence",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Carprofen",
+      "monitoring_parameter": "Pain score, hydration, appetite/faeces, renal status and GI bleeding signs",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Carvedilol",
+      "monitoring_parameter": "Heart rate/rhythm, blood pressure/perfusion, respiratory signs and renal status",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Celecoxib",
+      "monitoring_parameter": "Pain/inflammation response, appetite, hydration and renal/GI tolerance",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "monitoring_parameter": "Airway safety, toxin signs, faecal output and timing versus oral medicines",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "monitoring_parameter": "Fish behaviour, gill function, water quality and treatment concentration",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Chloroquine",
+      "monitoring_parameter": "Appetite, protozoal response, aquarium invertebrate/algae risk and water protocol",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "monitoring_parameter": "Allergic signs, sedation, urinary retention and seizure risk",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "monitoring_parameter": "Reproductive response, adverse reaction and husbandry/reproductive context",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "monitoring_parameter": "Clinical response, infection, GI signs, renal/hepatic values and drug interactions",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Clomipramine",
+      "monitoring_parameter": "Behaviour plan progress, appetite, sedation, urinary retention and cardiac/seizure risk",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "monitoring_parameter": "Lesion response, local irritation, product steroid content and recheck if no improvement",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Colchicine",
+      "monitoring_parameter": "CBC, renal/hepatic status, GI tolerance and clinical fibrosis/inflammation response",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Colestyramine",
+      "monitoring_parameter": "Faecal output, toxin/dysbiosis signs and spacing from oral medicines",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "monitoring_parameter": "Free copper, fish behaviour/gills, pH/hardness and invertebrate safety",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "monitoring_parameter": "CBC nadir, urine signs, hydration, renal/hepatic values and chemotherapy safety",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Review dosing and species suitability before repeat courses."
+    }
+  ],
+  "pearls": [
+    {
+      "drug_name": "Allopurinol",
+      "pearl": "Gout treatment fails quietly if dehydration and husbandry keep feeding the urate bonfire."
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "pearl": "Aluminium hydroxide can bind phosphate and your other drugs. Space it like a socially awkward molecule."
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "pearl": "Aquatic antiseptics are not just drugs, they are water chemistry events."
+    },
+    {
+      "drug_name": "Benzocaine",
+      "pearl": "With fish anaesthesia, the water is part of the patient."
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "pearl": "Black stool after bismuth may be expected, but long-term use should not become a wallpaper prescription."
+    },
+    {
+      "drug_name": "Budesonide",
+      "pearl": "First-pass steroid does not mean side-effect proof ferret fairy dust."
+    },
+    {
+      "drug_name": "Bupivacaine",
+      "pearl": "Long acting local anaesthetic becomes long acting trouble if it finds a vein."
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "pearl": "Buscopan can quiet spasm, but it must not quiet your search for obstruction."
+    },
+    {
+      "drug_name": "Carnidazole",
+      "pearl": "Treating pigeon canker also means managing the loft, contacts and hygiene."
+    },
+    {
+      "drug_name": "Carprofen",
+      "pearl": "For NSAIDs in exotics, hydration is the moat around the castle."
+    },
+    {
+      "drug_name": "Carvedilol",
+      "pearl": "Do not beta-block a cardiac wobble until you know which wobble it is."
+    },
+    {
+      "drug_name": "Celecoxib",
+      "pearl": "COX-2 preference does not grant immunity from NSAID goblins."
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "pearl": "Charcoal binds the villain, the helpers and your sleeve. Timing matters."
+    },
+    {
+      "drug_name": "Chloramine-T",
+      "pearl": "A fish tank treatment is a prescription for water, not just fish."
+    },
+    {
+      "drug_name": "Chloroquine",
+      "pearl": "Chloroquine and reef tanks are a bad opera."
+    },
+    {
+      "drug_name": "Chlorphenamine",
+      "pearl": "Useful antihistamine, but a sleepy exotic may hide deterioration. Recheck the whole patient."
+    },
+    {
+      "drug_name": "Chorionic gonadotrophin",
+      "pearl": "Hormones without husbandry correction are often just expensive theatre."
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "pearl": "Ciclosporin interactions multiply like rabbits with calculators."
+    },
+    {
+      "drug_name": "Clomipramine",
+      "pearl": "Behaviour drugs need behaviour plans, not wishful tablet confetti."
+    },
+    {
+      "drug_name": "Clotrimazole",
+      "pearl": "Topical antifungals fail when the lesion is not actually fungal."
+    },
+    {
+      "drug_name": "Colchicine",
+      "pearl": "Colchicine has a narrow safety corridor; do not sprint down it."
+    },
+    {
+      "drug_name": "Colestyramine",
+      "pearl": "This resin binds trouble, but it also binds useful oral medicines."
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "pearl": "Copper is useful until it becomes a tank-wide murder mystery."
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "pearl": "Chemotherapy rows are not casual calculator toys; they need oncology handling and monitoring."
+    }
+  ],
+  "species_warnings": [
+    {
+      "drug_name": "Bupivacaine",
+      "species": "Bird",
+      "warning": "Concerns exist over prolonged bupivacaine levels and high plasma concentrations after subcutaneous use; lidocaine may be safer.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Benzocaine",
+      "species": "Amphibian",
+      "warning": "Can induce apnoea; tricaine or other alternatives are generally preferred.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Carprofen",
+      "species": "Vulture",
+      "warning": "Use extra care; NSAID sensitivity concerns exist in scavenging birds.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Carprofen",
+      "species": "Fish",
+      "warning": "Depressed activity may occur at higher dose rates.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chloroquine",
+      "species": "Reef tank",
+      "warning": "Do not use in reef systems because of toxicity to algae and invertebrates.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Copper sulphate",
+      "species": "Elasmobranch/Invertebrate",
+      "warning": "Copper is toxic to elasmobranchs, invertebrates, algae and many plants.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Ciclosporin",
+      "species": "Harris Hawk",
+      "warning": "High parrot-style dose rates have produced toxic signs in a Harris hawk; lower specialist dosing may be required.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Clomipramine",
+      "species": "Bird",
+      "warning": "Use only alongside behaviour and husbandry modification for feather damaging behaviour.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Butylscopolamine",
+      "species": "Rabbit",
+      "warning": "Contraindicated for rabbit ileus and intestinal obstruction.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Aluminium antacids",
+      "species": "Rat",
+      "warning": "High chronic doses can reduce food intake and bodyweight.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bismuth salts",
+      "species": "Renal impairment",
+      "warning": "Bismuth chelate is contraindicated in renal impairment.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Benzalkonium chloride",
+      "species": "Fish",
+      "warning": "Toxicity increases at high temperature and low water hardness; reduce dose accordingly.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Colchicine",
+      "species": "Bird",
+      "warning": "Use cautiously because vomiting, diarrhoea, bone marrow suppression and fatal overdose are possible.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Cyclophosphamide",
+      "species": "Bird/Reptile",
+      "warning": "Specialist oncology use only; monitor CBC and urine signs carefully.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Activated charcoal",
+      "species": "All",
+      "warning": "Avoid if aspiration risk is high or airway cannot be protected.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Colestyramine",
+      "species": "Rabbit/Guinea Pig",
+      "warning": "Can cause constipation and bind oral medicines; separate dosing where possible.",
+      "severity": "Moderate"
+    }
+  ],
+  "interactions": [
+    {
+      "drug_a": "Aluminium antacids",
+      "drug_b": "Fluoroquinolones",
+      "severity": "Moderate",
+      "mechanism": "Chelation reduces oral absorption.",
+      "recommendation": "Separate oral dosing by at least 2 hours.",
+      "interaction": "Reduced antibiotic absorption."
+    },
+    {
+      "drug_a": "Aluminium antacids",
+      "drug_b": "Tetracyclines",
+      "severity": "Moderate",
+      "mechanism": "Chelation reduces oral absorption.",
+      "recommendation": "Separate oral dosing by at least 2 hours.",
+      "interaction": "Reduced antibiotic absorption."
+    },
+    {
+      "drug_a": "Aluminium antacids",
+      "drug_b": "Digoxin",
+      "severity": "Moderate",
+      "mechanism": "Reduced oral absorption.",
+      "recommendation": "Separate dosing and monitor response.",
+      "interaction": "Reduced digoxin absorption."
+    },
+    {
+      "drug_a": "Bismuth salts",
+      "drug_b": "Tetracyclines",
+      "severity": "Moderate",
+      "mechanism": "Reduced tetracycline absorption.",
+      "recommendation": "Avoid concurrent oral administration or separate dosing.",
+      "interaction": "Reduced antibiotic absorption."
+    },
+    {
+      "drug_a": "Bupivacaine",
+      "drug_b": "Other local anaesthetics",
+      "severity": "High",
+      "mechanism": "Additive local anaesthetic toxicity.",
+      "recommendation": "Reduce total dose and calculate cumulative exposure.",
+      "interaction": "CNS/cardiac toxicity risk."
+    },
+    {
+      "drug_a": "Butylscopolamine",
+      "drug_b": "Phenothiazines",
+      "severity": "Moderate",
+      "mechanism": "Metamizole component and phenothiazines may increase hypothermia risk.",
+      "recommendation": "Avoid Buscopan Compositum with recent phenothiazine use where possible.",
+      "interaction": "Hypothermia risk."
+    },
+    {
+      "drug_a": "Carprofen",
+      "drug_b": "Corticosteroids",
+      "severity": "High",
+      "mechanism": "Additive GI ulceration and renal risk.",
+      "recommendation": "Avoid concurrent use and allow washout where possible.",
+      "interaction": "GI ulcer/renal risk."
+    },
+    {
+      "drug_a": "Carprofen",
+      "drug_b": "Other NSAIDs",
+      "severity": "High",
+      "mechanism": "Additive NSAID toxicity.",
+      "recommendation": "Avoid concurrent use; allow washout.",
+      "interaction": "GI/renal toxicity risk."
+    },
+    {
+      "drug_a": "Carprofen",
+      "drug_b": "Aminoglycosides",
+      "severity": "High",
+      "mechanism": "NSAID renal perfusion effects plus nephrotoxic antibiotic risk.",
+      "recommendation": "Avoid in dehydrated or unstable patients; monitor renal values.",
+      "interaction": "Renal injury risk."
+    },
+    {
+      "drug_a": "Carvedilol",
+      "drug_b": "Calcium-channel blockers",
+      "severity": "High",
+      "mechanism": "Additive bradycardia, hypotension and AV block.",
+      "recommendation": "Avoid or use only with specialist monitoring.",
+      "interaction": "Cardiovascular depression."
+    },
+    {
+      "drug_a": "Carvedilol",
+      "drug_b": "Digoxin",
+      "severity": "Moderate",
+      "mechanism": "Additive bradycardia.",
+      "recommendation": "Monitor heart rate/rhythm.",
+      "interaction": "Bradycardia risk."
+    },
+    {
+      "drug_a": "Carvedilol",
+      "drug_b": "Insulin",
+      "severity": "Moderate",
+      "mechanism": "May enhance hypoglycaemic effect and mask signs.",
+      "recommendation": "Monitor glucose and appetite.",
+      "interaction": "Hypoglycaemia risk."
+    },
+    {
+      "drug_a": "Celecoxib",
+      "drug_b": "Corticosteroids",
+      "severity": "High",
+      "mechanism": "Additive GI/renal NSAID-steroid toxicity.",
+      "recommendation": "Avoid concurrent use.",
+      "interaction": "GI ulceration/renal risk."
+    },
+    {
+      "drug_a": "Activated charcoal",
+      "drug_b": "Oral medicines",
+      "severity": "Moderate",
+      "mechanism": "Adsorbs many orally administered drugs.",
+      "recommendation": "Separate dosing where possible and consider whether charcoal is appropriate.",
+      "interaction": "Reduced medicine absorption."
+    },
+    {
+      "drug_a": "Ciclosporin",
+      "drug_b": "Itraconazole/azole antifungals",
+      "severity": "High",
+      "mechanism": "CYP inhibition increases ciclosporin exposure.",
+      "recommendation": "Avoid or monitor and reduce ciclosporin dose.",
+      "interaction": "Ciclosporin toxicity risk."
+    },
+    {
+      "drug_a": "Ciclosporin",
+      "drug_b": "NSAIDs/aminoglycosides/fluoroquinolones",
+      "severity": "High",
+      "mechanism": "Additive nephrotoxicity risk.",
+      "recommendation": "Avoid if possible; monitor renal status.",
+      "interaction": "Renal toxicity risk."
+    },
+    {
+      "drug_a": "Ciclosporin",
+      "drug_b": "Macrocyclic lactones",
+      "severity": "High",
+      "mechanism": "P-glycoprotein interaction may increase CNS exposure to macrocyclic lactones.",
+      "recommendation": "Use extreme caution and monitor neurological signs.",
+      "interaction": "Neurotoxicity risk."
+    },
+    {
+      "drug_a": "Clomipramine",
+      "drug_b": "Cimetidine",
+      "severity": "Moderate",
+      "mechanism": "May increase clomipramine plasma levels.",
+      "recommendation": "Avoid or monitor sedation/cardiac effects.",
+      "interaction": "Increased clomipramine exposure."
+    },
+    {
+      "drug_a": "Clomipramine",
+      "drug_b": "Sympathomimetics",
+      "severity": "Moderate",
+      "mechanism": "TCA may potentiate sympathomimetic effects.",
+      "recommendation": "Use caution with adrenaline/similar drugs.",
+      "interaction": "Cardiovascular stimulation risk."
+    },
+    {
+      "drug_a": "Colchicine",
+      "drug_b": "Ciclosporin",
+      "severity": "High",
+      "mechanism": "Increased nephrotoxicity and myotoxicity risk.",
+      "recommendation": "Avoid combination where possible.",
+      "interaction": "Toxicity risk."
+    },
+    {
+      "drug_a": "Colchicine",
+      "drug_b": "NSAIDs",
+      "severity": "High",
+      "mechanism": "Increased risk of thrombocytopenia/leucopenia/bone marrow depression.",
+      "recommendation": "Avoid or monitor CBC closely.",
+      "interaction": "Myelosuppression risk."
+    },
+    {
+      "drug_a": "Colestyramine",
+      "drug_b": "Digoxin/anticoagulants/diuretics/thyroxine",
+      "severity": "Moderate",
+      "mechanism": "Binds drugs in the GI tract and reduces absorption.",
+      "recommendation": "Separate dosing and monitor clinical response.",
+      "interaction": "Reduced oral drug absorption."
+    },
+    {
+      "drug_a": "Cyclophosphamide",
+      "drug_b": "Doxorubicin",
+      "severity": "High",
+      "mechanism": "Additive cardiotoxicity risk.",
+      "recommendation": "Oncology specialist protocols only.",
+      "interaction": "Cardiotoxicity risk."
+    },
+    {
+      "drug_a": "Cyclophosphamide",
+      "drug_b": "Phenothiazines/chloramphenicol",
+      "severity": "Moderate",
+      "mechanism": "May reduce cyclophosphamide efficacy.",
+      "recommendation": "Avoid unless specialist rationale.",
+      "interaction": "Reduced chemotherapy effect."
+    }
+  ]
+}

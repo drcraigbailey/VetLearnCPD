@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -34,6 +34,56 @@ import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const pageSize = 25;
+const smallAnimalSpecies = ["Dog", "Cat"];
+const exoticSpecies = [
+  "Rabbit", "Guinea Pig", "Ferret",
+  "Rodent", "Rat", "Mouse", "Hamster", "Gerbil", "Chinchilla", "Other Rodent",
+  "Small Mammal", "Hedgehog", "Sugar Glider", "Primate",
+  "Bird", "Parrot", "Amazon Parrot", "Parakeet", "Canary", "Zebra Finch", "Pigeon/Passerine", "Raptor",
+  "Reptile", "Bearded Dragon", "Chameleon", "Red-eared Slider", "Turtle", "Tortoise", "Ball Python",
+  "Amphibian", "Northern Leopard Frog", "Eastern Hellbender",
+  "Fish", "Fish/Pond",
+  "Rabbit/Rodent", "Rabbit/Small Herbivore", "Rat/Mouse", "Gerbil/Rat/Mouse",
+  "Other"
+];
+const formularySpeciesFilters = [
+  { id: "all", label: "All" },
+  { id: "small-animal", label: "Dog & Cat" },
+  { id: "exotics", label: "Exotics" }
+];
+const formularySpeciesOptions = [...smallAnimalSpecies, ...exoticSpecies];
+const calculatorModeOptions = [
+  { id: "dose", label: "Dose calculator" },
+  { id: "interaction", label: "Interaction checker" },
+  { id: "exotics", label: "Exotics dose calculator" }
+];
+
+const normalise = (value) => String(value || "").toLowerCase().trim();
+
+const isExoticSpecies = (species) => {
+  const normalised = normalise(species);
+  if (!normalised || normalised === "general") return false;
+  if (smallAnimalSpecies.map(normalise).includes(normalised)) return false;
+  return exoticSpecies.map(normalise).some((option) => normalised.includes(option) || option.includes(normalised));
+};
+
+const matchesSpeciesFilter = (drug, filter) => {
+  if (filter === "all") return true;
+
+  const speciesList = Array.isArray(drug.speciesList) && drug.speciesList.length
+    ? drug.speciesList
+    : [drug.species].filter(Boolean);
+
+  if (filter === "small-animal") {
+    return speciesList.some((species) => smallAnimalSpecies.map(normalise).includes(normalise(species)));
+  }
+
+  if (filter === "exotics") {
+    return speciesList.some(isExoticSpecies);
+  }
+
+  return true;
+};
 
 const parseSafeNumber = (val, fallback = 0) => {
   if (typeof val === "number" && !Number.isNaN(val)) return val;
@@ -41,8 +91,6 @@ const parseSafeNumber = (val, fallback = 0) => {
   const match = String(val).match(/\d+(\.\d+)?/);
   return match ? parseFloat(match[0]) : fallback;
 };
-
-const normalise = (value) => String(value || "").toLowerCase().trim();
 
 const unique = (items) => [...new Set((items || []).filter(Boolean))];
 const emptyDrugForm = {
@@ -91,8 +139,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const location = useLocation();
   const navigate = useNavigate();
   const canUseMyDrugs = canUseFeature(featureAccess, featureKeys.myDrugs, adminAccess);
+  const canUseExoticsFormulary = canUseFeature(featureAccess, featureKeys.exoticsFormulary, adminAccess);
   const isMyDrugsPath = location.pathname === "/drugs/my-drugs" || location.pathname === "/drugs/my-monographs";
   const [activeTab, setActiveTab] = useState(isMyDrugsPath ? "my-drugs" : "library");
+  const searchInputRef = useRef(null);
   const [drugs, setDrugs] = useState([]);
   const [allAliases, setAllAliases] = useState([]);
   const [drugCollaborations, setDrugCollaborations] = useState({});
@@ -101,6 +151,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [drugSearch, setDrugSearch] = useState("");
   const [myDrugSearch, setMyDrugSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState("");
+  const [speciesFilter, setSpeciesFilter] = useState("all");
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
   const [favourites, setFavourites] = useState([]);
@@ -151,8 +202,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   }, [activeDrugScope, canUseMyDrugs]);
 
   useEffect(() => {
+    if (!canUseExoticsFormulary && speciesFilter === "exotics") {
+      setSpeciesFilter("all");
+    }
+  }, [canUseExoticsFormulary, speciesFilter]);
+
+  useEffect(() => {
     setVisibleCount(pageSize);
-  }, [drugSearch, selectedLetter]);
+  }, [drugSearch, selectedLetter, speciesFilter]);
 
   // Track only the drug names to avoid re-triggering the check when a user merely adjusts a dose slider
   const selectedCalcDrugNames = useMemo(() => {
@@ -273,6 +330,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
           id: drug.id,
           user_id: drug.user_id,
           name: drug.name,
+          species: drug.species || "General",
+          speciesList: unique([drug.species].filter(Boolean)),
           category: drug.category || drug.drug_class || "Uncategorised",
           indication: drug.indication || drug.indications || details.indication || "",
           summary: drug.summary || drug.clinical_summary || drug.notes || details.summary || "",
@@ -293,19 +352,25 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         existing.aliases = unique([...existing.aliases, ...aliases]);
         existing.brandNames = unique([...existing.brandNames, ...brandNames]);
         existing.searchTerms = unique([...existing.searchTerms, ...(Array.isArray(drug.search_terms) ? drug.search_terms : [])]);
+        existing.speciesList = unique([...(existing.speciesList || []), drug.species].filter(Boolean));
       }
     });
 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allAliases, drugCollaborations, user.id]);
 
+  const availableDrugRows = useMemo(
+    () => canUseExoticsFormulary ? drugs : drugs.filter((drug) => Boolean(drug.user_id) || !isExoticSpecies(drug.species)),
+    [canUseExoticsFormulary, drugs]
+  );
+
   const libraryDrugsList = useMemo(
-    () => buildDrugList(drugs.filter((drug) => !drug.user_id), false),
-    [buildDrugList, drugs]
+    () => buildDrugList(availableDrugRows.filter((drug) => !drug.user_id), false),
+    [availableDrugRows, buildDrugList]
   );
   const myDrugsList = useMemo(
-    () => canUseMyDrugs ? buildDrugList(drugs.filter((drug) => Boolean(drug.user_id)), true) : [],
-    [buildDrugList, canUseMyDrugs, drugs, user.id]
+    () => canUseMyDrugs ? buildDrugList(availableDrugRows.filter((drug) => Boolean(drug.user_id)), true) : [],
+    [availableDrugRows, buildDrugList, canUseMyDrugs, user.id]
   );
   const uniqueDrugsList = useMemo(
     () => [...libraryDrugsList, ...myDrugsList].sort((a, b) => a.name.localeCompare(b.name)),
@@ -314,13 +379,17 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
   const filteredLibrary = useMemo(() => {
     const q = normalise(drugSearch);
+    const scopedDrugs = uniqueDrugsList.filter((drug) => matchesSpeciesFilter(drug, speciesFilter));
+
     if (q) {
-      return uniqueDrugsList.filter((drug) => {
+      return scopedDrugs.filter((drug) => {
         const haystack = [
           drug.name,
           drug.category,
           drug.indication,
           drug.summary,
+          drug.species,
+          ...(drug.speciesList || []),
           ...drug.aliases,
           ...drug.brandNames,
           ...drug.searchTerms
@@ -330,11 +399,11 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     }
 
     if (selectedLetter) {
-      return uniqueDrugsList.filter((drug) => drug.name?.toUpperCase().startsWith(selectedLetter));
+      return scopedDrugs.filter((drug) => drug.name?.toUpperCase().startsWith(selectedLetter));
     }
 
-    return [];
-  }, [drugSearch, selectedLetter, uniqueDrugsList]);
+    return speciesFilter === "all" ? [] : scopedDrugs;
+  }, [drugSearch, selectedLetter, speciesFilter, uniqueDrugsList]);
 
   const visibleLibrary = filteredLibrary.slice(0, visibleCount);
   const filteredMyDrugs = useMemo(() => {
@@ -378,7 +447,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     }
     const formattedName = normalise(drugName);
     const cacheKey = `${scope}:${formattedName}`;
-    const doses = drugs.filter((drug) => (
+    const doses = availableDrugRows.filter((drug) => (
       normalise(drug.name) === formattedName
       && (
         scope === "custom"
@@ -447,7 +516,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     } finally {
       setLoadingSummary(false);
     }
-  }, [canUseMyDrugs, drugs, summaryCache, user.id]);
+  }, [availableDrugRows, canUseMyDrugs, summaryCache, user.id]);
 
   const handleToggleFav = async (drugName) => {
     const existing = favourites.find((item) => normalise(item.title) === normalise(drugName));
@@ -626,7 +695,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   };
 
   const handleAddDrugToCalc = (event) => {
-    const drug = drugs.find((item) => String(item.id) === String(event.target.value));
+    const drug = availableDrugRows.find((item) => String(item.id) === String(event.target.value));
     if (drug) addDrugToActiveCalc(drug);
     event.target.value = "";
   };
@@ -666,7 +735,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     }, {});
   }, [activeDrugDoses]);
 
-  const availableCalcDrugs = drugs.filter((drug) => drug.species === calcPatient.species);
+  const availableCalcDrugs = availableDrugRows.filter((drug) => normalise(drug.species) === normalise(calcPatient.species));
   const canUseCalculator = canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess);
   const canUseLibrary = canUseFeature(featureAccess, featureKeys.library, adminAccess);
   const formularyTabs = useMemo(() => [
@@ -679,6 +748,22 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   useEffect(() => {
     if (!formularyTabs.some((tab) => tab.id === activeTab)) setActiveTab(formularyTabs[0]?.id || "history");
   }, [activeTab, formularyTabs]);
+
+  useEffect(() => {
+    if (!canUseLibrary || loading) return undefined;
+
+    const focusTarget = new URLSearchParams(location.search).get("focus");
+    if (focusTarget !== "search") return undefined;
+
+    setActiveTab("library");
+    setSelectedLetter("");
+
+    const focusTimer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 250);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [canUseLibrary, loading, location.search]);
 
   const selectTab = (tabId) => {
     setActiveTab(tabId);
@@ -788,9 +873,13 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               panelClass={panelClass}
               uniqueDrugsList={uniqueDrugsList}
               drugSearch={drugSearch}
+              searchInputRef={searchInputRef}
               setDrugSearch={setDrugSearch}
               selectedLetter={selectedLetter}
               setSelectedLetter={setSelectedLetter}
+              speciesFilter={speciesFilter}
+              setSpeciesFilter={setSpeciesFilter}
+              canUseExoticsFormulary={canUseExoticsFormulary}
               visibleLibrary={visibleLibrary}
               filteredLibrary={filteredLibrary}
               visibleCount={visibleCount}
@@ -844,6 +933,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               interactionResults={interactionResults}
               showInteractionModal={showInteractionModal}
               setShowInteractionModal={setShowInteractionModal}
+              canUseExoticsFormulary={canUseExoticsFormulary}
             />
           )}
 
@@ -868,9 +958,13 @@ function LibraryTab(props) {
     panelClass,
     uniqueDrugsList,
     drugSearch,
+    searchInputRef,
     setDrugSearch,
     selectedLetter,
     setSelectedLetter,
+    speciesFilter,
+    setSpeciesFilter,
+    canUseExoticsFormulary,
     visibleLibrary,
     filteredLibrary,
     visibleCount,
@@ -881,7 +975,14 @@ function LibraryTab(props) {
     handleToggleFav
   } = props;
 
-  const noActiveFilter = !drugSearch.trim() && !selectedLetter;
+  const scopedDrugList = uniqueDrugsList.filter((drug) => matchesSpeciesFilter(drug, speciesFilter));
+  const noActiveFilter = !drugSearch.trim() && !selectedLetter && speciesFilter === "all";
+  const activeSpeciesFilter = formularySpeciesFilters.find((filter) => filter.id === speciesFilter);
+  const resultTitle = drugSearch
+    ? "Search Results"
+    : selectedLetter
+      ? `${selectedLetter} Drugs`
+      : `${activeSpeciesFilter?.label || "Filtered"} Drugs`;
 
   return (
     <div className="space-y-6">
@@ -896,6 +997,7 @@ function LibraryTab(props) {
       <div className={`flex items-center gap-2 px-4 rounded-xl border ${darkMode ? "bg-white/5 border-white/10" : "bg-white border-[#DCEDEA]"}`}>
         <Search size={20} className={darkMode ? "text-slate-400" : "text-slate-500"} />
         <input
+          ref={searchInputRef}
           placeholder="Search by drug, alias, brand, indication or class..."
           className={`w-full py-4 outline-none bg-transparent text-sm font-bold ${darkMode ? "text-white placeholder:text-slate-400" : "text-[#113247] placeholder:text-slate-500"}`}
           value={drugSearch}
@@ -904,16 +1006,42 @@ function LibraryTab(props) {
         {drugSearch && <button onClick={() => setDrugSearch("")}><X size={16} className="opacity-50 hover:opacity-100" /></button>}
       </div>
 
+      <div className="grid grid-cols-3 gap-2">
+        {formularySpeciesFilters.map((filter) => {
+          const exoticsLocked = filter.id === "exotics" && !canUseExoticsFormulary;
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              disabled={exoticsLocked}
+              title={exoticsLocked ? "Enable Exotics Formulary in Admin > Features" : undefined}
+              onClick={() => {
+                if (exoticsLocked) return;
+                setSpeciesFilter(filter.id);
+                setSelectedLetter("");
+              }}
+              className={`h-10 rounded-lg text-sm font-black transition ${
+                speciesFilter === filter.id
+                  ? "bg-[#71CFC2] text-[#062F63] shadow-sm"
+                  : darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"
+              } ${exoticsLocked ? "opacity-45 cursor-not-allowed" : ""}`}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className={panelClass}>
         <div className="mb-4">
           <div>
             <h2 className="font-black text-lg">Browse A-Z</h2>
-            <p className="text-sm opacity-60">Choose a letter to show matching drugs only.</p>
+            <p className="text-sm opacity-60">Choose a letter to show {activeSpeciesFilter?.label?.toLowerCase() || "matching"} drugs only.</p>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-2 sm:grid-cols-13">
           {alphabet.map((letter) => {
-            const count = uniqueDrugsList.filter((drug) => drug.name?.toUpperCase().startsWith(letter)).length;
+            const count = scopedDrugList.filter((drug) => drug.name?.toUpperCase().startsWith(letter)).length;
             const active = selectedLetter === letter && !drugSearch;
             return (
               <button
@@ -943,10 +1071,10 @@ function LibraryTab(props) {
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-3 px-1">
             <div>
-              <h2 className="font-black text-lg">{drugSearch ? "Search Results" : `${selectedLetter} Drugs`}</h2>
+              <h2 className="font-black text-lg">{resultTitle}</h2>
               <p className="text-sm opacity-60">{filteredLibrary.length} match{filteredLibrary.length === 1 ? "" : "es"}</p>
             </div>
-            {(drugSearch || selectedLetter) && <button className="text-xs font-black opacity-60" onClick={() => { setDrugSearch(""); setSelectedLetter(""); }}>Clear</button>}
+            {(drugSearch || selectedLetter || speciesFilter !== "all") && <button className="text-xs font-black opacity-60" onClick={() => { setDrugSearch(""); setSelectedLetter(""); setSpeciesFilter("all"); }}>Clear</button>}
           </div>
 
           {visibleLibrary.map((drug) => (
@@ -1111,6 +1239,7 @@ function DrugChips({ title, icon, items, empty, onOpen, onRemove, darkMode }) {
 function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDrug, onClose }) {
   const [additionalField, setAdditionalField] = useState("");
   const selectedField = additionalDrugFields.find((field) => field.key === additionalField);
+  const speciesOptions = formularySpeciesOptions;
 
   return (
     <div className={`${panelClass} border-l-4 border-l-[#71CFC2] animate-in slide-in-from-top-2`}>
@@ -1121,7 +1250,7 @@ function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDru
       <div className="grid grid-cols-[2fr_1fr] gap-3 mb-3">
         <input className={fieldClass} placeholder="Drug name" value={drugForm.name} onChange={(event) => setDrugForm({ ...drugForm, name: event.target.value })} />
         <select className={fieldClass} value={drugForm.species} onChange={(event) => setDrugForm({ ...drugForm, species: event.target.value })}>
-          <option>Dog</option><option>Cat</option><option>Rabbit</option><option>Other</option>
+          {speciesOptions.map((species) => <option key={species}>{species}</option>)}
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -1335,10 +1464,26 @@ function CalculatorTab(props) {
     availableCalcDrugs, selectedCalcDrugs, setSelectedCalcDrugs,
     handleAddDrugToCalc, updateCalcDrugDose, saveToHistory, openMonograph,
     checkingInteractions, interactionResults,
-    showInteractionModal, setShowInteractionModal
+    showInteractionModal, setShowInteractionModal,
+    canUseExoticsFormulary
   } = props;
 
+  const [calculatorMode, setCalculatorMode] = useState("dose");
   const [calculatorSearch, setCalculatorSearch] = useState("");
+  const availableCalculatorModes = canUseExoticsFormulary
+    ? calculatorModeOptions
+    : calculatorModeOptions.filter((mode) => mode.id !== "exotics");
+  const calculatorSpecies = calculatorMode === "exotics"
+    ? exoticSpecies
+    : canUseExoticsFormulary ? formularySpeciesOptions : smallAnimalSpecies;
+
+  useEffect(() => {
+    if (!canUseExoticsFormulary && calculatorMode === "exotics") {
+      setCalculatorMode("dose");
+      setCalcPatient({ ...calcPatient, species: "Dog" });
+      setSelectedCalcDrugs([]);
+    }
+  }, [calculatorMode, calcPatient, canUseExoticsFormulary, setCalcPatient, setSelectedCalcDrugs]);
   const filteredCalcDrugs = useMemo(() => {
     const q = normalise(calculatorSearch);
     if (!q) return [];
@@ -1353,6 +1498,14 @@ function CalculatorTab(props) {
     setCalculatorSearch("");
   };
 
+  const chooseCalculatorMode = (mode) => {
+    setCalculatorMode(mode);
+    if (mode === "exotics" && !isExoticSpecies(calcPatient.species)) {
+      setCalcPatient({ ...calcPatient, species: "Rabbit" });
+      setSelectedCalcDrugs([]);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Interaction Warning Modal */}
@@ -1365,12 +1518,15 @@ function CalculatorTab(props) {
 
       <div className={panelClass}>
         <h2 className="font-black mb-4 flex items-center gap-2"><Syringe size={18} /> Patient Details</h2>
+        <select className={`${fieldClass} mb-3`} value={calculatorMode} onChange={(event) => chooseCalculatorMode(event.target.value)}>
+          {availableCalculatorModes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label}</option>)}
+        </select>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <input className={fieldClass} placeholder="Patient name" value={calcPatient.name} onChange={(event) => setCalcPatient({ ...calcPatient, name: event.target.value })} />
           <input className={fieldClass} type="number" placeholder="Weight kg" value={calcPatient.weight} onChange={(event) => setCalcPatient({ ...calcPatient, weight: event.target.value })} />
         </div>
-        <div className="flex gap-2 mb-5">
-          {["Dog", "Cat", "Rabbit"].map((species) => <button key={species} onClick={() => { setCalcPatient({ ...calcPatient, species }); setSelectedCalcDrugs([]); }} className={`flex-1 py-2 rounded-lg font-bold ${calcPatient.species === species ? "bg-[#71CFC2] text-[#071A24]" : darkMode ? "bg-white/10 text-slate-400" : "bg-slate-100 text-slate-500"}`}>{species}</button>)}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {calculatorSpecies.map((species) => <button key={species} onClick={() => { setCalcPatient({ ...calcPatient, species }); setSelectedCalcDrugs([]); }} className={`min-h-10 px-2 py-2 rounded-lg font-bold text-sm leading-tight ${calcPatient.species === species ? "bg-[#71CFC2] text-[#071A24]" : darkMode ? "bg-white/10 text-slate-400" : "bg-slate-100 text-slate-500"}`}>{species}</button>)}
         </div>
 
         <div className="border-t border-slate-200 dark:border-white/10 pt-5 mt-5">

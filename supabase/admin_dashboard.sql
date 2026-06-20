@@ -192,6 +192,7 @@ values
   ('clinical_tools', 'Clinical Tools', 'Dose, CRI, fluid, emergency and toxicology calculators.'),
   ('clinical_protocols', 'Clinical Protocols', 'Create and share treatment protocols.'),
   ('drug_database', 'Drug Database', 'Search formulary and clinical drug information.'),
+  ('exotics_formulary', 'Exotics Formulary', 'Show exotic species filters, dose rows and formulary calculator options.'),
   ('my_drugs', 'My Drugs / My Monographs', 'Create and share personal drug monographs.'),
   ('library', 'Library', 'Learning resources and saved reading.'),
   ('case_logs', 'Case Logs', 'Record and review clinical cases.'),
@@ -206,6 +207,7 @@ on conflict (feature_key) do update set
 insert into public.subscription_feature_access (subscription_tier, feature_key, is_enabled)
 select tier, feature_key,
   case
+    when feature_key = 'exotics_formulary' then false
     when tier = 'free' and feature_key in ('cpd_tracker', 'drug_database') then true
     when tier = 'clinician' and feature_key in ('cpd_tracker', 'drug_database', 'my_drugs', 'clinical_tools', 'clinical_protocols', 'case_logs', 'messaging') then true
     when tier in ('professional', 'premium', 'enterprise') then true

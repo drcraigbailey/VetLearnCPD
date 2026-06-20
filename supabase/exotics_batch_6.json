@@ -1,0 +1,1396 @@
+{
+  "tag": "VetLearn Exotics Seed v6",
+  "drugs": [
+    {
+      "name": "Cisapride",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "GI prokinetic support, particularly GI stasis/hypomotility",
+      "route": "PO",
+      "dose_min": 0.1,
+      "dose_max": 1.0,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Typically 0.5 mg/kg. Use with awareness that efficacy may vary and obstruction must be excluded.",
+      "formulary_page": 70,
+      "authorised": false,
+      "search_terms": [
+        "cisapride",
+        "prokinetic",
+        "GI stasis",
+        "rabbit"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Veterinary special tablets/suspensions vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Cisapride",
+      "species": "Guinea Pig",
+      "category": "Gastrointestinal",
+      "indication": "GI prokinetic support, particularly GI stasis/hypomotility",
+      "route": "PO",
+      "dose_min": 0.1,
+      "dose_max": 1.0,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Typically 0.5 mg/kg. Use with awareness that efficacy may vary and obstruction must be excluded.",
+      "formulary_page": 70,
+      "authorised": false,
+      "search_terms": [
+        "cisapride",
+        "prokinetic",
+        "GI stasis",
+        "guinea pig"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Veterinary special tablets/suspensions vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Cisapride",
+      "species": "Primate",
+      "category": "Gastrointestinal",
+      "indication": "GI prokinetic support",
+      "route": "PO",
+      "dose_min": 0.2,
+      "dose_max": 0.2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use with case-specific assessment and monitor for abdominal discomfort.",
+      "formulary_page": 70,
+      "authorised": false,
+      "search_terms": [
+        "cisapride",
+        "primate",
+        "prokinetic"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Veterinary special tablets/suspensions vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Cisapride",
+      "species": "Sugar Glider",
+      "category": "Gastrointestinal",
+      "indication": "GI prokinetic support",
+      "route": "PO/SC",
+      "dose_min": 0.25,
+      "dose_max": 0.25,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-24h",
+      "notes": "Use with careful hydration and obstruction assessment.",
+      "formulary_page": 70,
+      "authorised": false,
+      "search_terms": [
+        "cisapride",
+        "sugar glider",
+        "prokinetic"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Veterinary special tablets/suspensions vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / stress-associated gastric ulcer support",
+      "route": "PO",
+      "dose_min": 3.5,
+      "dose_max": 3.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Preparations may be difficult to source; check current availability.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "Zantac",
+        "H2 blocker",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable 25 mg/ml; oral syrup 15 mg/ml/tablets if available",
+      "concentration": 15,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy or prokinetic support",
+      "route": "PO/SC",
+      "dose_min": 4,
+      "dose_max": 6,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-24h",
+      "notes": "Often used for prokinetic effect under cascade where clinically appropriate.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "rabbit",
+        "prokinetic",
+        "H2 blocker"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 25 mg/ml; oral syrup 15 mg/ml/tablets if available",
+      "concentration": 15,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Guinea Pig",
+      "category": "Gastrointestinal",
+      "indication": "Prokinetic/anti-ulcer support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Stagger from interacting oral medicines where possible.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "guinea pig",
+        "prokinetic"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral syrup/tablets if available",
+      "concentration": 15,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Chinchilla",
+      "category": "Gastrointestinal",
+      "indication": "Prokinetic/anti-ulcer support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Stagger from interacting oral medicines where possible.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "chinchilla",
+        "prokinetic"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral syrup/tablets if available",
+      "concentration": 15,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Primate",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Monitor response and sourcing/availability.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "primate",
+        "anti-ulcer"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Oral syrup/tablets if available",
+      "concentration": 15,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Ranitidine",
+      "species": "Hedgehog",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer/prokinetic support",
+      "route": "SC",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Monitor hydration and GI signs.",
+      "formulary_page": 238,
+      "authorised": false,
+      "search_terms": [
+        "ranitidine",
+        "hedgehog",
+        "anti-ulcer"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 25 mg/ml",
+      "concentration": 25,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "PO/IV/SC",
+      "dose_min": 0.25,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "H2 blocker with fewer interactions than cimetidine.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "Pepcid",
+        "H2 blocker",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable/oral formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "PO/IV/SC",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Consider where acid suppression is justified.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "rabbit",
+        "H2 blocker"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable/oral formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Guinea Pig",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "PO/SC",
+      "dose_min": 0.4,
+      "dose_max": 0.4,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite and faecal output.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "guinea pig",
+        "H2 blocker"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable/oral formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Chinchilla",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "SC",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite and faecal output.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "chinchilla",
+        "H2 blocker"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Primate",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor response and ongoing indication.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "primate",
+        "H2 blocker"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Oral formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Famotidine",
+      "species": "Hedgehog",
+      "category": "Gastrointestinal",
+      "indication": "Anti-ulcer therapy / acid suppression",
+      "route": "PO/SC",
+      "dose_min": 0.5,
+      "dose_max": 1.0,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Route and interval vary with case. Monitor appetite and hydration.",
+      "formulary_page": 115,
+      "authorised": false,
+      "search_terms": [
+        "famotidine",
+        "hedgehog",
+        "H2 blocker"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable/oral formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Oesophageal, gastric or duodenal ulcer protection",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 125,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-12h",
+      "notes": "Give separately from many oral drugs; at least 2 hours spacing is sensible.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "ulcer",
+        "gastroprotectant",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Rabbit",
+      "category": "Gastrointestinal",
+      "indication": "Oesophageal, gastric or duodenal ulcer protection",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Give separately from fluoroquinolones, digoxin and other oral drugs.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "rabbit",
+        "ulcer"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Rodent",
+      "category": "Gastrointestinal",
+      "indication": "Oesophageal, gastric or duodenal ulcer protection",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-8h",
+      "notes": "Monitor for constipation and ensure hydration.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "rodent",
+        "ulcer"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Primate",
+      "category": "Gastrointestinal",
+      "indication": "Oesophageal, gastric or duodenal ulcer protection",
+      "route": "PO",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "mg/animal",
+      "frequency": "q6-12h",
+      "notes": "Fixed dose commonly 500 mg/animal. Not suitable for mg/kg calculator.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "primate",
+        "ulcer"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Hedgehog",
+      "category": "Gastrointestinal",
+      "indication": "Oesophageal, gastric or duodenal ulcer protection",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Give apart from other oral medicines.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "hedgehog",
+        "ulcer"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Bird",
+      "category": "Gastrointestinal",
+      "indication": "GI ulcer/mucosal protection",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-24h",
+      "notes": "Anecdotal range; lower end often used q8h. Monitor appetite and crop/GI function.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "bird",
+        "avian",
+        "ulcer"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Sucralfate",
+      "species": "Reptile",
+      "category": "Gastrointestinal",
+      "indication": "GI ulcer/mucosal protection",
+      "route": "PO",
+      "dose_min": 200,
+      "dose_max": 1000,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-24h",
+      "notes": "Anecdotal range and case-specific. Ensure hydration and correct temperature.",
+      "formulary_page": 253,
+      "authorised": false,
+      "search_terms": [
+        "sucralfate",
+        "reptile",
+        "ulcer"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral tablets/suspension vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Lactulose",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "Constipation or hepatic encephalopathy support",
+      "route": "PO",
+      "dose_min": 0.15,
+      "dose_max": 0.75,
+      "dose_unit": "ml/kg",
+      "frequency": "q12h",
+      "notes": "Reduce dose if diarrhoea develops. Not suitable for mg/kg calculator.",
+      "formulary_page": 162,
+      "authorised": false,
+      "search_terms": [
+        "lactulose",
+        "constipation",
+        "hepatic encephalopathy",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral syrup 3.3 g/5 ml",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Lactulose",
+      "species": "Rodent",
+      "category": "Gastrointestinal",
+      "indication": "Constipation or hepatic encephalopathy support",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "ml/kg",
+      "frequency": "q12h",
+      "notes": "Reduce dose if diarrhoea develops. Not suitable for mg/kg calculator.",
+      "formulary_page": 162,
+      "authorised": false,
+      "search_terms": [
+        "lactulose",
+        "rodent",
+        "constipation"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral syrup 3.3 g/5 ml",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Lactulose",
+      "species": "Bird",
+      "category": "Gastrointestinal",
+      "indication": "Appetite support / hepatic encephalopathy support",
+      "route": "PO",
+      "dose_min": 0.2,
+      "dose_max": 1.0,
+      "dose_unit": "ml/kg",
+      "frequency": "q8-12h",
+      "notes": "Reduce dose if diarrhoea develops. Not suitable for mg/kg calculator.",
+      "formulary_page": 162,
+      "authorised": false,
+      "search_terms": [
+        "lactulose",
+        "bird",
+        "hepatic encephalopathy",
+        "appetite"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral syrup 3.3 g/5 ml",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Lactulose",
+      "species": "Reptile",
+      "category": "Gastrointestinal",
+      "indication": "Constipation support",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "ml/kg",
+      "frequency": "q24h",
+      "notes": "Ensure hydration, temperature and obstruction assessment. Not suitable for mg/kg calculator.",
+      "formulary_page": 162,
+      "authorised": false,
+      "search_terms": [
+        "lactulose",
+        "reptile",
+        "constipation"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral syrup 3.3 g/5 ml",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Tramadol",
+      "species": "Ferret",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO/SC",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Analgesic efficacy can be variable; monitor pain response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "opioid",
+        "analgesia",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; injectable 50 mg/ml may be difficult to source",
+      "concentration": 50,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Rabbit",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO",
+      "dose_min": 3,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Analgesic dose is not firmly determined; use multimodal analgesia and pain scoring.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "rabbit analgesia",
+        "opioid"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Rat",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO/SC",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Monitor sedation, appetite and pain response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "rat analgesia",
+        "opioid"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; injectable 50 mg/ml",
+      "concentration": 50,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Mouse",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "SC",
+      "dose_min": 10,
+      "dose_max": 40,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use accurate dilution and monitor response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "mouse analgesia",
+        "opioid"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 50 mg/ml; dilute for small patients",
+      "concentration": 50,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Primate",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO/IV",
+      "dose_min": 1.5,
+      "dose_max": 3,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Analgesic effect may not be fully determined; monitor response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "primate analgesia"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; injectable 50 mg/ml",
+      "concentration": 50,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Hedgehog",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Monitor sedation and pain response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "hedgehog analgesia"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Sugar Glider",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Monitor sedation and pain response.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "sugar glider analgesia"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Raptor",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO/IM",
+      "dose_min": 4,
+      "dose_max": 15,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h or species-specific",
+      "notes": "Species-specific dosing varies; monitor thermal withdrawal/pain response where relevant.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "raptor",
+        "avian analgesia",
+        "red-tailed hawk",
+        "buzzard"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; injectable 50 mg/ml",
+      "concentration": 50,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tramadol",
+      "species": "Amazon Parrot",
+      "category": "Analgesia",
+      "indication": "Mild to moderate pain / adjunctive analgesia",
+      "route": "PO",
+      "dose_min": 30,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q6h",
+      "notes": "High species-specific oral dose reported; use specialist avian judgement.",
+      "formulary_page": 266,
+      "authorised": false,
+      "search_terms": [
+        "tramadol",
+        "amazon parrot",
+        "avian analgesia"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    }
+  ],
+  "information": [
+    {
+      "drug_name": "Cisapride",
+      "section": "Exotics overview",
+      "content": "GI prokinetic related to metoclopramide, used mainly for rabbit and guinea pig GI stasis/hypomotility. It has no central antiemetic effect."
+    },
+    {
+      "drug_name": "Cisapride",
+      "section": "Key caution",
+      "content": "Efficacy may be variable and obstruction must be excluded. Use carefully with drugs that alter CYP3A4 or gut motility."
+    },
+    {
+      "drug_name": "Ranitidine",
+      "section": "Exotics overview",
+      "content": "H2 receptor antagonist with acid-suppressing and prokinetic use in selected exotic mammals. Availability of human preparations may be limited."
+    },
+    {
+      "drug_name": "Ranitidine",
+      "section": "Key caution",
+      "content": "Rapid IV administration can cause hypotension/arrhythmias. Stagger from sucralfate, antacids, digoxin and metoclopramide where possible."
+    },
+    {
+      "drug_name": "Famotidine",
+      "section": "Exotics overview",
+      "content": "H2 receptor antagonist used for acid suppression and ulcer support in selected exotic mammals. It has fewer classic H2-blocker interactions than cimetidine."
+    },
+    {
+      "drug_name": "Famotidine",
+      "section": "Key caution",
+      "content": "Review ongoing need for acid suppression and monitor appetite, hydration and GI signs."
+    },
+    {
+      "drug_name": "Sucralfate",
+      "section": "Exotics overview",
+      "content": "GI mucosal protectant used for oesophageal, gastric and duodenal ulceration. It forms a protective barrier and supports mucosal repair."
+    },
+    {
+      "drug_name": "Sucralfate",
+      "section": "Key caution",
+      "content": "Separate from other oral medicines, especially fluoroquinolones and digoxin. Do not use with perforated ulceration."
+    },
+    {
+      "drug_name": "Lactulose",
+      "section": "Exotics overview",
+      "content": "Osmotic laxative and ammonia-trapping therapy used for constipation and hepatic encephalopathy support in selected exotic species."
+    },
+    {
+      "drug_name": "Lactulose",
+      "section": "Key caution",
+      "content": "Reduce dose if diarrhoea develops. Do not administer orally to severely encephalopathic patients at aspiration risk."
+    },
+    {
+      "drug_name": "Tramadol",
+      "section": "Exotics overview",
+      "content": "Centrally acting analgesic used for mild to moderate pain or as an adjunct. Exotics dose evidence is variable and response should be pain-scored."
+    },
+    {
+      "drug_name": "Tramadol",
+      "section": "Key caution",
+      "content": "Seizure risk and serotonin syndrome are important concerns, especially with serotonergic drugs or seizure-prone patients."
+    }
+  ],
+  "warnings": [
+    {
+      "drug_name": "Cisapride",
+      "warning_type": "Cardiac",
+      "warning_text": "Avoid combining with strong CYP3A4 inhibitors such as erythromycin, clarithromycin or itraconazole where possible.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Cisapride",
+      "warning_type": "GI obstruction",
+      "warning_text": "Do not use as a substitute for obstruction assessment in GI stasis cases.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Ranitidine",
+      "warning_type": "Availability",
+      "warning_text": "Many human preparations have been withdrawn/unavailable; check legal and reliable supply route.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Ranitidine",
+      "warning_type": "Rapid IV",
+      "warning_text": "Rapid IV administration may cause hypotension or arrhythmias.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Famotidine",
+      "warning_type": "Ongoing indication",
+      "warning_text": "Do not continue acid suppression automatically without reviewing diagnosis and response.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Famotidine",
+      "warning_type": "Renal/hepatic caution",
+      "warning_text": "Use cautiously in compromised patients and monitor response.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Sucralfate",
+      "warning_type": "Drug binding",
+      "warning_text": "Can significantly reduce absorption of fluoroquinolones, digoxin and some other oral medicines.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Sucralfate",
+      "warning_type": "Perforation",
+      "warning_text": "Contraindicated in perforated ulceration.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Lactulose",
+      "warning_type": "Aspiration risk",
+      "warning_text": "Do not administer orally to severely encephalopathic animals at risk of inhalation.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Lactulose",
+      "warning_type": "Diarrhoea/dehydration",
+      "warning_text": "Excess dosing can cause diarrhoea, cramping and dehydration.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tramadol",
+      "warning_type": "Seizure risk",
+      "warning_text": "May increase seizure risk, particularly in seizure-prone patients or with serotonergic drugs.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Tramadol",
+      "warning_type": "Variable analgesia",
+      "warning_text": "Analgesic effect can be unpredictable in exotics; pain scoring and multimodal analgesia are essential.",
+      "species": "All",
+      "severity": "Moderate"
+    }
+  ],
+  "contraindications": [
+    {
+      "drug_name": "Cisapride",
+      "species": "All",
+      "contraindication": "Suspected GI obstruction or perforation.",
+      "severity": "High",
+      "notes": "Assess obstruction before prokinetic therapy."
+    },
+    {
+      "drug_name": "Ranitidine",
+      "species": "All",
+      "contraindication": "Known hypersensitivity or unstable patient where rapid IV adverse effects cannot be monitored.",
+      "severity": "Moderate",
+      "notes": "Use slower routes where possible."
+    },
+    {
+      "drug_name": "Sucralfate",
+      "species": "All",
+      "contraindication": "Perforated ulcer.",
+      "severity": "High",
+      "notes": "Mucosal coating does not replace surgical/critical care management."
+    },
+    {
+      "drug_name": "Lactulose",
+      "species": "All",
+      "contraindication": "Severe encephalopathy with aspiration risk for oral medication.",
+      "severity": "High",
+      "notes": "Stabilise airway/neurological status first."
+    },
+    {
+      "drug_name": "Tramadol",
+      "species": "All",
+      "contraindication": "Seizure-prone patient or concurrent high-risk serotonergic medication without strong justification.",
+      "severity": "High",
+      "notes": "Monitor closely if unavoidable."
+    },
+    {
+      "drug_name": "Famotidine",
+      "species": "All",
+      "contraindication": "Known hypersensitivity to H2 blockers.",
+      "severity": "Moderate",
+      "notes": "Choose alternative therapy."
+    }
+  ],
+  "adverse_effects": [
+    {
+      "drug_name": "Cisapride",
+      "effect": "Abdominal cramps, diarrhoea and potential cardiac arrhythmia risk with interacting drugs.",
+      "frequency": "Occasional",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Ranitidine",
+      "effect": "Rare hypotension or arrhythmias, particularly with rapid IV use.",
+      "frequency": "Rare",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Famotidine",
+      "effect": "Adverse effects are uncommon; monitor for intolerance or reduced appetite.",
+      "frequency": "Rare",
+      "severity": "Low-Moderate"
+    },
+    {
+      "drug_name": "Sucralfate",
+      "effect": "Constipation, bezoar formation and hypophosphataemia are possible concerns.",
+      "frequency": "Occasional",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Lactulose",
+      "effect": "Flatulence, diarrhoea, cramping and dehydration if overdosed.",
+      "frequency": "Dose-related",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tramadol",
+      "effect": "Sedation, excitation, reduced appetite, seizures or serotonin syndrome in high-risk combinations.",
+      "frequency": "Occasional",
+      "severity": "High"
+    }
+  ],
+  "monitoring": [
+    {
+      "drug_name": "Cisapride",
+      "monitoring_parameter": "Gut sounds, faecal output, abdominal pain/distension and appetite",
+      "monitoring_frequency": "During treatment",
+      "notes": "Stop and reassess if pain or distension worsens."
+    },
+    {
+      "drug_name": "Ranitidine",
+      "monitoring_parameter": "GI signs, appetite, hydration and response to acid/prokinetic therapy",
+      "monitoring_frequency": "During treatment",
+      "notes": "Stagger interacting oral medicines."
+    },
+    {
+      "drug_name": "Famotidine",
+      "monitoring_parameter": "Appetite, GI signs and ongoing indication",
+      "monitoring_frequency": "At review",
+      "notes": "Avoid indefinite acid suppression without diagnosis."
+    },
+    {
+      "drug_name": "Sucralfate",
+      "monitoring_parameter": "Ulcer signs, appetite, faecal output and timing around other oral medicines",
+      "monitoring_frequency": "During treatment",
+      "notes": "Separate from fluoroquinolones/digoxin by at least 2 hours where possible."
+    },
+    {
+      "drug_name": "Lactulose",
+      "monitoring_parameter": "Stool consistency, hydration, appetite and neurological signs where hepatic encephalopathy is present",
+      "monitoring_frequency": "During treatment",
+      "notes": "Titrate to soft stools and avoid diarrhoea."
+    },
+    {
+      "drug_name": "Tramadol",
+      "monitoring_parameter": "Pain score, sedation/excitation, appetite and neurological signs",
+      "monitoring_frequency": "During treatment",
+      "notes": "Use multimodal analgesia if pain persists."
+    }
+  ],
+  "pearls": [
+    {
+      "drug_name": "Cisapride",
+      "pearl": "A prokinetic is not a crowbar. Exclude obstruction before asking the gut to move."
+    },
+    {
+      "drug_name": "Ranitidine",
+      "pearl": "Ranitidine may be useful, but current availability can be the real clinical puzzle-box."
+    },
+    {
+      "drug_name": "Famotidine",
+      "pearl": "Famotidine is the quieter H2 cousin. Still review whether acid suppression is actually needed."
+    },
+    {
+      "drug_name": "Sucralfate",
+      "pearl": "Sucralfate hugs ulcers but also hugs other drugs. Space oral medicines like social distancing for molecules."
+    },
+    {
+      "drug_name": "Lactulose",
+      "pearl": "Titrate lactulose to soft stools, not a swamp. Diarrhoea is the dose shouting back."
+    },
+    {
+      "drug_name": "Tramadol",
+      "pearl": "Tramadol in exotics is a maybe-dragon. Pain score it, don’t worship the dose."
+    }
+  ],
+  "species_warnings": [
+    {
+      "drug_name": "Cisapride",
+      "species": "Rabbit",
+      "warning": "If signs worsen or abdominal pain/distension develops, reassess for obstruction rather than increasing the dose.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Ranitidine",
+      "species": "All",
+      "warning": "Current preparation availability may be limited because many human ranitidine products were withdrawn.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Sucralfate",
+      "species": "Reptile",
+      "warning": "Anecdotal high-dose ranges require careful hydration, temperature and obstruction assessment.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Lactulose",
+      "species": "Bird",
+      "warning": "Use cautiously in small/debilitated birds because diarrhoea and dehydration can develop quickly.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tramadol",
+      "species": "Rabbit",
+      "warning": "Analgesic dose is not firmly established; use pain scoring and multimodal analgesia.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tramadol",
+      "species": "Seizure-prone patients",
+      "warning": "Avoid or use only with strong justification because seizure risk may increase.",
+      "severity": "High"
+    }
+  ],
+  "interactions": [
+    {
+      "drug_a": "Cisapride",
+      "drug_b": "Erythromycin/clarithromycin/itraconazole",
+      "severity": "High",
+      "mechanism": "CYP3A4 inhibition may increase cisapride exposure.",
+      "recommendation": "Avoid combination where possible due to arrhythmia concern.",
+      "interaction": "Potential arrhythmia risk."
+    },
+    {
+      "drug_a": "Cisapride",
+      "drug_b": "Opioids/antimuscarinics",
+      "severity": "Moderate",
+      "mechanism": "These drugs can antagonise prokinetic effects.",
+      "recommendation": "Avoid where prokinetic response is critical or monitor closely.",
+      "interaction": "Reduced prokinetic effect."
+    },
+    {
+      "drug_a": "Ranitidine",
+      "drug_b": "Sucralfate",
+      "severity": "Moderate",
+      "mechanism": "Sucralfate can reduce absorption/effect of oral medicines.",
+      "recommendation": "Give sucralfate at least 2 hours apart where possible.",
+      "interaction": "Reduced absorption/effect risk."
+    },
+    {
+      "drug_a": "Ranitidine",
+      "drug_b": "Digoxin/metoclopramide/antacids",
+      "severity": "Moderate",
+      "mechanism": "Ranitidine may alter absorption or effect of oral co-medications.",
+      "recommendation": "Stagger oral dosing by around 2 hours.",
+      "interaction": "Reduced absorption/effect risk."
+    },
+    {
+      "drug_a": "Famotidine",
+      "drug_b": "Other acid suppressants",
+      "severity": "Low",
+      "mechanism": "Duplicate acid suppression may be unnecessary.",
+      "recommendation": "Avoid therapeutic duplication unless deliberate.",
+      "interaction": "Duplicate therapy."
+    },
+    {
+      "drug_a": "Sucralfate",
+      "drug_b": "Fluoroquinolones",
+      "severity": "High",
+      "mechanism": "Chelation/binding significantly reduces fluoroquinolone absorption.",
+      "recommendation": "Separate dosing and avoid simultaneous administration.",
+      "interaction": "Reduced antibiotic exposure."
+    },
+    {
+      "drug_a": "Sucralfate",
+      "drug_b": "Digoxin",
+      "severity": "High",
+      "mechanism": "Binding can significantly reduce digoxin absorption.",
+      "recommendation": "Separate and monitor clinical response.",
+      "interaction": "Reduced digoxin exposure."
+    },
+    {
+      "drug_a": "Sucralfate",
+      "drug_b": "Tetracyclines/phenytoin/H2 blockers",
+      "severity": "Moderate",
+      "mechanism": "Can reduce oral bioavailability.",
+      "recommendation": "Separate by at least 2 hours where possible.",
+      "interaction": "Reduced absorption risk."
+    },
+    {
+      "drug_a": "Lactulose",
+      "drug_b": "Oral antibiotics such as neomycin",
+      "severity": "Moderate",
+      "mechanism": "May have synergistic ammonia-lowering effect.",
+      "recommendation": "Use deliberately and monitor stools/hydration.",
+      "interaction": "Enhanced GI effect."
+    },
+    {
+      "drug_a": "Lactulose",
+      "drug_b": "Other laxatives",
+      "severity": "Moderate",
+      "mechanism": "Additive laxative effect.",
+      "recommendation": "Avoid routine combination and monitor hydration.",
+      "interaction": "Diarrhoea/dehydration risk."
+    },
+    {
+      "drug_a": "Lactulose",
+      "drug_b": "Oral antacids",
+      "severity": "Moderate",
+      "mechanism": "May reduce lactulose colonic acidification effect.",
+      "recommendation": "Avoid unnecessary combination or monitor response.",
+      "interaction": "Reduced lactulose effect."
+    },
+    {
+      "drug_a": "Tramadol",
+      "drug_b": "SSRIs/TCAs/MAOIs",
+      "severity": "High",
+      "mechanism": "Serotonergic interaction may cause serotonin syndrome.",
+      "recommendation": "Avoid or use only with strong justification and monitoring.",
+      "interaction": "Serotonin syndrome/seizure risk."
+    },
+    {
+      "drug_a": "Tramadol",
+      "drug_b": "Fentanyl/pethidine/buprenorphine",
+      "severity": "High",
+      "mechanism": "Serotonergic/opioid interactions may contribute to serotonin syndrome or altered analgesia.",
+      "recommendation": "Avoid high-risk combinations where possible.",
+      "interaction": "Serotonin syndrome/analgesic interaction."
+    },
+    {
+      "drug_a": "Tramadol",
+      "drug_b": "NSAIDs/gabapentin/amantadine",
+      "severity": "Moderate",
+      "mechanism": "May be used as multimodal analgesia with monitoring.",
+      "recommendation": "Monitor sedation, appetite and analgesic response.",
+      "interaction": "Additive analgesic/sedative effects possible."
+    }
+  ]
+}

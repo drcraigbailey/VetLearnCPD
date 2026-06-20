@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Calculator, ClipboardList, Pill } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
@@ -9,7 +10,25 @@ import { canUseFeature, featureKeys } from "../utils/featureAccess";
 import ClinicalTools from "./ClinicalTools";
 import Protocols from "./Protocols";
 
+const calculatorTabs = new Set([
+  "drug",
+  "protocol",
+  "emergency",
+  "fluids",
+  "transfusion",
+  "cri",
+  "toxicology",
+  "interaction",
+  "pill_counter"
+]);
+
+const normaliseCalculatorTab = (value) => {
+  const tab = String(value || "").trim();
+  return calculatorTabs.has(tab) ? tab : "";
+};
+
 export default function ClinicalToolsPage({ user, darkMode = false, featureAccess, adminAccess = false }) {
+  const location = useLocation();
   const pageRef = useRef(null);
   const additionalCalculatorsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("calculators");
@@ -17,6 +36,9 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
   const canUseProtocols = canUseFeature(featureAccess, featureKeys.clinicalProtocols, adminAccess);
   const canUseAdditionalCalculators = featureAccess && featureAccess[featureKeys.additionalCalculators] === true;
   const canUsePillCount = featureAccess && featureAccess[featureKeys.pillCount] === true;
+  const routeParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const requestedCalculator = normaliseCalculatorTab(routeParams.get("calculator"));
+  const requestedSection = routeParams.get("section");
 
   const scrollToAdditionalCalculators = () => {
     if (!canUseAdditionalCalculators) return;
@@ -34,6 +56,17 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       setActiveSection("calculators");
     }
   }, [activeSection, canUseProtocols, canUsePillCount]);
+
+  useEffect(() => {
+    if (requestedSection === "pillCounter" || requestedCalculator === "pill_counter") {
+      setActiveSection(canUsePillCount ? "pillCounter" : "calculators");
+      return;
+    }
+
+    if (requestedCalculator) {
+      setActiveSection("calculators");
+    }
+  }, [canUsePillCount, requestedCalculator, requestedSection]);
 
   useEffect(() => {
     const root = pageRef.current;
@@ -76,7 +109,7 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
       {activeSection === "calculators" && (
         <>
-          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} />
+          <ClinicalTools user={user} darkMode={darkMode} showBanner={false} featureAccess={featureAccess} adminAccess={adminAccess} initialTab={requestedCalculator || "drug"} />
           {canUseAdditionalCalculators && (
             <div ref={additionalCalculatorsRef} className="scroll-mt-24">
               <AdditionalClinicalCalculators darkMode={darkMode} />

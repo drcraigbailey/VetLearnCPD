@@ -1,0 +1,2994 @@
+{
+  "tag": "VetLearn Exotics Seed v14",
+  "drugs": [
+    {
+      "name": "Acetazolamide",
+      "species": "Seahorse",
+      "category": "Metabolic",
+      "indication": "Gas bubble disease support",
+      "route": "IM/intracoelomic",
+      "dose_min": 2.5,
+      "dose_max": 5.0,
+      "dose_unit": "mg/kg",
+      "frequency": "q3-7d for up to 3 doses",
+      "notes": "Correct the underlying husbandry/water cause as well as treating the patient.",
+      "formulary_page": 18,
+      "authorised": false,
+      "search_terms": [
+        "acetazolamide",
+        "gas bubble disease",
+        "seahorse",
+        "carbonic anhydrase"
+      ],
+      "species_priority": 80,
+      "route_priority": 10,
+      "formulation": "Injectable 500 mg vial for reconstitution",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Acetazolamide",
+      "species": "Fish",
+      "category": "Metabolic",
+      "indication": "Gas bubble disease immersion support",
+      "route": "Immersion",
+      "dose_min": 6,
+      "dose_max": 6,
+      "dose_unit": "mg/l",
+      "frequency": "Change daily for 4-8 days",
+      "notes": "Non-weight immersion treatment; water-system correction is essential.",
+      "formulary_page": 18,
+      "authorised": false,
+      "search_terms": [
+        "acetazolamide",
+        "fish gas bubble",
+        "immersion"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Tablets/injectable reconstituted for specialist use",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Acetic acid",
+      "species": "Bird",
+      "category": "Gastrointestinal",
+      "indication": "Supportive flock management for suspected macrorhabdiasis/dysbiosis",
+      "route": "Drinking water/food",
+      "dose_min": 15,
+      "dose_max": 15,
+      "dose_unit": "ml/l",
+      "frequency": "Fresh drinking water as directed",
+      "notes": "Low-evidence supportive approach; sick individual birds need proper diagnosis and treatment.",
+      "formulary_page": 19,
+      "authorised": false,
+      "search_terms": [
+        "acetic acid",
+        "apple cider vinegar",
+        "macrorhabdus",
+        "bird dysbiosis"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Vinegar/apple cider vinegar preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Acetic acid",
+      "species": "Fish",
+      "category": "Antiparasitic",
+      "indication": "External ectoparasite dip where safer options are unsuitable",
+      "route": "Immersion",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "ml/l",
+      "frequency": "30-60 seconds",
+      "notes": "Glacial acetic acid dip. Use specialist aquatic judgement and avoid overdosing small tropical fish.",
+      "formulary_page": 19,
+      "authorised": false,
+      "search_terms": [
+        "acetic acid",
+        "fish ectoparasite",
+        "dip",
+        "glacial acetic acid"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Glacial acetic acid 100%; vinegar preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Acriflavine",
+      "species": "Fish",
+      "category": "Antifungal",
+      "indication": "External fungal, bacterial or parasitic disease where proprietary aquatic treatment is selected",
+      "route": "Immersion",
+      "dose_min": 5,
+      "dose_max": 10,
+      "dose_unit": "mg/l",
+      "frequency": "3-5 days or 2 hour bath depending protocol",
+      "notes": "Use proprietary products where possible to avoid purity/dosing errors. Can damage plants and reproduction.",
+      "formulary_page": 20,
+      "authorised": false,
+      "search_terms": [
+        "acriflavine",
+        "fish fungal",
+        "fish parasite",
+        "acriflavinium chloride"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Aquatic powder/liquid formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Amantadine",
+      "species": "Ferret",
+      "category": "Analgesia",
+      "indication": "Adjunctive analgesia for chronic or neuropathic pain",
+      "route": "PO",
+      "dose_min": 3,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use as adjunctive analgesic, not first-line acute analgesia.",
+      "formulary_page": 27,
+      "authorised": false,
+      "search_terms": [
+        "amantadine",
+        "NMDA",
+        "neuropathic pain",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "100 mg capsules; 10 mg/ml syrup",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Amantadine",
+      "species": "Rabbit",
+      "category": "Analgesia",
+      "indication": "Adjunctive analgesia for chronic or neuropathic pain",
+      "route": "PO",
+      "dose_min": 3,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Extrapolated canine-style dose; monitor appetite and behaviour.",
+      "formulary_page": 27,
+      "authorised": false,
+      "search_terms": [
+        "amantadine",
+        "rabbit pain",
+        "NMDA",
+        "chronic pain"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "100 mg capsules; 10 mg/ml syrup",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Amantadine",
+      "species": "Bird",
+      "category": "Analgesia",
+      "indication": "Adjunctive analgesia or selected antiviral-support use",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Not recommended as first-line analgesic in birds; evidence for analgesia is limited.",
+      "formulary_page": 27,
+      "authorised": false,
+      "search_terms": [
+        "amantadine",
+        "bird analgesia",
+        "PDD",
+        "bornavirus"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "100 mg capsules; 10 mg/ml syrup",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Amantadine",
+      "species": "Amazon Parrot",
+      "category": "Analgesia",
+      "indication": "Adjunctive analgesia where selected by clinician",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Pharmacokinetic data exist in orange-winged Amazons; clinical analgesic efficacy still uncertain.",
+      "formulary_page": 27,
+      "authorised": false,
+      "search_terms": [
+        "amantadine",
+        "amazon parrot",
+        "orange-winged amazon",
+        "NMDA"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "100 mg capsules; 10 mg/ml syrup",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Amitriptyline",
+      "species": "Rat",
+      "category": "Behaviour",
+      "indication": "Chronic anxiety/compulsive behaviour support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Start low and titrate. Avoid in seizure history, glaucoma, urinary retention or severe liver disease.",
+      "formulary_page": 31,
+      "authorised": false,
+      "search_terms": [
+        "amitriptyline",
+        "rat behaviour",
+        "tricyclic"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "10/25/50 mg tablets; 5-10 mg/ml solutions",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Amitriptyline",
+      "species": "Bird",
+      "category": "Behaviour",
+      "indication": "Feather damaging behaviour or chronic anxiety support",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 9,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Start low; extrapyramidal signs have been reported in parrots.",
+      "formulary_page": 31,
+      "authorised": false,
+      "search_terms": [
+        "amitriptyline",
+        "bird behaviour",
+        "feather plucking",
+        "tricyclic"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Tablets/solutions vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Apomorphine",
+      "species": "Ferret",
+      "category": "Emergency",
+      "indication": "Induction of emesis after suitable non-caustic toxin ingestion",
+      "route": "SC",
+      "dose_min": 0.07,
+      "dose_max": 0.07,
+      "dose_unit": "mg/kg",
+      "frequency": "Once",
+      "notes": "Use only when emesis is appropriate and safe. Further doses may depress the vomiting centre.",
+      "formulary_page": 37,
+      "authorised": false,
+      "search_terms": [
+        "apomorphine",
+        "ferret emetic",
+        "toxin ingestion"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable 1 mg/ml or 3 mg/ml",
+      "concentration": 1,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Aspirin",
+      "species": "Ferret",
+      "category": "Analgesia",
+      "indication": "Mild pain/inflammation or antithrombotic use where appropriate",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Not preferred for analgesia where safer NSAIDs are suitable.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "aspirin",
+        "acetylsalicylic acid",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "75 mg and 300 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Aspirin",
+      "species": "Rabbit",
+      "category": "Analgesia",
+      "indication": "Mild pain/inflammation or antithrombotic use where appropriate",
+      "route": "PO",
+      "dose_min": 100,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use with caution; monitor appetite, faecal output and renal status.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "aspirin",
+        "rabbit NSAID",
+        "acetylsalicylic acid"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "75 mg and 300 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Aspirin",
+      "species": "Rodent",
+      "category": "Analgesia",
+      "indication": "Mild pain/inflammation where appropriate",
+      "route": "PO",
+      "dose_min": 50,
+      "dose_max": 150,
+      "dose_unit": "mg/kg",
+      "frequency": "q4-8h",
+      "notes": "Avoid dehydration and concurrent NSAIDs/steroids.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "aspirin",
+        "rodent NSAID",
+        "acetylsalicylic acid"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "75 mg and 300 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Aspirin",
+      "species": "Primate",
+      "category": "Analgesia",
+      "indication": "Mild pain/inflammation or antithrombotic use where appropriate",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q4-6h",
+      "notes": "Monitor GI and renal tolerance.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "aspirin",
+        "primate analgesia",
+        "antiplatelet"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "75 mg and 300 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Aspirin",
+      "species": "Parrot",
+      "category": "Analgesia",
+      "indication": "Mild pain/inflammation where selected",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Use only with clear indication and monitoring.",
+      "formulary_page": 38,
+      "authorised": false,
+      "search_terms": [
+        "aspirin",
+        "parrot analgesia",
+        "avian NSAID"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "75 mg and 300 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Atracurium",
+      "species": "Rabbit",
+      "category": "Anaesthesia",
+      "indication": "Neuromuscular blockade during anaesthesia",
+      "route": "IV",
+      "dose_min": 0.04,
+      "dose_max": 0.84,
+      "dose_unit": "mg/kg",
+      "frequency": "To effect",
+      "notes": "Requires intubation/ventilation, anaesthetic monitoring and reversal/recovery planning.",
+      "formulary_page": 41,
+      "authorised": false,
+      "search_terms": [
+        "atracurium",
+        "neuromuscular blocker",
+        "rabbit anaesthesia"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Atracurium",
+      "species": "Bird",
+      "category": "Anaesthesia",
+      "indication": "Neuromuscular blockade or ocular mydriasis during anaesthesia/examination",
+      "route": "IV",
+      "dose_min": 0.25,
+      "dose_max": 1.0,
+      "dose_unit": "mg/kg",
+      "frequency": "To effect",
+      "notes": "Only use with appropriate ventilation and monitoring.",
+      "formulary_page": 41,
+      "authorised": false,
+      "search_terms": [
+        "atracurium",
+        "bird mydriasis",
+        "neuromuscular blocker"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Azathioprine",
+      "species": "Ferret",
+      "category": "Immunosuppressive",
+      "indication": "Immune-mediated or inflammatory disease where selected",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-72h depending indication",
+      "notes": "Monitor CBC/platelets and liver enzymes closely; response can take weeks.",
+      "formulary_page": 44,
+      "authorised": false,
+      "search_terms": [
+        "azathioprine",
+        "ferret IBD",
+        "immunosuppressive"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "25 mg and 50 mg tablets",
+      "concentration": null,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Betamethasone",
+      "species": "Mammal",
+      "category": "Corticosteroid",
+      "indication": "Short-term inflammatory disease where a long-acting steroid is selected",
+      "route": "SC",
+      "dose_min": 0.1,
+      "dose_max": 0.1,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h short course only",
+      "notes": "Not suitable for long-term daily or alternate-day use.",
+      "formulary_page": 50,
+      "authorised": false,
+      "search_terms": [
+        "betamethasone",
+        "corticosteroid",
+        "anti-inflammatory"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 4 mg/ml; oral/topical/otic/ophthalmic forms vary",
+      "concentration": 4,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Betamethasone",
+      "species": "Mammal",
+      "category": "Ophthalmology",
+      "indication": "Topical ocular inflammation where infection/ulceration excluded",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop q6-8h",
+      "notes": "Topical steroid row, not a calculator dose. Avoid corneal ulceration or untreated infection.",
+      "formulary_page": 50,
+      "authorised": false,
+      "search_terms": [
+        "betamethasone",
+        "eye steroid",
+        "ophthalmology"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "0.1% ophthalmic solution/suspension combinations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Bronopol",
+      "species": "Fish",
+      "category": "Antifungal",
+      "indication": "External fungal infection in fish",
+      "route": "Immersion",
+      "dose_min": 20,
+      "dose_max": 20,
+      "dose_unit": "mg/l",
+      "frequency": "30 min q24h for 14 treatments",
+      "notes": "Irritant. Use aquatic product guidance and water-system assessment.",
+      "formulary_page": 52,
+      "authorised": true,
+      "search_terms": [
+        "bronopol",
+        "fish fungus",
+        "Pyceze"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Immersion 500 mg/l liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Bronopol",
+      "species": "Fish eggs",
+      "category": "Antifungal",
+      "indication": "External fungal infection control in fish eggs",
+      "route": "Immersion",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/l",
+      "frequency": "30 min",
+      "notes": "Egg treatment row; not a patient mg/kg dose.",
+      "formulary_page": 52,
+      "authorised": true,
+      "search_terms": [
+        "bronopol",
+        "fish eggs",
+        "fungus"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Immersion 500 mg/l liquid",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Chlorambucil",
+      "species": "Bird",
+      "category": "Oncology",
+      "indication": "Selected lymphoid malignancies under oncology guidance",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "twice weekly",
+      "notes": "Cytotoxic. Use PPE and oncology protocols. Monitor CBC.",
+      "formulary_page": 60,
+      "authorised": false,
+      "search_terms": [
+        "chlorambucil",
+        "avian lymphoma",
+        "chemotherapy"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "2 mg tablets",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Chlorambucil",
+      "species": "Ferret",
+      "category": "Oncology",
+      "indication": "Lymphoma protocol component under oncology guidance",
+      "route": "PO",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Protocol dependent",
+      "notes": "Use chemotherapy protocol; fixed/protocol row hidden from calculator.",
+      "formulary_page": 60,
+      "authorised": false,
+      "search_terms": [
+        "chlorambucil",
+        "ferret lymphoma",
+        "chemotherapy"
+      ],
+      "species_priority": 20,
+      "route_priority": 30,
+      "formulation": "2 mg tablets",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Glucose",
+      "species": "Mammal",
+      "category": "Emergency",
+      "indication": "Hypoglycaemia emergency support",
+      "route": "Slow IV",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "ml/kg",
+      "frequency": "0.1-2 ml of 50% dextrose slowly over 10 min",
+      "notes": "Volume-based emergency row, not calculator mg/kg. Dilute/monitor carefully.",
+      "formulary_page": 137,
+      "authorised": false,
+      "search_terms": [
+        "glucose",
+        "dextrose",
+        "hypoglycaemia",
+        "emergency"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "50% dextrose = 500 mg/ml",
+      "concentration": 500,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Glucose",
+      "species": "Bird",
+      "category": "Emergency",
+      "indication": "Hypoglycaemia emergency support",
+      "route": "Slow IV",
+      "dose_min": 50,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "Bolus to effect",
+      "notes": "Slow IV bolus, then reassess glucose and underlying cause.",
+      "formulary_page": 137,
+      "authorised": false,
+      "search_terms": [
+        "glucose",
+        "avian hypoglycaemia",
+        "dextrose"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "50% dextrose = 500 mg/ml",
+      "concentration": 500,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Glucose",
+      "species": "Reptile",
+      "category": "Emergency",
+      "indication": "Hypoglycaemia emergency support",
+      "route": "Slow IV",
+      "dose_min": 50,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "Bolus to effect",
+      "notes": "Administer as 5-10% solution diluted in crystalloids; maintain temperature.",
+      "formulary_page": 137,
+      "authorised": false,
+      "search_terms": [
+        "glucose",
+        "reptile hypoglycaemia",
+        "dextrose"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Diluted dextrose solution",
+      "concentration": 500,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Insulin",
+      "species": "Ferret",
+      "category": "Endocrinology",
+      "indication": "Diabetes mellitus management",
+      "route": "SC",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "IU/animal",
+      "frequency": "q12h or q24h depending insulin type",
+      "notes": "Fixed-unit dosing; hidden from mg/kg calculator. Monitor glucose curves and hypoglycaemia.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "insulin",
+        "ferret diabetes",
+        "Caninsulin",
+        "Prozinc"
+      ],
+      "species_priority": 20,
+      "route_priority": 30,
+      "formulation": "Insulin formulations vary: 40 IU/ml or 100 IU/ml",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Insulin",
+      "species": "Guinea Pig",
+      "category": "Endocrinology",
+      "indication": "Diabetes mellitus management",
+      "route": "SC",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h",
+      "notes": "IU/kg row, hidden from mg/kg calculator. Adjust to serial glucose measurements.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "insulin",
+        "guinea pig diabetes"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Insulin formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Insulin",
+      "species": "Chinchilla",
+      "category": "Endocrinology",
+      "indication": "Diabetes mellitus management",
+      "route": "SC",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "IU/kg",
+      "frequency": "q12h",
+      "notes": "IU/kg row, hidden from mg/kg calculator. Adjust to serial glucose measurements.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "insulin",
+        "chinchilla diabetes"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Insulin formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Insulin",
+      "species": "Reptile",
+      "category": "Endocrinology",
+      "indication": "Diabetes mellitus / hyperglycaemia support where appropriate",
+      "route": "IM",
+      "dose_min": 1,
+      "dose_max": 10,
+      "dose_unit": "IU/kg",
+      "frequency": "q24-72h depending species",
+      "notes": "IU/kg row, hidden from mg/kg calculator. Adjust using serial glucose measurements.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "insulin",
+        "reptile diabetes",
+        "chelonian",
+        "lizard"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Insulin formulations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Misoprostol",
+      "species": "Ferret",
+      "category": "Gastrointestinal",
+      "indication": "NSAID-associated gastric ulcer prevention or treatment support",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "micrograms/kg",
+      "frequency": "q8h",
+      "notes": "Teratogenic human safety risk. Hidden from mg/kg calculator because unit is micrograms/kg.",
+      "formulary_page": 190,
+      "authorised": false,
+      "search_terms": [
+        "misoprostol",
+        "ferret gastric ulcer",
+        "prostaglandin"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "200 microgram tablets",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Sevoflurane",
+      "species": "Mammal",
+      "category": "Anaesthesia",
+      "indication": "Inhalational induction and maintenance of anaesthesia",
+      "route": "Inhalational",
+      "dose_min": 6,
+      "dose_max": 8,
+      "dose_unit": "%",
+      "frequency": "Induction to effect",
+      "notes": "Vaporizer percentage row, hidden from mg/kg calculator.",
+      "formulary_page": 259,
+      "authorised": true,
+      "search_terms": [
+        "sevoflurane",
+        "inhalant",
+        "anaesthesia"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Inhalational liquid 250 ml bottle",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Sevoflurane",
+      "species": "Reptile",
+      "category": "Anaesthesia",
+      "indication": "Inhalational induction and maintenance of anaesthesia",
+      "route": "Inhalational",
+      "dose_min": 3,
+      "dose_max": 8,
+      "dose_unit": "%",
+      "frequency": "Induction 6-8%; maintenance 3-5%",
+      "notes": "Vaporizer percentage row, hidden from mg/kg calculator. Maintain selected temperature range.",
+      "formulary_page": 259,
+      "authorised": true,
+      "search_terms": [
+        "sevoflurane",
+        "reptile anaesthesia",
+        "inhalant"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Inhalational liquid 250 ml bottle",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Sevoflurane",
+      "species": "Amphibian",
+      "category": "Anaesthesia",
+      "indication": "Topical/chamber anaesthesia under specialist protocol",
+      "route": "Topical/chamber",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Protocol dependent",
+      "notes": "Specialist protocol row, hidden from calculator.",
+      "formulary_page": 259,
+      "authorised": false,
+      "search_terms": [
+        "sevoflurane",
+        "amphibian anaesthesia",
+        "cane toad"
+      ],
+      "species_priority": 70,
+      "route_priority": 30,
+      "formulation": "Inhalational liquid 250 ml bottle",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Tolfenamic acid",
+      "species": "Guinea Pig",
+      "category": "NSAID",
+      "indication": "Pain and inflammation where selected",
+      "route": "SC",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Use NSAID precautions. Avoid dehydration, renal compromise and steroid/NSAID combinations.",
+      "formulary_page": 264,
+      "authorised": false,
+      "search_terms": [
+        "tolfenamic acid",
+        "guinea pig NSAID",
+        "Tolfedine"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 40 mg/ml; tablets vary",
+      "concentration": 40,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Ferret",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection",
+      "route": "PO/SC",
+      "dose_min": 15,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Dose is total combined product. Use culture/sensitivity where possible.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "potentiated sulphonamide",
+        "Sulfatrim",
+        "ferret"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral suspension commonly 48 mg/ml total product; injectable 240 mg/ml total product",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Rabbit",
+      "category": "Antibiotic",
+      "indication": "Susceptible infection or coccidiosis protocol",
+      "route": "PO/SC",
+      "dose_min": 20,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Dose is total combined product. Authorised rabbit coccidiosis formulations exist.",
+      "formulary_page": 270,
+      "authorised": true,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "rabbit coccidiosis",
+        "Sulfatrim"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral suspension commonly 48 mg/ml total product",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Guinea Pig",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection",
+      "route": "PO/IM/SC",
+      "dose_min": 15,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Dose is total combined product. Monitor hydration and GI tolerance.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "guinea pig antibiotic"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral/injectable formulations vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Rodent",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection",
+      "route": "PO/SC",
+      "dose_min": 50,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Dose is total combined product. Monitor GI and hydration status.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "rodent antibiotic"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral/injectable formulations vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Bird",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection",
+      "route": "IM/PO",
+      "dose_min": 8,
+      "dose_max": 100,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Dose is total combined product; wide range reflects route/species differences.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "avian antibiotic",
+        "Sulfatrim"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral/injectable formulations vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Pigeon",
+      "category": "Antiprotozoal",
+      "indication": "Coccidiosis treatment",
+      "route": "PO",
+      "dose_min": 25,
+      "dose_max": 50,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h for 10-14 days",
+      "notes": "Dose is total combined product. Drinking-water protocols also exist.",
+      "formulary_page": 270,
+      "authorised": true,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "pigeon coccidiosis",
+        "Sulfatrim"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral suspension/tablets vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Reptile",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection",
+      "route": "PO",
+      "dose_min": 15,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-48h",
+      "notes": "Dose is total combined product. Temperature/species affect interval.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "reptile antibiotic"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral formulations vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Trimethoprim/Sulphonamide",
+      "species": "Fish",
+      "category": "Antibiotic",
+      "indication": "Susceptible bacterial infection under aquatic protocol",
+      "route": "IM/feed",
+      "dose_min": 30,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-48h depending route",
+      "notes": "Dose is total combined product. Specialist aquatic prescribing required.",
+      "formulary_page": 270,
+      "authorised": false,
+      "search_terms": [
+        "trimethoprim sulphonamide",
+        "fish antibiotic"
+      ],
+      "species_priority": 80,
+      "route_priority": 10,
+      "formulation": "Feed/injectable formulations vary",
+      "concentration": 48,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "l-Thyroxine",
+      "species": "Rodent",
+      "category": "Endocrinology",
+      "indication": "Hypothyroidism support where diagnosis is confident",
+      "route": "PO",
+      "dose_min": 0.005,
+      "dose_max": 0.005,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Diagnosis in exotics can be challenging. Monitor clinical response and avoid overdosage.",
+      "formulary_page": 261,
+      "authorised": false,
+      "search_terms": [
+        "levothyroxine",
+        "l-thyroxine",
+        "T4",
+        "rodent hypothyroidism"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Tablets; 1 mg/ml solution",
+      "concentration": 1,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "l-Thyroxine",
+      "species": "Bird",
+      "category": "Endocrinology",
+      "indication": "Hypothyroidism support where diagnosis is confident",
+      "route": "PO",
+      "dose_min": 0.02,
+      "dose_max": 0.02,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "True avian hypothyroidism is controversial; avoid using to induce moult.",
+      "formulary_page": 261,
+      "authorised": false,
+      "search_terms": [
+        "levothyroxine",
+        "bird hypothyroidism",
+        "T4"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Tablets; 1 mg/ml solution",
+      "concentration": 1,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "l-Thyroxine",
+      "species": "Tortoise",
+      "category": "Endocrinology",
+      "indication": "Hypothyroidism support in confirmed/suspected cases",
+      "route": "PO",
+      "dose_min": 0.02,
+      "dose_max": 0.02,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-48h",
+      "notes": "Reported in tortoises; monitor clinical response and avoid overdosage.",
+      "formulary_page": 261,
+      "authorised": false,
+      "search_terms": [
+        "levothyroxine",
+        "tortoise hypothyroidism",
+        "T4"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Tablets; 1 mg/ml solution",
+      "concentration": 1,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Tetracosactide",
+      "species": "Ferret",
+      "category": "Endocrinology",
+      "indication": "ACTH stimulation testing for suspected hypoadrenocorticism",
+      "route": "IM",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "micrograms/kg",
+      "frequency": "Diagnostic dose",
+      "notes": "Diagnostic row, hidden from mg/kg calculator because unit is micrograms/kg.",
+      "formulary_page": 259,
+      "authorised": false,
+      "search_terms": [
+        "tetracosactide",
+        "ACTH",
+        "Synacthen",
+        "ferret hypoadrenocorticism"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable 0.25 mg/ml",
+      "concentration": 0.25,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Terbutaline",
+      "species": "Rabbit",
+      "category": "Respiratory",
+      "indication": "Bronchodilation support",
+      "route": "PO",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "mg/animal",
+      "frequency": "0.312-1.25 mg/animal q8h",
+      "notes": "Fixed animal dose row, hidden from mg/kg calculator.",
+      "formulary_page": 258,
+      "authorised": false,
+      "search_terms": [
+        "terbutaline",
+        "rabbit bronchodilator",
+        "Bricanyl"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Injectable 0.5 mg/ml; oral tablets/syrup",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Terbutaline",
+      "species": "Rat",
+      "category": "Respiratory",
+      "indication": "Bronchodilation support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use caution in diabetes, hyperthyroidism, hypertension or seizures.",
+      "formulary_page": 258,
+      "authorised": false,
+      "search_terms": [
+        "terbutaline",
+        "rat bronchodilator"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral tablets/syrup",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Terbutaline",
+      "species": "Bird",
+      "category": "Emergency",
+      "indication": "Emergency bronchodilation support",
+      "route": "IM",
+      "dose_min": 0.1,
+      "dose_max": 0.1,
+      "dose_unit": "mg/kg",
+      "frequency": "Once, reassess",
+      "notes": "Emergency use. Monitor heart rate, tremor and potassium.",
+      "formulary_page": 258,
+      "authorised": false,
+      "search_terms": [
+        "terbutaline",
+        "avian bronchodilator",
+        "respiratory emergency"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable 0.5 mg/ml",
+      "concentration": 0.5,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Ferret",
+      "category": "Antibiotic",
+      "indication": "Susceptible beta-lactamase-negative infection",
+      "route": "SC/IM",
+      "dose_min": 20,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use culture/sensitivity where possible. Avoid oral penicillin extrapolations.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "benzylpenicillin",
+        "ferret antibiotic"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Procaine penicillin suspension 300 mg/ml; sodium salt vials vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Rabbit",
+      "category": "Antibiotic",
+      "indication": "Treponema cuniculi or susceptible infection",
+      "route": "SC",
+      "dose_min": 40,
+      "dose_max": 40,
+      "dose_unit": "mg/kg",
+      "frequency": "Once weekly x3 for syphilis, or q12-24h for other infections",
+      "notes": "Parenteral use only. Never give oral penicillins to rabbits.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "rabbit syphilis",
+        "Treponema cuniculi",
+        "benzylpenicillin"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Procaine penicillin suspension 300 mg/ml; sodium salt vials vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Rat",
+      "category": "Antibiotic",
+      "indication": "Susceptible infection",
+      "route": "SC/IM",
+      "dose_min": 22,
+      "dose_max": 22,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Avoid procaine formulation in rats where specified. Monitor GI tolerance.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "rat antibiotic",
+        "benzylpenicillin"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Sodium/procaine/benzathine salts vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Primate",
+      "category": "Antibiotic",
+      "indication": "Susceptible infection",
+      "route": "SC/IM",
+      "dose_min": 20,
+      "dose_max": 40,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use culture/sensitivity and route-specific formulation knowledge.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "primate antibiotic"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Sodium/procaine/benzathine salts vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Sugar Glider",
+      "category": "Antibiotic",
+      "indication": "Susceptible infection",
+      "route": "SC/IM",
+      "dose_min": 22,
+      "dose_max": 25,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Monitor appetite and GI tolerance.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "sugar glider antibiotic"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Sodium/procaine/benzathine salts vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Penicillin G",
+      "species": "Hedgehog",
+      "category": "Antibiotic",
+      "indication": "Susceptible infection",
+      "route": "SC/IM",
+      "dose_min": 40,
+      "dose_max": 40,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor appetite and GI tolerance.",
+      "formulary_page": 209,
+      "authorised": false,
+      "search_terms": [
+        "penicillin G",
+        "hedgehog antibiotic"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Sodium/procaine/benzathine salts vary",
+      "concentration": 300,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Vitamin A",
+      "species": "Rabbit",
+      "category": "Supplement",
+      "indication": "Hypovitaminosis A support",
+      "route": "IM",
+      "dose_min": 500,
+      "dose_max": 1000,
+      "dose_unit": "IU/kg",
+      "frequency": "Once",
+      "notes": "Fat-soluble vitamin; avoid overdosage and concurrent oral/topical retinoids.",
+      "formulary_page": 282,
+      "authorised": false,
+      "search_terms": [
+        "vitamin A",
+        "retinol",
+        "rabbit hypovitaminosis A"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Injectable vitamin A 50,000 IU/ml special order; oral/topical retinoids vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Vitamin A",
+      "species": "Guinea Pig",
+      "category": "Supplement",
+      "indication": "Hypovitaminosis A support",
+      "route": "IM/food",
+      "dose_min": 50,
+      "dose_max": 500,
+      "dose_unit": "IU/kg",
+      "frequency": "Once or dietary beta-carotene protocol",
+      "notes": "IU/kg row hidden from mg/kg calculator. Monitor for toxicity.",
+      "formulary_page": 282,
+      "authorised": false,
+      "search_terms": [
+        "vitamin A",
+        "guinea pig",
+        "retinol"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Injectable/oral preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Vitamin A",
+      "species": "Hedgehog",
+      "category": "Supplement",
+      "indication": "Hypovitaminosis A support",
+      "route": "PO/IM",
+      "dose_min": 400,
+      "dose_max": 400,
+      "dose_unit": "IU/kg",
+      "frequency": "q24-48h; parenteral max 2 doses then oral",
+      "notes": "IU/kg row hidden from mg/kg calculator. Monitor for toxicity.",
+      "formulary_page": 282,
+      "authorised": false,
+      "search_terms": [
+        "vitamin A",
+        "hedgehog retinol"
+      ],
+      "species_priority": 35,
+      "route_priority": 30,
+      "formulation": "Injectable/oral preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Vitamin A",
+      "species": "Bird",
+      "category": "Supplement",
+      "indication": "Hypovitaminosis A support",
+      "route": "IM/PO",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "IU/bird",
+      "frequency": "Once IM or q12h PO depending protocol",
+      "notes": "Fixed bird dose row hidden from mg/kg calculator. Avoid over-supplementation.",
+      "formulary_page": 282,
+      "authorised": false,
+      "search_terms": [
+        "vitamin A",
+        "avian hypovitaminosis A",
+        "retinol"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Injectable/oral preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Vitamin A",
+      "species": "Reptile",
+      "category": "Supplement",
+      "indication": "Hypovitaminosis A support",
+      "route": "PO",
+      "dose_min": 1000,
+      "dose_max": 2000,
+      "dose_unit": "IU/kg",
+      "frequency": "q7-14d",
+      "notes": "IU/kg row hidden from mg/kg calculator. Avoid overdosage.",
+      "formulary_page": 282,
+      "authorised": false,
+      "search_terms": [
+        "vitamin A",
+        "reptile hypovitaminosis A",
+        "retinol"
+      ],
+      "species_priority": 60,
+      "route_priority": 30,
+      "formulation": "Oral preparations vary",
+      "concentration": null,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": false
+    },
+    {
+      "name": "Vitamin K1",
+      "species": "Ferret",
+      "category": "Antidote",
+      "indication": "Anticoagulant rodenticide toxicity or vitamin K deficiency",
+      "route": "SC then PO",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "Protocol depends on toxin generation",
+      "notes": "Monitor PT/coagulation and duration based on toxin type.",
+      "formulary_page": 283,
+      "authorised": false,
+      "search_terms": [
+        "vitamin K1",
+        "phytomenadione",
+        "ferret rodenticide"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml; oral 50 mg tablets",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Vitamin K1",
+      "species": "Rabbit",
+      "category": "Antidote",
+      "indication": "Anticoagulant toxicity or vitamin K deficiency",
+      "route": "IM",
+      "dose_min": 1,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "As needed based on clotting times",
+      "notes": "Monitor PT and bleeding signs.",
+      "formulary_page": 283,
+      "authorised": false,
+      "search_terms": [
+        "vitamin K1",
+        "rabbit rodenticide",
+        "phytomenadione"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml; oral 50 mg tablets",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Vitamin K1",
+      "species": "Rodent",
+      "category": "Antidote",
+      "indication": "Anticoagulant toxicity or vitamin K deficiency",
+      "route": "IM",
+      "dose_min": 1,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "As needed based on clotting times",
+      "notes": "Monitor PT and bleeding signs.",
+      "formulary_page": 283,
+      "authorised": false,
+      "search_terms": [
+        "vitamin K1",
+        "rodent rodenticide",
+        "phytomenadione"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml; oral 50 mg tablets",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Vitamin K1",
+      "species": "Bird",
+      "category": "Antidote",
+      "indication": "Anticoagulant toxicity or vitamin K deficiency",
+      "route": "IM/PO",
+      "dose_min": 0.2,
+      "dose_max": 2.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q6-12h until stable then q24h",
+      "notes": "Monitor bleeding signs and clotting times where possible.",
+      "formulary_page": 283,
+      "authorised": false,
+      "search_terms": [
+        "vitamin K1",
+        "avian rodenticide",
+        "phytomenadione"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml; oral 50 mg tablets",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    },
+    {
+      "name": "Vitamin K1",
+      "species": "Reptile",
+      "category": "Antidote",
+      "indication": "Anticoagulant toxicity or vitamin K deficiency",
+      "route": "IM",
+      "dose_min": 0.5,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor bleeding signs and supportive care needs.",
+      "formulary_page": 283,
+      "authorised": false,
+      "search_terms": [
+        "vitamin K1",
+        "reptile rodenticide",
+        "phytomenadione"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Injectable 10 mg/ml; oral 50 mg tablets",
+      "concentration": 10,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true,
+      "calculator_enabled": true
+    }
+  ],
+  "information": [
+    {
+      "drug_name": "Acetazolamide",
+      "section": "Exotics overview",
+      "content": "Carbonic anhydrase inhibitor used in fish gas bubble disease situations where water-system causes are also corrected."
+    },
+    {
+      "drug_name": "Acetazolamide",
+      "section": "Key caution",
+      "content": "High doses or inappropriate aquatic use can disturb buoyancy and cause neurological signs."
+    },
+    {
+      "drug_name": "Acetic acid",
+      "section": "Exotics overview",
+      "content": "Acidifying agent used in fish dips and as low-evidence supportive flock management in some avian dysbiosis/macrorhabdus contexts."
+    },
+    {
+      "drug_name": "Acetic acid",
+      "section": "Key caution",
+      "content": "It is corrosive/irritant in concentrated form and can be toxic to small tropical fish."
+    },
+    {
+      "drug_name": "Acriflavine",
+      "section": "Exotics overview",
+      "content": "Aquatic antimicrobial/antiparasitic dye used for some external fish diseases, usually via proprietary products."
+    },
+    {
+      "drug_name": "Acriflavine",
+      "section": "Key caution",
+      "content": "Powder is irritant and potentially mutagenic; it can harm plants and reproduction in some species."
+    },
+    {
+      "drug_name": "Amantadine",
+      "section": "Exotics overview",
+      "content": "NMDA antagonist used as adjunctive analgesia, especially chronic or neuropathic pain."
+    },
+    {
+      "drug_name": "Amantadine",
+      "section": "Key caution",
+      "content": "Not first-line for acute analgesia and avian analgesic efficacy is not well established."
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "section": "Exotics overview",
+      "content": "Tricyclic antidepressant used for selected chronic anxiety and feather-damaging behaviour cases."
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "section": "Key caution",
+      "content": "Start low and monitor for sedation, anticholinergic effects and extrapyramidal signs."
+    },
+    {
+      "drug_name": "Apomorphine",
+      "section": "Exotics overview",
+      "content": "Dopamine agonist emetic used in ferrets when vomiting is appropriate after non-caustic toxin ingestion."
+    },
+    {
+      "drug_name": "Apomorphine",
+      "section": "Key caution",
+      "content": "Contraindicated if caustic/corrosive material, aspiration risk or CNS depression makes emesis unsafe."
+    },
+    {
+      "drug_name": "Aspirin",
+      "section": "Exotics overview",
+      "content": "Irreversible COX inhibitor used for antiplatelet effects and sometimes mild analgesia."
+    },
+    {
+      "drug_name": "Aspirin",
+      "section": "Key caution",
+      "content": "Not a preferred analgesic in many exotics; GI and renal risks matter."
+    },
+    {
+      "drug_name": "Atracurium",
+      "section": "Exotics overview",
+      "content": "Non-depolarising neuromuscular blocker used during anaesthesia and sometimes for ocular examination in birds."
+    },
+    {
+      "drug_name": "Atracurium",
+      "section": "Key caution",
+      "content": "Requires ventilation, anaesthetic depth and recovery planning; it provides no analgesia or unconsciousness."
+    },
+    {
+      "drug_name": "Azathioprine",
+      "section": "Exotics overview",
+      "content": "Immunosuppressive antimetabolite used in selected ferret inflammatory/immune-mediated disease."
+    },
+    {
+      "drug_name": "Azathioprine",
+      "section": "Key caution",
+      "content": "CBC, platelets and liver monitoring are essential."
+    },
+    {
+      "drug_name": "Betamethasone",
+      "section": "Exotics overview",
+      "content": "Potent long-acting glucocorticoid for short-term inflammatory disease or topical/ocular indications."
+    },
+    {
+      "drug_name": "Betamethasone",
+      "section": "Key caution",
+      "content": "Avoid long-term routine use and avoid topical ocular steroid when corneal ulceration or infection is possible."
+    },
+    {
+      "drug_name": "Bronopol",
+      "section": "Exotics overview",
+      "content": "Aquatic antifungal used for fish and fish egg fungal control."
+    },
+    {
+      "drug_name": "Bronopol",
+      "section": "Key caution",
+      "content": "Irritant to eyes, lungs and skin; use water-system specific protocols."
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "section": "Exotics overview",
+      "content": "Alkylating chemotherapy agent used for selected lymphoid malignancies under protocol guidance."
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "section": "Key caution",
+      "content": "Cytotoxic drug requiring PPE, safe handling and CBC monitoring."
+    },
+    {
+      "drug_name": "Glucose",
+      "section": "Exotics overview",
+      "content": "Emergency energy source used for hypoglycaemia and as part of nutrition/fluid support."
+    },
+    {
+      "drug_name": "Glucose",
+      "section": "Key caution",
+      "content": "Concentrated dextrose must be given slowly/diluted appropriately and glucose must be rechecked."
+    },
+    {
+      "drug_name": "Insulin",
+      "section": "Exotics overview",
+      "content": "Endocrine treatment for diabetes mellitus and selected hyperkalaemia contexts."
+    },
+    {
+      "drug_name": "Insulin",
+      "section": "Key caution",
+      "content": "Overdose causes hypoglycaemia and hypokalaemia; serial glucose monitoring is mandatory."
+    },
+    {
+      "drug_name": "Misoprostol",
+      "section": "Exotics overview",
+      "content": "Prostaglandin analogue used for NSAID-associated gastric ulcer prevention or treatment support."
+    },
+    {
+      "drug_name": "Misoprostol",
+      "section": "Key caution",
+      "content": "Teratogenic handling risk and GI cramping/diarrhoea are important."
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "section": "Exotics overview",
+      "content": "Volatile anaesthetic for induction and maintenance, with rapid adjustment and recovery compared with more soluble agents."
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "section": "Key caution",
+      "content": "Requires calibrated vaporizer, oxygen/scavenging and close monitoring."
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "section": "Exotics overview",
+      "content": "NSAID used for acute or chronic pain/inflammation in selected cases."
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "section": "Key caution",
+      "content": "Avoid dehydration, renal compromise, GI ulcer risk and concurrent steroids/NSAIDs."
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "section": "Exotics overview",
+      "content": "Potentiated sulphonamide antimicrobial with broad exotics use, including coccidiosis indications in some species."
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "section": "Key caution",
+      "content": "Ensure hydration and monitor tear production/keratoconjunctivitis sicca risk with longer courses."
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "section": "Exotics overview",
+      "content": "Thyroid hormone replacement used only where hypothyroidism diagnosis is confident."
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "section": "Key caution",
+      "content": "Avian and reptile thyroid diagnosis is difficult; avoid use to induce moult."
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "section": "Exotics overview",
+      "content": "ACTH analogue used diagnostically for suspected hypoadrenocorticism in ferrets."
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "section": "Key caution",
+      "content": "Reserve for diagnostic testing; availability/formulation issues may apply."
+    },
+    {
+      "drug_name": "Terbutaline",
+      "section": "Exotics overview",
+      "content": "Beta-2 agonist bronchodilator used in selected respiratory/emergency cases."
+    },
+    {
+      "drug_name": "Terbutaline",
+      "section": "Key caution",
+      "content": "Monitor tachycardia, tremor and hypokalaemia; use caution in seizures, hypertension and hyperthyroidism."
+    },
+    {
+      "drug_name": "Penicillin G",
+      "section": "Exotics overview",
+      "content": "Narrow-spectrum beta-lactam for susceptible infections, with parenteral rabbit use for Treponema cuniculi."
+    },
+    {
+      "drug_name": "Penicillin G",
+      "section": "Key caution",
+      "content": "Do not use in guinea pigs, chinchillas, hamsters, gerbils or degus."
+    },
+    {
+      "drug_name": "Vitamin A",
+      "section": "Exotics overview",
+      "content": "Fat-soluble vitamin used for hypovitaminosis A in selected exotic species."
+    },
+    {
+      "drug_name": "Vitamin A",
+      "section": "Key caution",
+      "content": "Toxicity is possible; avoid combining oral and topical retinoid exposure."
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "section": "Exotics overview",
+      "content": "Phytomenadione used for anticoagulant rodenticide toxicity or vitamin K deficiency."
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "section": "Key caution",
+      "content": "Treatment duration must match toxin type and coagulation monitoring."
+    }
+  ],
+  "warnings": [
+    {
+      "drug_name": "Acetazolamide",
+      "warning_type": "Clinical caution",
+      "warning_text": "High doses or inappropriate aquatic use can disturb buoyancy and cause neurological signs.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Acetic acid",
+      "warning_type": "Clinical caution",
+      "warning_text": "It is corrosive/irritant in concentrated form and can be toxic to small tropical fish.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Acriflavine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Powder is irritant and potentially mutagenic; it can harm plants and reproduction in some species.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amantadine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Not first-line for acute analgesia and avian analgesic efficacy is not well established.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "warning_type": "Clinical caution",
+      "warning_text": "Start low and monitor for sedation, anticholinergic effects and extrapyramidal signs.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Apomorphine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Contraindicated if caustic/corrosive material, aspiration risk or CNS depression makes emesis unsafe.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Aspirin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Not a preferred analgesic in many exotics; GI and renal risks matter.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Atracurium",
+      "warning_type": "Clinical caution",
+      "warning_text": "Requires ventilation, anaesthetic depth and recovery planning; it provides no analgesia or unconsciousness.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Azathioprine",
+      "warning_type": "Clinical caution",
+      "warning_text": "CBC, platelets and liver monitoring are essential.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Betamethasone",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid long-term routine use and avoid topical ocular steroid when corneal ulceration or infection is possible.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bronopol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Irritant to eyes, lungs and skin; use water-system specific protocols.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "warning_type": "Clinical caution",
+      "warning_text": "Cytotoxic drug requiring PPE, safe handling and CBC monitoring.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Glucose",
+      "warning_type": "Clinical caution",
+      "warning_text": "Concentrated dextrose must be given slowly/diluted appropriately and glucose must be rechecked.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Insulin",
+      "warning_type": "Clinical caution",
+      "warning_text": "Overdose causes hypoglycaemia and hypokalaemia; serial glucose monitoring is mandatory.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Misoprostol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Teratogenic handling risk and GI cramping/diarrhoea are important.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "warning_type": "Clinical caution",
+      "warning_text": "Requires calibrated vaporizer, oxygen/scavenging and close monitoring.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid dehydration, renal compromise, GI ulcer risk and concurrent steroids/NSAIDs.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Ensure hydration and monitor tear production/keratoconjunctivitis sicca risk with longer courses.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avian and reptile thyroid diagnosis is difficult; avoid use to induce moult.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Reserve for diagnostic testing; availability/formulation issues may apply.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Terbutaline",
+      "warning_type": "Clinical caution",
+      "warning_text": "Monitor tachycardia, tremor and hypokalaemia; use caution in seizures, hypertension and hyperthyroidism.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Penicillin G",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use in guinea pigs, chinchillas, hamsters, gerbils or degus.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Vitamin A",
+      "warning_type": "Clinical caution",
+      "warning_text": "Toxicity is possible; avoid combining oral and topical retinoid exposure.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "warning_type": "Clinical caution",
+      "warning_text": "Treatment duration must match toxin type and coagulation monitoring.",
+      "species": "All",
+      "severity": "High"
+    }
+  ],
+  "contraindications": [
+    {
+      "drug_name": "Apomorphine",
+      "species": "All",
+      "contraindication": "Caustic/corrosive ingestion, aspiration risk, severe CNS depression or seizures.",
+      "severity": "High",
+      "notes": "Do not induce vomiting if unsafe."
+    },
+    {
+      "drug_name": "Aspirin",
+      "species": "All",
+      "contraindication": "GI ulceration, dehydration, renal compromise or concurrent NSAID/steroid therapy.",
+      "severity": "High",
+      "notes": "Use safer analgesia where possible."
+    },
+    {
+      "drug_name": "Atracurium",
+      "species": "All",
+      "contraindication": "Use without ability to ventilate/monitor anaesthesia.",
+      "severity": "High",
+      "notes": "Neuromuscular blockade does not provide unconsciousness."
+    },
+    {
+      "drug_name": "Azathioprine",
+      "species": "All",
+      "contraindication": "Bone marrow suppression, severe infection or severe hepatic disease.",
+      "severity": "High",
+      "notes": "CBC/platelets and liver monitoring required."
+    },
+    {
+      "drug_name": "Betamethasone",
+      "species": "All",
+      "contraindication": "Corneal ulceration or untreated infection for ocular/topical steroid use.",
+      "severity": "High",
+      "notes": "Steroids can worsen infection/ulceration."
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "species": "All",
+      "contraindication": "Bone marrow suppression or inability to handle cytotoxic drugs safely.",
+      "severity": "High",
+      "notes": "Use chemotherapy safety protocols."
+    },
+    {
+      "drug_name": "Insulin",
+      "species": "All",
+      "contraindication": "Hypoglycaemia.",
+      "severity": "High",
+      "notes": "Correct glucose and reassess dose."
+    },
+    {
+      "drug_name": "Misoprostol",
+      "species": "Pregnant handlers/patients",
+      "contraindication": "Pregnancy exposure risk.",
+      "severity": "High",
+      "notes": "Teratogenic/uterotonic handling concern."
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "species": "All",
+      "contraindication": "Dehydration, renal compromise, GI ulceration or concurrent NSAID/steroid.",
+      "severity": "High",
+      "notes": "NSAID safety precautions."
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "species": "All",
+      "contraindication": "Severe dehydration or previous sulphonamide hypersensitivity.",
+      "severity": "High",
+      "notes": "Maintain hydration."
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "species": "All",
+      "contraindication": "Uncorrected adrenal insufficiency.",
+      "severity": "High",
+      "notes": "Correct adrenal disease first."
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "species": "All",
+      "contraindication": "No practical contraindication listed, but do not use as treatment dose.",
+      "severity": "Moderate",
+      "notes": "Diagnostic use only."
+    },
+    {
+      "drug_name": "Terbutaline",
+      "species": "All",
+      "contraindication": "Significant tachyarrhythmia unless emergency benefit outweighs risk.",
+      "severity": "High",
+      "notes": "Monitor heart rate."
+    },
+    {
+      "drug_name": "Penicillin G",
+      "species": "Guinea Pig/Chinchilla/Hamster/Gerbil/Degu",
+      "contraindication": "Use is contraindicated due to enterotoxaemia risk.",
+      "severity": "High",
+      "notes": "Choose safer antibiotic."
+    },
+    {
+      "drug_name": "Vitamin A",
+      "species": "All",
+      "contraindication": "Existing hypervitaminosis A or concurrent retinoid over-supplementation.",
+      "severity": "High",
+      "notes": "Fat-soluble toxicity risk."
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "species": "All",
+      "contraindication": "No major contraindication when treating life-threatening anticoagulant toxicity.",
+      "severity": "Moderate",
+      "notes": "Use route/formulation carefully."
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "species": "All",
+      "contraindication": "Use without calibrated vaporizer, oxygen delivery or anaesthetic monitoring.",
+      "severity": "High",
+      "notes": "Inhalant anaesthesia needs proper equipment."
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "species": "All",
+      "contraindication": "Glaucoma, seizure history, urinary retention or severe liver disease.",
+      "severity": "High",
+      "notes": "Tricyclic precautions."
+    }
+  ],
+  "adverse_effects": [
+    {
+      "drug_name": "Acetazolamide",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Acetic acid",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Acriflavine",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amantadine",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Apomorphine",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Aspirin",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Atracurium",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Azathioprine",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Betamethasone",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Bronopol",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Glucose",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Insulin",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Misoprostol",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Terbutaline",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Penicillin G",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Vitamin A",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "effect": "Adverse effects vary by species and route; monitor closely and reassess if clinical status worsens.",
+      "frequency": "Species/route dependent",
+      "severity": "Moderate"
+    }
+  ],
+  "monitoring": [
+    {
+      "drug_name": "Acetazolamide",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Acetic acid",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Acriflavine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Amantadine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Apomorphine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Aspirin",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Atracurium",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Azathioprine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Betamethasone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Bronopol",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Glucose",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Insulin",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Misoprostol",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Terbutaline",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Penicillin G",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Vitamin A",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety markers",
+      "monitoring_frequency": "During treatment and at review",
+      "notes": "Use patient-specific judgement and reassess if response is poor."
+    }
+  ],
+  "pearls": [
+    {
+      "drug_name": "Acetazolamide",
+      "pearl": "Acetazolamide: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Acetic acid",
+      "pearl": "Acetic acid: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Acriflavine",
+      "pearl": "Acriflavine: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Amantadine",
+      "pearl": "Amantadine: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "pearl": "Amitriptyline: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Apomorphine",
+      "pearl": "Apomorphine: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Aspirin",
+      "pearl": "Aspirin: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Atracurium",
+      "pearl": "Atracurium: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Azathioprine",
+      "pearl": "Azathioprine: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Betamethasone",
+      "pearl": "Betamethasone: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Bronopol",
+      "pearl": "Bronopol: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Chlorambucil",
+      "pearl": "Chlorambucil: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Glucose",
+      "pearl": "Glucose: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Insulin",
+      "pearl": "Insulin: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Misoprostol",
+      "pearl": "Misoprostol: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Sevoflurane",
+      "pearl": "Sevoflurane: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Tolfenamic acid",
+      "pearl": "Tolfenamic acid: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "pearl": "Trimethoprim/Sulphonamide: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "pearl": "l-Thyroxine: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Tetracosactide",
+      "pearl": "Tetracosactide: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Terbutaline",
+      "pearl": "Terbutaline: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Penicillin G",
+      "pearl": "Penicillin G: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Vitamin A",
+      "pearl": "Vitamin A: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "pearl": "Vitamin K1: dose route and species are doing most of the heavy lifting here. Check the row before you press calculate."
+    }
+  ],
+  "species_warnings": [
+    {
+      "drug_name": "Acetic acid",
+      "species": "Fish",
+      "warning": "Can be toxic to small tropical fish; use aquatic specialist protocols.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Acriflavine",
+      "species": "Fish",
+      "warning": "May cause reproductive failure in some species and will kill aquatic plants.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amantadine",
+      "species": "Bird",
+      "warning": "Not recommended as first-line avian analgesic because efficacy evidence is limited.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Amitriptyline",
+      "species": "Bird",
+      "warning": "Extrapyramidal signs have been reported; start low and titrate carefully.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Apomorphine",
+      "species": "Ferret",
+      "warning": "Use only when vomiting is clinically appropriate and safe.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Atracurium",
+      "species": "Bird",
+      "warning": "Ventilation and monitoring are required when neuromuscular blockade is used.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Betamethasone",
+      "species": "Bird",
+      "warning": "Systemic use is not recommended in the source monograph.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Bronopol",
+      "species": "Fish",
+      "warning": "Irritant product; do not dispose into waterways and follow aquatic safety guidance.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Insulin",
+      "species": "Reptile",
+      "warning": "Adjust only using serial glucose measurements.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Penicillin G",
+      "species": "Rabbit",
+      "warning": "Parenteral use only; oral penicillins can be dangerous.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Penicillin G",
+      "species": "Guinea Pig",
+      "warning": "Do not use because of enterotoxaemia risk.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Penicillin G",
+      "species": "Chinchilla",
+      "warning": "Do not use because of enterotoxaemia risk.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Trimethoprim/Sulphonamide",
+      "species": "Rabbit",
+      "warning": "Maintain hydration and monitor for adverse GI/ocular effects.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "l-Thyroxine",
+      "species": "Bird",
+      "warning": "True hypothyroidism is controversial and using thyroid hormone to induce moult is not recommended.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Vitamin A",
+      "species": "Bird",
+      "warning": "Avoid over-supplementation; toxicity is possible.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Vitamin K1",
+      "species": "Ferret",
+      "warning": "Duration depends on rodenticide generation; recheck coagulation after stopping.",
+      "severity": "Moderate"
+    }
+  ],
+  "interactions": [
+    {
+      "drug_a": "Aspirin",
+      "drug_b": "Corticosteroids",
+      "severity": "High",
+      "mechanism": "Additive GI ulceration risk.",
+      "recommendation": "Avoid combination.",
+      "interaction": "GI ulceration/bleeding risk."
+    },
+    {
+      "drug_a": "Aspirin",
+      "drug_b": "Other NSAIDs",
+      "severity": "High",
+      "mechanism": "Additive NSAID toxicity.",
+      "recommendation": "Avoid or washout appropriately.",
+      "interaction": "GI/renal toxicity risk."
+    },
+    {
+      "drug_a": "Aspirin",
+      "drug_b": "Aminoglycosides",
+      "severity": "High",
+      "mechanism": "Reduced renal perfusion may increase nephrotoxicity.",
+      "recommendation": "Avoid in dehydrated patients.",
+      "interaction": "Renal injury risk."
+    },
+    {
+      "drug_a": "Atracurium",
+      "drug_b": "Aminoglycosides",
+      "severity": "Moderate",
+      "mechanism": "May potentiate neuromuscular blockade.",
+      "recommendation": "Monitor ventilation and recovery.",
+      "interaction": "Prolonged blockade risk."
+    },
+    {
+      "drug_a": "Azathioprine",
+      "drug_b": "Allopurinol",
+      "severity": "High",
+      "mechanism": "Allopurinol inhibits azathioprine metabolism.",
+      "recommendation": "Avoid or use specialist dose reduction.",
+      "interaction": "Severe myelosuppression risk."
+    },
+    {
+      "drug_a": "Betamethasone",
+      "drug_b": "NSAIDs",
+      "severity": "High",
+      "mechanism": "Additive GI ulceration and renal perfusion risk.",
+      "recommendation": "Avoid routine combination.",
+      "interaction": "GI/renal toxicity risk."
+    },
+    {
+      "drug_a": "Betamethasone",
+      "drug_b": "Insulin",
+      "severity": "Moderate",
+      "mechanism": "Glucocorticoids antagonise insulin.",
+      "recommendation": "Monitor glucose and adjust insulin.",
+      "interaction": "Reduced glycaemic control."
+    },
+    {
+      "drug_a": "Chlorambucil",
+      "drug_b": "Other myelosuppressive drugs",
+      "severity": "High",
+      "mechanism": "Additive bone marrow suppression.",
+      "recommendation": "Use oncology protocol and CBC monitoring.",
+      "interaction": "Myelosuppression risk."
+    },
+    {
+      "drug_a": "Glucose",
+      "drug_b": "Insulin",
+      "severity": "High",
+      "mechanism": "Insulin drives glucose and potassium intracellularly.",
+      "recommendation": "Monitor glucose and potassium.",
+      "interaction": "Hypoglycaemia/hypokalaemia risk."
+    },
+    {
+      "drug_a": "Insulin",
+      "drug_b": "Corticosteroids",
+      "severity": "Moderate",
+      "mechanism": "Steroids antagonise insulin effect.",
+      "recommendation": "Monitor glucose and adjust dose.",
+      "interaction": "Hyperglycaemia risk."
+    },
+    {
+      "drug_a": "Insulin",
+      "drug_b": "Beta-blockers",
+      "severity": "Moderate",
+      "mechanism": "Can mask hypoglycaemia signs.",
+      "recommendation": "Monitor glucose rather than relying on clinical signs.",
+      "interaction": "Masked hypoglycaemia."
+    },
+    {
+      "drug_a": "Misoprostol",
+      "drug_b": "NSAIDs",
+      "severity": "Moderate",
+      "mechanism": "Used to reduce NSAID gastric toxicity.",
+      "recommendation": "Still address NSAID risk factors.",
+      "interaction": "Gastric protective interaction."
+    },
+    {
+      "drug_a": "Sevoflurane",
+      "drug_b": "Opioids/sedatives",
+      "severity": "Moderate",
+      "mechanism": "Anaesthetic-sparing effects.",
+      "recommendation": "Titrate inhalant to effect.",
+      "interaction": "Reduced MAC requirement."
+    },
+    {
+      "drug_a": "Tolfenamic acid",
+      "drug_b": "ACE inhibitors",
+      "severity": "Moderate",
+      "mechanism": "NSAID renal perfusion effects may worsen renal risk.",
+      "recommendation": "Monitor renal values and hydration.",
+      "interaction": "Renal injury risk."
+    },
+    {
+      "drug_a": "Trimethoprim/Sulphonamide",
+      "drug_b": "Urinary acidifiers",
+      "severity": "Moderate",
+      "mechanism": "May increase crystalluria risk.",
+      "recommendation": "Maintain hydration and avoid unnecessary acidification.",
+      "interaction": "Crystalluria risk."
+    },
+    {
+      "drug_a": "l-Thyroxine",
+      "drug_b": "Insulin",
+      "severity": "Moderate",
+      "mechanism": "Thyroid hormone may alter insulin requirement.",
+      "recommendation": "Monitor glucose during initiation.",
+      "interaction": "Changed insulin requirement."
+    },
+    {
+      "drug_a": "l-Thyroxine",
+      "drug_b": "Ketamine",
+      "severity": "Moderate",
+      "mechanism": "Sympathomimetic response may be enhanced.",
+      "recommendation": "Use caution in cardiac patients.",
+      "interaction": "Tachycardia/hypertension risk."
+    },
+    {
+      "drug_a": "Terbutaline",
+      "drug_b": "Insulin",
+      "severity": "Moderate",
+      "mechanism": "Beta agonists may oppose insulin-induced hypoglycaemia.",
+      "recommendation": "Monitor glucose.",
+      "interaction": "Altered glucose response."
+    },
+    {
+      "drug_a": "Penicillin G",
+      "drug_b": "Aciclovir",
+      "severity": "High",
+      "mechanism": "Reduced aciclovir elimination reported in red-eared sliders.",
+      "recommendation": "Avoid combination in red-eared sliders.",
+      "interaction": "Aciclovir accumulation risk."
+    },
+    {
+      "drug_a": "Vitamin A",
+      "drug_b": "Tetracyclines",
+      "severity": "Moderate",
+      "mechanism": "Retinoids with tetracyclines can increase intracranial pressure risk in other species.",
+      "recommendation": "Avoid unnecessary combination.",
+      "interaction": "Neurotoxicity/intracranial pressure concern."
+    }
+  ]
+}

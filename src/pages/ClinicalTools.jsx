@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   Activity,
@@ -66,8 +66,9 @@ const formatNumber = (value, decimals = 2) => {
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
 const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
 
-export default function ClinicalTools({ user, darkMode = false, showBanner = true, featureAccess, adminAccess = false }) {
-  const [activeTab, setActiveTab] = useState("drug");
+export default function ClinicalTools({ user, darkMode = false, showBanner = true, featureAccess, adminAccess = false, initialTab = "drug" }) {
+  const appliedInitialTabRef = useRef(initialTab || "drug");
+  const [activeTab, setActiveTab] = useState(initialTab || "drug");
   const [protocolContext, setProtocolContext] = useState(null);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -118,6 +119,14 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
       return true;
     });
   }, [featureAccess, adminAccess]);
+
+  useEffect(() => {
+    const nextInitialTab = initialTab || "drug";
+    if (appliedInitialTabRef.current === nextInitialTab) return;
+
+    appliedInitialTabRef.current = nextInitialTab;
+    setActiveTab(nextInitialTab);
+  }, [initialTab]);
 
   // ACCESS PROTECTION: Intercepts users deep-linking to / trying to navigate to disabled tabs
   useEffect(() => {

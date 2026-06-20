@@ -15,7 +15,7 @@ import NotificationDrawer from "./components/NotificationDrawer";
 import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric, syncBiometricSession } from "./utils/biometricAuth";
 import { canUseFeature, defaultFeatureAccess, featureKeys, loadFeatureAccess } from "./utils/featureAccess";
-import { hasRecentPushNavigationIntent, setupPushNotifications } from "./utils/pushNotifications";
+import { setupPushNotifications } from "./utils/pushNotifications";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import AuthPage from "./pages/AuthPage";
@@ -83,10 +83,14 @@ function RecentRouteTracker({ user }) {
 }
 
 function NativeLaunchHomeRedirect() {
+  // Keep native resumes on the user's current screen.
+  return null;
+}
+
+function NativeBackButtonHandler() {
   const location = useLocation();
   const navigate = useNavigate();
   const locationRef = useRef(location);
-  const backgroundedAtRef = useRef(null);
 
   useEffect(() => {
     locationRef.current = location;
@@ -95,31 +99,24 @@ function NativeLaunchHomeRedirect() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform?.()) return undefined;
 
-    const goHomeForNormalOpen = () => {
-      window.setTimeout(() => {
-        if (hasRecentPushNavigationIntent()) return;
-        if (locationRef.current.pathname !== "/") navigate("/", { replace: true });
-      }, 900);
-    };
+    let backButtonListener = null;
+    CapacitorApp.addListener("backButton", ({ canGoBack }) => {
+      const currentLocation = locationRef.current;
+      const isHome = currentLocation.pathname === "/" && !currentLocation.search;
 
-    const initialTimer = window.setTimeout(goHomeForNormalOpen, 900);
-    let appStateListener = null;
-
-    CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-      if (!isActive) {
-        backgroundedAtRef.current = Date.now();
+      if (!isHome) {
+        if (canGoBack || window.history.length > 1) navigate(-1);
+        else navigate("/", { replace: true });
         return;
       }
 
-      const backgroundedFor = backgroundedAtRef.current ? Date.now() - backgroundedAtRef.current : 0;
-      if (backgroundedFor > 1500) goHomeForNormalOpen();
-    }).then(listener => {
-      appStateListener = listener;
+      CapacitorApp.exitApp();
+    }).then((listener) => {
+      backButtonListener = listener;
     });
 
     return () => {
-      window.clearTimeout(initialTimer);
-      appStateListener?.remove();
+      backButtonListener?.remove();
     };
   }, [navigate]);
 
@@ -774,6 +771,7 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <NativeLaunchHomeRedirect />
+      <NativeBackButtonHandler />
       <RecentRouteTracker user={session.user} />
       <HybridToaster darkMode={darkMode} />
       <AndroidClipboardToolbar darkMode={darkMode} />

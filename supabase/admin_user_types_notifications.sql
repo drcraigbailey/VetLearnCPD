@@ -23,6 +23,24 @@ create policy "Admins can manage user type feature access"
   using (public.current_admin_role() in ('admin', 'super_admin'))
   with check (public.current_admin_role() in ('admin', 'super_admin'));
 
+insert into public.app_features (feature_key, name, description, is_active)
+values (
+  'exotics_formulary',
+  'Exotics Formulary',
+  'Show exotic species filters, dose rows and formulary calculator options.',
+  true
+)
+on conflict (feature_key) do update set
+  name = excluded.name,
+  description = excluded.description,
+  is_active = true,
+  updated_at = now();
+
+insert into public.subscription_feature_access (subscription_tier, feature_key, is_enabled)
+select tier, 'exotics_formulary', false
+from public.subscription_plans
+on conflict (subscription_tier, feature_key) do nothing;
+
 insert into public.user_type_feature_access (user_type, feature_key, is_enabled)
 select tier.user_type, feature.feature_key,
   case

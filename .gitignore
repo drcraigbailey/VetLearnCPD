@@ -33,3 +33,9 @@ env
 supabase/.temp/
 firebase-service-account.json
 .codex-remote-attachments/
+
+supabase-backup/
+supabase-backup*.zip
+*.sql
+.env
+env

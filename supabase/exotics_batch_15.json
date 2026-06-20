@@ -1,0 +1,2392 @@
+{
+  "tag": "VetLearn Exotics Seed v15",
+  "drugs": [
+    {
+      "name": "Aglepristone",
+      "species": "Rabbit",
+      "category": "Reproduction",
+      "indication": "Pregnancy termination where clinically appropriate",
+      "route": "SC",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "On days 6 and 7 post-implantation",
+      "notes": "Confirm pregnancy/termination where possible and use cascade consent.",
+      "formulary_page": 7,
+      "authorised": false,
+      "search_terms": [
+        "aglepristone",
+        "Alizin",
+        "pregnancy termination",
+        "rabbit"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 30 mg/ml",
+      "concentration": 30,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Aglepristone",
+      "species": "Guinea Pig",
+      "category": "Reproduction",
+      "indication": "Pyometra/metritis support where progesterone blockade is selected",
+      "route": "SC",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "Days 1, 2 and 8",
+      "notes": "Use with reproductive diagnosis and close monitoring.",
+      "formulary_page": 7,
+      "authorised": false,
+      "search_terms": [
+        "aglepristone",
+        "guinea pig pyometra",
+        "metritis"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 30 mg/ml",
+      "concentration": 30,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Aglepristone",
+      "species": "Rat",
+      "category": "Reproduction",
+      "indication": "Pregnancy termination where clinically appropriate",
+      "route": "SC",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "Two doses 24h apart at mid-pregnancy",
+      "notes": "Specialist/reproductive judgement required.",
+      "formulary_page": 7,
+      "authorised": false,
+      "search_terms": [
+        "aglepristone",
+        "rat pregnancy termination"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 30 mg/ml",
+      "concentration": 30,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Asparaginase",
+      "species": "Ferret",
+      "category": "Oncology",
+      "indication": "Lymphoid malignancy protocol component",
+      "route": "SC",
+      "dose_min": 10000,
+      "dose_max": 10000,
+      "dose_unit": "IU/m2",
+      "frequency": "Weekly for first 3 weeks as protocol directs",
+      "notes": "Cytotoxic/oncology protocol drug. Not suitable for mg/kg calculator.",
+      "formulary_page": 22,
+      "authorised": false,
+      "search_terms": [
+        "asparaginase",
+        "l-asparaginase",
+        "ferret lymphoma",
+        "chemotherapy"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Powder vials 5000 or 10000 IU",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Asparaginase",
+      "species": "Bearded Dragon",
+      "category": "Oncology",
+      "indication": "Lymphoid leukaemia/lymphoma protocol component",
+      "route": "SC",
+      "dose_min": 400,
+      "dose_max": 400,
+      "dose_unit": "IU/kg",
+      "frequency": "Every 3 weeks as protocol directs",
+      "notes": "Cytotoxic/oncology protocol drug. Not suitable for mg/kg calculator.",
+      "formulary_page": 22,
+      "authorised": false,
+      "search_terms": [
+        "asparaginase",
+        "bearded dragon",
+        "lymphoid leukaemia",
+        "chemotherapy"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Powder vials 5000 or 10000 IU",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Dinoprostone",
+      "species": "Bird",
+      "category": "Reproduction",
+      "indication": "Egg binding support by cloacal/vaginal relaxation",
+      "route": "Topical cloacal mucosa",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "Thin layer once",
+      "notes": "Topical gel row; not suitable for mg/kg calculator.",
+      "formulary_page": 96,
+      "authorised": false,
+      "search_terms": [
+        "dinoprostone",
+        "prostaglandin E2",
+        "egg bound bird",
+        "dystocia"
+      ],
+      "species_priority": 50,
+      "route_priority": 30,
+      "formulation": "Topical gel 0.4 mg/ml",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Diphenhydramine",
+      "species": "Ferret",
+      "category": "Antihistamine",
+      "indication": "Allergic reactions or vaccine-reaction prophylaxis",
+      "route": "PO/SC/IM",
+      "dose_min": 0.5,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h; IM high end before vaccination where indicated",
+      "notes": "Liquid may be unpalatable; monitor sedation.",
+      "formulary_page": 97,
+      "authorised": false,
+      "search_terms": [
+        "diphenhydramine",
+        "antihistamine",
+        "ferret allergy",
+        "vaccine reaction"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral 25 mg tablets; 2 mg/ml solution",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Diphenhydramine",
+      "species": "Rabbit",
+      "category": "Antihistamine",
+      "indication": "Torticollis-associated nausea/motion sickness support",
+      "route": "PO/SC/IM",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Use as adjunct while underlying vestibular disease is addressed.",
+      "formulary_page": 97,
+      "authorised": false,
+      "search_terms": [
+        "diphenhydramine",
+        "rabbit torticollis",
+        "antihistamine"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral 25 mg tablets; 2 mg/ml solution",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Diphenhydramine",
+      "species": "Rodent",
+      "category": "Antihistamine",
+      "indication": "Allergic reaction/pruritus support",
+      "route": "PO/SC",
+      "dose_min": 1,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h or as required by species",
+      "notes": "Use lower end in small/debilitated patients.",
+      "formulary_page": 97,
+      "authorised": false,
+      "search_terms": [
+        "diphenhydramine",
+        "rodent allergy",
+        "antihistamine"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral 25 mg tablets; 2 mg/ml solution",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Diphenhydramine",
+      "species": "Bird",
+      "category": "Antihistamine",
+      "indication": "Allergic rhinitis, hypersensitivity or allergic dermatopathy support",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Monitor for hypotension and sedation.",
+      "formulary_page": 97,
+      "authorised": false,
+      "search_terms": [
+        "diphenhydramine",
+        "avian allergy",
+        "antihistamine"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral 25 mg tablets; 2 mg/ml solution",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Finasteride",
+      "species": "Ferret",
+      "category": "Endocrinology",
+      "indication": "Benign prostatic hyperplasia associated with adrenal gland disease",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Do not use in breeding ferrets; human pregnancy handling precautions.",
+      "formulary_page": 119,
+      "authorised": false,
+      "search_terms": [
+        "finasteride",
+        "ferret adrenal disease",
+        "prostatic hyperplasia"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral 5 mg tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Hydralazine",
+      "species": "Guinea Pig",
+      "category": "Cardiology",
+      "indication": "Afterload reduction / hypertension support where selected",
+      "route": "IV",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "As required under monitoring",
+      "notes": "Hospital monitoring recommended due to hypotension risk.",
+      "formulary_page": 144,
+      "authorised": false,
+      "search_terms": [
+        "hydralazine",
+        "guinea pig hypertension",
+        "afterload reducer"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable powder for reconstitution; oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Hydrochlorothiazide",
+      "species": "Reptile",
+      "category": "Cardiology",
+      "indication": "Adjunct diuretic for refractory fluid overload or calcium oxalate prevention",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-72h",
+      "notes": "Use with renal/electrolyte monitoring; avoid renal impairment.",
+      "formulary_page": 145,
+      "authorised": false,
+      "search_terms": [
+        "hydrochlorothiazide",
+        "thiazide",
+        "reptile diuretic"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Co-amilozide tablets containing hydrochlorothiazide/amiloride",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Hydroxyzine",
+      "species": "Ferret",
+      "category": "Dermatology",
+      "indication": "Pruritus/allergic disease support",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "May cause sedation and may reduce seizure threshold.",
+      "formulary_page": 145,
+      "authorised": false,
+      "search_terms": [
+        "hydroxyzine",
+        "ferret pruritus",
+        "antihistamine"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral 10 mg/25 mg tablets; 2 mg/ml syrup",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Hydroxyzine",
+      "species": "Rabbit",
+      "category": "Dermatology",
+      "indication": "Pruritus/allergic disease support",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Use with caution in urinary retention, glaucoma or pyloroduodenal obstruction.",
+      "formulary_page": 145,
+      "authorised": false,
+      "search_terms": [
+        "hydroxyzine",
+        "rabbit pruritus",
+        "antihistamine"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral 10 mg/25 mg tablets; 2 mg/ml syrup",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Hydroxyzine",
+      "species": "Bird",
+      "category": "Behaviour",
+      "indication": "Feather plucking/pruritus support where allergic component suspected",
+      "route": "PO",
+      "dose_min": 2.2,
+      "dose_max": 2.2,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Use only after husbandry, behavioural and infectious causes are considered.",
+      "formulary_page": 145,
+      "authorised": false,
+      "search_terms": [
+        "hydroxyzine",
+        "bird feather plucking",
+        "avian pruritus"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral 10 mg/25 mg tablets; 2 mg/ml syrup",
+      "concentration": 2,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Latanoprost",
+      "species": "Rabbit",
+      "category": "Ophthalmology",
+      "indication": "Primary glaucoma / acute intraocular pressure reduction",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop per affected eye q8-24h",
+      "notes": "Topical ophthalmic row; not suitable for mg/kg calculator.",
+      "formulary_page": 163,
+      "authorised": false,
+      "search_terms": [
+        "latanoprost",
+        "rabbit glaucoma",
+        "Xalatan",
+        "ophthalmology"
+      ],
+      "species_priority": 30,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.005% solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Milbemycin oxime",
+      "species": "Ferret",
+      "category": "Antiparasitic",
+      "indication": "Nematode control / heartworm prevention where regionally appropriate",
+      "route": "PO",
+      "dose_min": 1.15,
+      "dose_max": 2.33,
+      "dose_unit": "mg/kg",
+      "frequency": "q30d",
+      "notes": "Do not use in animals suspected of heartworm disease; avoid under 0.5 kg.",
+      "formulary_page": 189,
+      "authorised": false,
+      "search_terms": [
+        "milbemycin",
+        "ferret parasite",
+        "heartworm prevention",
+        "nematodes"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral tablets in combination products vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Nitenpyram",
+      "species": "Small Mammal",
+      "category": "Parasiticide",
+      "indication": "Flea treatment / flystrike support where appropriate",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "Once or q24h",
+      "notes": "Use as part of integrated parasite control.",
+      "formulary_page": 197,
+      "authorised": false,
+      "search_terms": [
+        "nitenpyram",
+        "Capstar",
+        "fleas",
+        "flystrike"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Oral 11.4 mg and 57 mg tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Prazosin",
+      "species": "Ferret",
+      "category": "Urology",
+      "indication": "Urethral smooth muscle relaxation / functional urethral obstruction support",
+      "route": "PO",
+      "dose_min": 0.05,
+      "dose_max": 0.1,
+      "dose_unit": "mg/kg",
+      "frequency": "q8h",
+      "notes": "Monitor for first-dose hypotension, weakness and syncope.",
+      "formulary_page": 228,
+      "authorised": false,
+      "search_terms": [
+        "prazosin",
+        "ferret urethral obstruction",
+        "alpha blocker"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral 0.5 mg, 1 mg, 2 mg, 5 mg tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Prednisolone",
+      "species": "Ferret",
+      "category": "Corticosteroid",
+      "indication": "Anti-inflammatory therapy or lymphoma/adrenalectomy protocol support",
+      "route": "PO",
+      "dose_min": 0.25,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h then taper by indication",
+      "notes": "Use lowest effective dose and taper after chronic therapy.",
+      "formulary_page": 230,
+      "authorised": false,
+      "search_terms": [
+        "prednisolone",
+        "ferret steroid",
+        "lymphoma",
+        "anti-inflammatory"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral tablets; injectable; ophthalmic preparations",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Prednisolone",
+      "species": "Rabbit",
+      "category": "Corticosteroid",
+      "indication": "Short anti-inflammatory course where benefits outweigh risks",
+      "route": "PO",
+      "dose_min": 0.25,
+      "dose_max": 0.5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h for 3 days, then taper",
+      "notes": "Rabbits are sensitive to steroids; use carefully and avoid infectious disease masking.",
+      "formulary_page": 230,
+      "authorised": false,
+      "search_terms": [
+        "prednisolone",
+        "rabbit steroid",
+        "anti-inflammatory"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral tablets; ophthalmic preparations",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Prednisolone",
+      "species": "Bird",
+      "category": "Corticosteroid",
+      "indication": "Pruritus/inflammatory disease after infectious causes excluded",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h then reduce quickly",
+      "notes": "Exclude aspergillosis, chlamydiosis and other infections before use.",
+      "formulary_page": 230,
+      "authorised": false,
+      "search_terms": [
+        "prednisolone",
+        "avian pruritus",
+        "bird steroid"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets; injectable/topical preparations",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Prednisolone",
+      "species": "Reptile",
+      "category": "Corticosteroid",
+      "indication": "Anti-inflammatory therapy or oncology protocol support",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q24-48h",
+      "notes": "Use cautiously; immunosuppression and infection risk are important.",
+      "formulary_page": 230,
+      "authorised": false,
+      "search_terms": [
+        "prednisolone",
+        "reptile steroid",
+        "anti-inflammatory"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Proligestone",
+      "species": "Ferret",
+      "category": "Reproduction",
+      "indication": "Prevention of prolonged oestrus complications",
+      "route": "SC",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": "mg/animal",
+      "frequency": "50 mg/ferret, then 25 mg after 7 days if needed",
+      "notes": "Fixed-dose row; not suitable for mg/kg calculator. Authorized in ferrets.",
+      "formulary_page": 231,
+      "authorised": true,
+      "search_terms": [
+        "proligestone",
+        "ferret oestrus",
+        "Delvosteron"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable 100 mg/ml suspension",
+      "concentration": 100,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Proligestone",
+      "species": "Rabbit",
+      "category": "Reproduction",
+      "indication": "False pregnancy treatment/prevention",
+      "route": "SC",
+      "dose_min": 30,
+      "dose_max": 30,
+      "dose_unit": "mg/kg",
+      "frequency": "Once as directed",
+      "notes": "Avoid in diabetic animals; do not use in birds.",
+      "formulary_page": 231,
+      "authorised": false,
+      "search_terms": [
+        "proligestone",
+        "rabbit pseudopregnancy",
+        "false pregnancy"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Injectable 100 mg/ml suspension",
+      "concentration": 100,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Propentofylline",
+      "species": "Bird",
+      "category": "Cardiology",
+      "indication": "Raptor wing-tip oedema / pododermatitis support / cognitive dysfunction support",
+      "route": "PO",
+      "dose_min": 5,
+      "dose_max": 5,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Anecdotal avian use; monitor cardiovascular tolerance.",
+      "formulary_page": 232,
+      "authorised": false,
+      "search_terms": [
+        "propentofylline",
+        "raptor",
+        "wing tip oedema",
+        "bumblefoot"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral 50 mg and 100 mg tablets",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Rifampicin",
+      "species": "Rabbit",
+      "category": "Antibiotic",
+      "indication": "Combination therapy for selected staphylococcal osteomyelitis/mycobacterial-type infections",
+      "route": "PO",
+      "dose_min": 40,
+      "dose_max": 40,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h in combination protocol",
+      "notes": "EMA Avoid category. Do not use as monotherapy because resistance develops readily.",
+      "formulary_page": 239,
+      "authorised": false,
+      "search_terms": [
+        "rifampicin",
+        "rifampin",
+        "rabbit osteomyelitis",
+        "mycobacteria"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral capsules 150/300 mg; syrup 20 mg/ml",
+      "concentration": 20,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Rifampicin",
+      "species": "Bird",
+      "category": "Antibiotic",
+      "indication": "Combination therapy for selected mycobacterial/chlamydial-type infections",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use only with culture/diagnostics and combination protocol rationale.",
+      "formulary_page": 239,
+      "authorised": false,
+      "search_terms": [
+        "rifampicin",
+        "avian mycobacteriosis",
+        "bird antibiotic"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral capsules 150/300 mg; syrup 20 mg/ml",
+      "concentration": 20,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Sotalol",
+      "species": "Bird",
+      "category": "Cardiology",
+      "indication": "Arrhythmia management where beta-blockade/class III effect is selected",
+      "route": "PO",
+      "dose_min": 2,
+      "dose_max": 4,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Specialist/cardiology use; monitor heart rate and rhythm.",
+      "formulary_page": 23,
+      "authorised": false,
+      "search_terms": [
+        "sotalol",
+        "avian arrhythmia",
+        "beta blocker"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Oral tablets; formulation varies",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Spironolactone",
+      "species": "Ferret",
+      "category": "Cardiology",
+      "indication": "Adjunct therapy for congestive heart failure / aldosterone antagonism",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Monitor potassium, renal values and hydration.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "spironolactone",
+        "ferret heart failure",
+        "aldosterone antagonist"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; combination products vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Spironolactone",
+      "species": "Rabbit",
+      "category": "Cardiology",
+      "indication": "Adjunct therapy for congestive heart failure / aldosterone antagonism",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Use with ACE inhibitor/diuretic plans only with monitoring.",
+      "formulary_page": 149,
+      "authorised": false,
+      "search_terms": [
+        "spironolactone",
+        "rabbit cardiology",
+        "heart failure"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral tablets/liquid; combination products vary",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Tetracaine",
+      "species": "Mammal/Bird",
+      "category": "Ophthalmology",
+      "indication": "Single-application ocular surface anaesthesia",
+      "route": "Ocular topical",
+      "dose_min": null,
+      "dose_max": null,
+      "dose_unit": null,
+      "frequency": "1 drop once",
+      "notes": "Topical anaesthetic; not for therapeutic use and not suitable for calculator.",
+      "formulary_page": 259,
+      "authorised": false,
+      "search_terms": [
+        "tetracaine",
+        "amethocaine",
+        "ocular anaesthetic"
+      ],
+      "species_priority": 40,
+      "route_priority": 30,
+      "formulation": "Ophthalmic 0.5% or 1% solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Theophylline",
+      "species": "Ferret",
+      "category": "Respiratory",
+      "indication": "Small airway disease / bronchodilation support",
+      "route": "PO",
+      "dose_min": 4.25,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Low therapeutic index; dose on lean bodyweight and monitor toxicity.",
+      "formulary_page": 260,
+      "authorised": false,
+      "search_terms": [
+        "theophylline",
+        "bronchodilator",
+        "ferret respiratory"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Sustained-release capsules 100/200/500 mg",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Theophylline",
+      "species": "Guinea Pig",
+      "category": "Respiratory",
+      "indication": "Small airway disease / bronchodilation support",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 20,
+      "dose_unit": "mg/kg",
+      "frequency": "q8-12h",
+      "notes": "Low therapeutic index; monitor cardiovascular/CNS signs.",
+      "formulary_page": 260,
+      "authorised": false,
+      "search_terms": [
+        "theophylline",
+        "guinea pig respiratory",
+        "bronchodilator"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Sustained-release capsules",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Theophylline",
+      "species": "Bird",
+      "category": "Respiratory",
+      "indication": "Bronchodilation support",
+      "route": "PO",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q12h",
+      "notes": "Monitor for excitation, tachycardia and seizures.",
+      "formulary_page": 260,
+      "authorised": false,
+      "search_terms": [
+        "theophylline",
+        "avian respiratory",
+        "bronchodilator"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Sustained-release capsules",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Thiamazole",
+      "species": "Guinea Pig",
+      "category": "Endocrinology",
+      "indication": "Hyperthyroidism control",
+      "route": "PO",
+      "dose_min": 0.5,
+      "dose_max": 2,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h",
+      "notes": "Monitor T4, CBC, biochemistry and renal values.",
+      "formulary_page": 261,
+      "authorised": false,
+      "search_terms": [
+        "thiamazole",
+        "methimazole",
+        "guinea pig hyperthyroidism"
+      ],
+      "species_priority": 30,
+      "route_priority": 10,
+      "formulation": "Oral tablets 1.25/2.5/5 mg; 5 mg/ml solution",
+      "concentration": 5,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Thiamazole",
+      "species": "Snake",
+      "category": "Endocrinology",
+      "indication": "Hyperthyroidism control",
+      "route": "PO",
+      "dose_min": 1,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "q24h for 30 days",
+      "notes": "Monitor clinical response; specialist reptile endocrinology case.",
+      "formulary_page": 261,
+      "authorised": false,
+      "search_terms": [
+        "thiamazole",
+        "methimazole",
+        "snake hyperthyroidism"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Oral tablets/solution",
+      "concentration": 5,
+      "calculator_enabled": true,
+      "renal_adjustment": true,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Tricaine methanesulfonate",
+      "species": "Fish",
+      "category": "Anaesthesia",
+      "indication": "Fish anaesthesia or euthanasia by immersion",
+      "route": "Immersion",
+      "dose_min": 25,
+      "dose_max": 200,
+      "dose_unit": "mg/l",
+      "frequency": "Induction; maintain at lower concentration as needed",
+      "notes": "Bath/immersion row; not suitable for mg/kg calculator. Buffer and monitor water quality.",
+      "formulary_page": 249,
+      "authorised": false,
+      "search_terms": [
+        "tricaine",
+        "MS-222",
+        "TMS",
+        "fish anaesthesia"
+      ],
+      "species_priority": 80,
+      "route_priority": 30,
+      "formulation": "Powder for immersion solution",
+      "concentration": null,
+      "calculator_enabled": false,
+      "renal_adjustment": false,
+      "hepatic_adjustment": false
+    },
+    {
+      "name": "Vincristine",
+      "species": "Ferret",
+      "category": "Oncology",
+      "indication": "Lymphoma chemotherapy protocol component",
+      "route": "IV",
+      "dose_min": 0.12,
+      "dose_max": 0.2,
+      "dose_unit": "mg/kg",
+      "frequency": "Protocol dependent",
+      "notes": "Cytotoxic vesicant; give via secure IV catheter only.",
+      "formulary_page": 276,
+      "authorised": false,
+      "search_terms": [
+        "vincristine",
+        "ferret lymphoma",
+        "chemotherapy"
+      ],
+      "species_priority": 20,
+      "route_priority": 10,
+      "formulation": "Injectable cytotoxic solution",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Vincristine",
+      "species": "Bird",
+      "category": "Oncology",
+      "indication": "Selected lymphoma/oncology protocol component",
+      "route": "IV",
+      "dose_min": 0.1,
+      "dose_max": 0.1,
+      "dose_unit": "mg/kg",
+      "frequency": "q7-14d",
+      "notes": "Specialist oncology use only.",
+      "formulary_page": 276,
+      "authorised": false,
+      "search_terms": [
+        "vincristine",
+        "avian lymphoma",
+        "chemotherapy"
+      ],
+      "species_priority": 50,
+      "route_priority": 10,
+      "formulation": "Injectable cytotoxic solution",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Vincristine",
+      "species": "Reptile",
+      "category": "Oncology",
+      "indication": "Selected lymphoma protocol component",
+      "route": "IV",
+      "dose_min": 0.008,
+      "dose_max": 0.008,
+      "dose_unit": "mg/kg",
+      "frequency": "Protocol dependent",
+      "notes": "Case-report level evidence; specialist oncology use only.",
+      "formulary_page": 276,
+      "authorised": false,
+      "search_terms": [
+        "vincristine",
+        "reptile lymphoma",
+        "green iguana"
+      ],
+      "species_priority": 60,
+      "route_priority": 10,
+      "formulation": "Injectable cytotoxic solution",
+      "concentration": null,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Xylazine",
+      "species": "Primate",
+      "category": "Anaesthesia",
+      "indication": "Sedation or ketamine-combination anaesthesia",
+      "route": "IM",
+      "dose_min": 0.5,
+      "dose_max": 6,
+      "dose_unit": "mg/kg",
+      "frequency": "Once, protocol dependent",
+      "notes": "Largely superseded by medetomidine/dexmedetomidine; cardiovascular risk.",
+      "formulary_page": 286,
+      "authorised": false,
+      "search_terms": [
+        "xylazine",
+        "primate sedation",
+        "alpha-2"
+      ],
+      "species_priority": 40,
+      "route_priority": 10,
+      "formulation": "Injectable 20 mg/ml",
+      "concentration": 20,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Xylazine",
+      "species": "Hedgehog",
+      "category": "Anaesthesia",
+      "indication": "Sedation / ketamine-combination anaesthesia",
+      "route": "IM",
+      "dose_min": 0.5,
+      "dose_max": 1,
+      "dose_unit": "mg/kg",
+      "frequency": "Once, protocol dependent",
+      "notes": "Avoid cardiovascular or systemic disease.",
+      "formulary_page": 286,
+      "authorised": false,
+      "search_terms": [
+        "xylazine",
+        "hedgehog sedation",
+        "alpha-2"
+      ],
+      "species_priority": 35,
+      "route_priority": 10,
+      "formulation": "Injectable 20 mg/ml",
+      "concentration": 20,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    },
+    {
+      "name": "Xylazine",
+      "species": "Amphibian",
+      "category": "Analgesia",
+      "indication": "Analgesic effect reported in Xenopus/leopard frog models",
+      "route": "Intracoelomic",
+      "dose_min": 10,
+      "dose_max": 10,
+      "dose_unit": "mg/kg",
+      "frequency": "q12-24h",
+      "notes": "Specialist amphibian use; monitor carefully.",
+      "formulary_page": 287,
+      "authorised": false,
+      "search_terms": [
+        "xylazine",
+        "amphibian analgesia",
+        "Xenopus"
+      ],
+      "species_priority": 70,
+      "route_priority": 10,
+      "formulation": "Injectable 20 mg/ml",
+      "concentration": 20,
+      "calculator_enabled": true,
+      "renal_adjustment": false,
+      "hepatic_adjustment": true
+    }
+  ],
+  "information": [
+    {
+      "drug_name": "Aglepristone",
+      "section": "Exotics overview",
+      "content": "Progesterone receptor antagonist used for selected reproductive indications such as pregnancy termination and pyometra/metritis support in exotic mammals."
+    },
+    {
+      "drug_name": "Aglepristone",
+      "section": "Key caution",
+      "content": "People who are or may become pregnant should not handle it; use caution in diabetes or suspected hypoadrenocorticism."
+    },
+    {
+      "drug_name": "Asparaginase",
+      "section": "Exotics overview",
+      "content": "Cytotoxic enzyme used as part of lymphoma or lymphoid leukaemia protocols in selected exotic species."
+    },
+    {
+      "drug_name": "Asparaginase",
+      "section": "Key caution",
+      "content": "Cytotoxic handling precautions apply and anaphylaxis risk increases with repeated doses."
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "section": "Exotics overview",
+      "content": "Prostaglandin E2 preparation used topically to support cloacal/vaginal relaxation in egg-bound birds."
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "section": "Key caution",
+      "content": "People who are or may become pregnant and asthmatics should avoid handling; uterine rupture is a concern."
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "section": "Exotics overview",
+      "content": "H1 antihistamine used for allergic reactions, vaccine-reaction prophylaxis and selected vestibular/nausea situations."
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "section": "Key caution",
+      "content": "Avoid or use caution in urinary retention, glaucoma and hyperthyroidism; sedation can combine with other CNS depressants."
+    },
+    {
+      "drug_name": "Finasteride",
+      "section": "Exotics overview",
+      "content": "5-alpha reductase inhibitor used for prostatic enlargement associated with adrenal disease in ferrets."
+    },
+    {
+      "drug_name": "Finasteride",
+      "section": "Key caution",
+      "content": "Do not use in breeding ferrets; human pregnancy handling precautions are important."
+    },
+    {
+      "drug_name": "Hydralazine",
+      "section": "Exotics overview",
+      "content": "Arteriolar vasodilator/afterload reducer used only with close cardiovascular monitoring."
+    },
+    {
+      "drug_name": "Hydralazine",
+      "section": "Key caution",
+      "content": "Can cause severe hypotension and reflex tachycardia, so hospital monitoring is recommended."
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "section": "Exotics overview",
+      "content": "Thiazide diuretic used as adjunctive therapy for selected refractory fluid overload or urolith prevention cases."
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "section": "Key caution",
+      "content": "Avoid renal impairment and monitor electrolytes because hypokalaemia and volume contraction can develop."
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "section": "Exotics overview",
+      "content": "H1 antihistamine sometimes used for pruritus or feather-plucking support after underlying causes are addressed."
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "section": "Key caution",
+      "content": "May cause sedation and reduce seizure threshold; use only after investigating underlying pruritus/behaviour causes."
+    },
+    {
+      "drug_name": "Latanoprost",
+      "section": "Exotics overview",
+      "content": "Topical prostaglandin analogue used to reduce intraocular pressure in glaucoma."
+    },
+    {
+      "drug_name": "Latanoprost",
+      "section": "Key caution",
+      "content": "Avoid in uveitis and anterior lens luxation; ocular irritation and miosis can occur."
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "section": "Exotics overview",
+      "content": "Macrocyclic lactone antiparasitic used for nematode control and regional heartworm prevention in ferrets."
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "section": "Key caution",
+      "content": "Do not use in animals suspected of heartworm disease or under 0.5 kg."
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "section": "Exotics overview",
+      "content": "Rapid oral flea adulticide used as part of integrated parasite control and sometimes flystrike support."
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "section": "Key caution",
+      "content": "Only kills adult fleas present at dosing; environmental and household control remain essential."
+    },
+    {
+      "drug_name": "Prazosin",
+      "section": "Exotics overview",
+      "content": "Alpha-1 antagonist used to relax urethral smooth muscle and support selected functional obstruction cases."
+    },
+    {
+      "drug_name": "Prazosin",
+      "section": "Key caution",
+      "content": "First-dose hypotension and syncope can occur, especially with diuretics or beta-blockers."
+    },
+    {
+      "drug_name": "Prednisolone",
+      "section": "Exotics overview",
+      "content": "Systemic or topical glucocorticoid used for inflammatory, immune-mediated and oncology indications when benefits outweigh risks."
+    },
+    {
+      "drug_name": "Prednisolone",
+      "section": "Key caution",
+      "content": "Avoid in pregnancy, diabetes, renal disease and ulcerative keratitis; rabbits are particularly steroid-sensitive."
+    },
+    {
+      "drug_name": "Proligestone",
+      "section": "Exotics overview",
+      "content": "Long-acting progestagen used for prolonged oestrus prevention in ferrets and selected rabbit pseudopregnancy cases."
+    },
+    {
+      "drug_name": "Proligestone",
+      "section": "Key caution",
+      "content": "Avoid diabetic animals and do not use in birds; long-term progestagen effects can be significant."
+    },
+    {
+      "drug_name": "Propentofylline",
+      "section": "Exotics overview",
+      "content": "Xanthine derivative used anecdotally in birds for vascular and pododermatitis-related indications."
+    },
+    {
+      "drug_name": "Propentofylline",
+      "section": "Key caution",
+      "content": "May increase myocardial oxygen demand; evidence is limited and mostly anecdotal in birds."
+    },
+    {
+      "drug_name": "Rifampicin",
+      "section": "Exotics overview",
+      "content": "Rifamycin antibiotic used only in carefully justified combination protocols because resistance develops quickly."
+    },
+    {
+      "drug_name": "Rifampicin",
+      "section": "Key caution",
+      "content": "EMA Avoid category; use only in combination and avoid pregnancy or liver disease."
+    },
+    {
+      "drug_name": "Sotalol",
+      "section": "Exotics overview",
+      "content": "Beta-blocking/class III antiarrhythmic used for selected avian arrhythmia cases under specialist judgement."
+    },
+    {
+      "drug_name": "Sotalol",
+      "section": "Key caution",
+      "content": "Avoid bradyarrhythmia and decompensated heart failure; ECG/heart-rate monitoring is important."
+    },
+    {
+      "drug_name": "Spironolactone",
+      "section": "Exotics overview",
+      "content": "Aldosterone antagonist and potassium-sparing diuretic used as adjunctive cardiology therapy."
+    },
+    {
+      "drug_name": "Spironolactone",
+      "section": "Key caution",
+      "content": "Monitor potassium and renal values, especially with ACE inhibitors or renal compromise."
+    },
+    {
+      "drug_name": "Tetracaine",
+      "section": "Exotics overview",
+      "content": "Topical ocular local anaesthetic for single diagnostic use only."
+    },
+    {
+      "drug_name": "Tetracaine",
+      "section": "Key caution",
+      "content": "Do not use therapeutically; topical anaesthetics delay corneal epithelial healing."
+    },
+    {
+      "drug_name": "Theophylline",
+      "section": "Exotics overview",
+      "content": "Methylxanthine bronchodilator with a low therapeutic index used for selected airway disease cases."
+    },
+    {
+      "drug_name": "Theophylline",
+      "section": "Key caution",
+      "content": "Low therapeutic index; arrhythmias, seizures and GI signs indicate possible toxicity."
+    },
+    {
+      "drug_name": "Thiamazole",
+      "section": "Exotics overview",
+      "content": "Antithyroid drug used for hyperthyroidism control in selected exotic patients."
+    },
+    {
+      "drug_name": "Thiamazole",
+      "section": "Key caution",
+      "content": "Do not use in pregnancy/lactation; monitor CBC, biochemistry, T4 and renal values."
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "section": "Exotics overview",
+      "content": "Buffered immersion anaesthetic for fish, also used at higher concentration for euthanasia protocols."
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "section": "Key caution",
+      "content": "Solutions must be buffered and tested in a small group before treating many fish."
+    },
+    {
+      "drug_name": "Vincristine",
+      "section": "Exotics overview",
+      "content": "Cytotoxic vinca alkaloid used in specialist lymphoma/oncology protocols."
+    },
+    {
+      "drug_name": "Vincristine",
+      "section": "Key caution",
+      "content": "Vesicant cytotoxic drug; extravasation can cause severe tissue injury."
+    },
+    {
+      "drug_name": "Xylazine",
+      "section": "Exotics overview",
+      "content": "Alpha-2 agonist sedative/analgesic largely superseded by medetomidine and dexmedetomidine because of cardiovascular effects."
+    },
+    {
+      "drug_name": "Xylazine",
+      "section": "Key caution",
+      "content": "Do not use in cardiovascular/systemic disease, pregnancy or diabetics; birds/reptiles no longer recommended."
+    }
+  ],
+  "warnings": [
+    {
+      "drug_name": "Aglepristone",
+      "warning_type": "Clinical caution",
+      "warning_text": "People who are or may become pregnant should not handle it; use caution in diabetes or suspected hypoadrenocorticism.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Asparaginase",
+      "warning_type": "Clinical caution",
+      "warning_text": "Cytotoxic handling precautions apply and anaphylaxis risk increases with repeated doses.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "warning_type": "Clinical caution",
+      "warning_text": "People who are or may become pregnant and asthmatics should avoid handling; uterine rupture is a concern.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid or use caution in urinary retention, glaucoma and hyperthyroidism; sedation can combine with other CNS depressants.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Finasteride",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use in breeding ferrets; human pregnancy handling precautions are important.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydralazine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Can cause severe hypotension and reflex tachycardia, so hospital monitoring is recommended.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid renal impairment and monitor electrolytes because hypokalaemia and volume contraction can develop.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "warning_type": "Clinical caution",
+      "warning_text": "May cause sedation and reduce seizure threshold; use only after investigating underlying pruritus/behaviour causes.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Latanoprost",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid in uveitis and anterior lens luxation; ocular irritation and miosis can occur.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use in animals suspected of heartworm disease or under 0.5 kg.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "warning_type": "Clinical caution",
+      "warning_text": "Only kills adult fleas present at dosing; environmental and household control remain essential.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Prazosin",
+      "warning_type": "Clinical caution",
+      "warning_text": "First-dose hypotension and syncope can occur, especially with diuretics or beta-blockers.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Prednisolone",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid in pregnancy, diabetes, renal disease and ulcerative keratitis; rabbits are particularly steroid-sensitive.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Proligestone",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid diabetic animals and do not use in birds; long-term progestagen effects can be significant.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Propentofylline",
+      "warning_type": "Clinical caution",
+      "warning_text": "May increase myocardial oxygen demand; evidence is limited and mostly anecdotal in birds.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Rifampicin",
+      "warning_type": "Clinical caution",
+      "warning_text": "EMA Avoid category; use only in combination and avoid pregnancy or liver disease.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Sotalol",
+      "warning_type": "Clinical caution",
+      "warning_text": "Avoid bradyarrhythmia and decompensated heart failure; ECG/heart-rate monitoring is important.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Spironolactone",
+      "warning_type": "Clinical caution",
+      "warning_text": "Monitor potassium and renal values, especially with ACE inhibitors or renal compromise.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tetracaine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use therapeutically; topical anaesthetics delay corneal epithelial healing.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Theophylline",
+      "warning_type": "Clinical caution",
+      "warning_text": "Low therapeutic index; arrhythmias, seizures and GI signs indicate possible toxicity.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Thiamazole",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use in pregnancy/lactation; monitor CBC, biochemistry, T4 and renal values.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "warning_type": "Clinical caution",
+      "warning_text": "Solutions must be buffered and tested in a small group before treating many fish.",
+      "species": "All",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Vincristine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Vesicant cytotoxic drug; extravasation can cause severe tissue injury.",
+      "species": "All",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Xylazine",
+      "warning_type": "Clinical caution",
+      "warning_text": "Do not use in cardiovascular/systemic disease, pregnancy or diabetics; birds/reptiles no longer recommended.",
+      "species": "All",
+      "severity": "High"
+    }
+  ],
+  "contraindications": [
+    {
+      "drug_name": "Aglepristone",
+      "species": "All",
+      "contraindication": "Diagnosed/suspected hypoadrenocorticism or diabetes mellitus should trigger avoidance or strong caution.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Asparaginase",
+      "species": "All",
+      "contraindication": "Active pancreatitis, history of pancreatitis or previous asparaginase-associated anaphylaxis.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "species": "Bird",
+      "contraindication": "Use without ability to monitor or where reproductive tract rupture risk is unacceptable.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "species": "All",
+      "contraindication": "Urinary retention, glaucoma or hyperthyroidism.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Finasteride",
+      "species": "Ferret",
+      "contraindication": "Breeding ferrets.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Hydralazine",
+      "species": "All",
+      "contraindication": "Hypovolaemia, hypotension, renal impairment or cerebral bleeding.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "species": "All",
+      "contraindication": "Renal impairment or uncontrolled electrolyte disturbance.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Latanoprost",
+      "species": "All",
+      "contraindication": "Uveitis or anterior lens luxation.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "species": "All",
+      "contraindication": "Suspected heartworm disease or bodyweight below 0.5 kg.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Prazosin",
+      "species": "All",
+      "contraindication": "Hypotension or renal failure.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Prednisolone",
+      "species": "All",
+      "contraindication": "Pregnancy, diabetes mellitus, significant renal disease or ulcerative keratitis for topical ocular use.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Proligestone",
+      "species": "Bird",
+      "contraindication": "Do not use in birds.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Rifampicin",
+      "species": "All",
+      "contraindication": "Pregnancy or liver disease.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Sotalol",
+      "species": "All",
+      "contraindication": "Bradyarrhythmias or acute/decompensated congestive heart failure.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Tetracaine",
+      "species": "All",
+      "contraindication": "Therapeutic/repeated use on the cornea.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Theophylline",
+      "species": "All",
+      "contraindication": "Known arrhythmias or seizures.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Thiamazole",
+      "species": "All",
+      "contraindication": "Pregnancy or lactation.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    },
+    {
+      "drug_name": "Xylazine",
+      "species": "All",
+      "contraindication": "Cardiovascular/systemic disease, pregnancy, diabetes or situations where vomiting is contraindicated.",
+      "severity": "High",
+      "notes": "Batch 15 cleanup contraindication."
+    }
+  ],
+  "adverse_effects": [
+    {
+      "drug_name": "Aglepristone",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. People who are or may become pregnant should not handle it; use caution in diabetes or suspected hypoadrenocorticism.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Asparaginase",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Cytotoxic handling precautions apply and anaphylaxis risk increases with repeated doses.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. People who are or may become pregnant and asthmatics should avoid handling; uterine rupture is a concern.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid or use caution in urinary retention, glaucoma and hyperthyroidism; sedation can combine with other CNS depressants.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Finasteride",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Do not use in breeding ferrets; human pregnancy handling precautions are important.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydralazine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Can cause severe hypotension and reflex tachycardia, so hospital monitoring is recommended.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid renal impairment and monitor electrolytes because hypokalaemia and volume contraction can develop.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. May cause sedation and reduce seizure threshold; use only after investigating underlying pruritus/behaviour causes.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Latanoprost",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid in uveitis and anterior lens luxation; ocular irritation and miosis can occur.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Do not use in animals suspected of heartworm disease or under 0.5 kg.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Only kills adult fleas present at dosing; environmental and household control remain essential.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Prazosin",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. First-dose hypotension and syncope can occur, especially with diuretics or beta-blockers.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Prednisolone",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid in pregnancy, diabetes, renal disease and ulcerative keratitis; rabbits are particularly steroid-sensitive.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Proligestone",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid diabetic animals and do not use in birds; long-term progestagen effects can be significant.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Propentofylline",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. May increase myocardial oxygen demand; evidence is limited and mostly anecdotal in birds.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Rifampicin",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. EMA Avoid category; use only in combination and avoid pregnancy or liver disease.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Sotalol",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Avoid bradyarrhythmia and decompensated heart failure; ECG/heart-rate monitoring is important.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Spironolactone",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Monitor potassium and renal values, especially with ACE inhibitors or renal compromise.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tetracaine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Do not use therapeutically; topical anaesthetics delay corneal epithelial healing.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Theophylline",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Low therapeutic index; arrhythmias, seizures and GI signs indicate possible toxicity.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Thiamazole",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Do not use in pregnancy/lactation; monitor CBC, biochemistry, T4 and renal values.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Solutions must be buffered and tested in a small group before treating many fish.",
+      "frequency": "Species/condition dependent",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Vincristine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Vesicant cytotoxic drug; extravasation can cause severe tissue injury.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Xylazine",
+      "effect": "Toxicity or intolerance may occur; use the specific species, route and monitoring notes for this drug. Do not use in cardiovascular/systemic disease, pregnancy or diabetics; birds/reptiles no longer recommended.",
+      "frequency": "Species/condition dependent",
+      "severity": "High"
+    }
+  ],
+  "monitoring": [
+    {
+      "drug_name": "Aglepristone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Asparaginase",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Finasteride",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Hydralazine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: cardiorespiratory and ECG/rhythm monitoring"
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Latanoprost",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Prazosin",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Prednisolone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Proligestone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Propentofylline",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Rifampicin",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Sotalol",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: cardiorespiratory and ECG/rhythm monitoring"
+    },
+    {
+      "drug_name": "Spironolactone",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: cardiorespiratory and ECG/rhythm monitoring"
+    },
+    {
+      "drug_name": "Tetracaine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Theophylline",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: cardiorespiratory and ECG/rhythm monitoring"
+    },
+    {
+      "drug_name": "Thiamazole",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Vincristine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: dose accuracy and reassessment"
+    },
+    {
+      "drug_name": "Xylazine",
+      "monitoring_parameter": "Clinical response, adverse effects and species-specific safety parameters",
+      "monitoring_frequency": "Baseline and during treatment",
+      "notes": "Extra focus: cardiorespiratory and ECG/rhythm monitoring"
+    }
+  ],
+  "pearls": [
+    {
+      "drug_name": "Aglepristone",
+      "pearl": "Aglepristone: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Asparaginase",
+      "pearl": "Asparaginase: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "pearl": "Dinoprostone: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Diphenhydramine",
+      "pearl": "Diphenhydramine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Finasteride",
+      "pearl": "Finasteride: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Hydralazine",
+      "pearl": "Hydralazine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Hydrochlorothiazide",
+      "pearl": "Hydrochlorothiazide: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Hydroxyzine",
+      "pearl": "Hydroxyzine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Latanoprost",
+      "pearl": "Latanoprost: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "pearl": "Milbemycin oxime: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Nitenpyram",
+      "pearl": "Nitenpyram: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Prazosin",
+      "pearl": "Prazosin: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Prednisolone",
+      "pearl": "Prednisolone: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Proligestone",
+      "pearl": "Proligestone: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Propentofylline",
+      "pearl": "Propentofylline: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Rifampicin",
+      "pearl": "Rifampicin: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Sotalol",
+      "pearl": "Sotalol: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Spironolactone",
+      "pearl": "Spironolactone: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Tetracaine",
+      "pearl": "Tetracaine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Theophylline",
+      "pearl": "Theophylline: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Thiamazole",
+      "pearl": "Thiamazole: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "pearl": "Tricaine methanesulfonate: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Vincristine",
+      "pearl": "Vincristine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    },
+    {
+      "drug_name": "Xylazine",
+      "pearl": "Xylazine: useful in the right exotic case, but only after the species warning and route are checked. The tiny-patient maths is where gremlins hide."
+    }
+  ],
+  "species_warnings": [
+    {
+      "drug_name": "Prednisolone",
+      "species": "Rabbit",
+      "warning": "Rabbits are highly sensitive to corticosteroids, including topical preparations.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Prednisolone",
+      "species": "Bird",
+      "warning": "Exclude infectious causes such as aspergillosis or chlamydiosis before steroid use.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Proligestone",
+      "species": "Bird",
+      "warning": "Do not use in birds.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Xylazine",
+      "species": "Bird/Reptile",
+      "warning": "No longer recommended because safer alpha-2 options are available.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Tetracaine",
+      "species": "All",
+      "warning": "Topical ocular anaesthetics delay corneal healing and should not be used therapeutically.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Rifampicin",
+      "species": "All",
+      "warning": "Use only in combination protocols; resistance emerges readily.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Theophylline",
+      "species": "All",
+      "warning": "Low therapeutic index. Monitor for tremors, tachycardia, arrhythmias and seizures.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Vincristine",
+      "species": "All",
+      "warning": "Cytotoxic vesicant. Secure IV access and chemotherapy handling precautions are essential.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Dinoprostone",
+      "species": "Bird",
+      "warning": "Use only with reproductive assessment; uterine/oviduct rupture is a concern.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Tricaine methanesulfonate",
+      "species": "Fish",
+      "warning": "Buffer solutions and test a small group before treating large numbers.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Latanoprost",
+      "species": "Rabbit",
+      "warning": "Avoid with uveitis or anterior lens luxation; monitor ocular comfort.",
+      "severity": "Moderate"
+    },
+    {
+      "drug_name": "Spironolactone",
+      "species": "Rabbit/Ferret",
+      "warning": "Monitor potassium and renal values if combined with ACE inhibitors.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Thiamazole",
+      "species": "Guinea Pig/Snake",
+      "warning": "Monitor haematology, liver/renal values and thyroid response.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Asparaginase",
+      "species": "Ferret/Bearded Dragon",
+      "warning": "Use as part of an oncology protocol with cytotoxic precautions.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Milbemycin oxime",
+      "species": "Ferret",
+      "warning": "Avoid animals suspected of heartworm disease and those under 0.5 kg.",
+      "severity": "High"
+    },
+    {
+      "drug_name": "Prazosin",
+      "species": "Ferret",
+      "warning": "First dose hypotension can occur; start with monitoring.",
+      "severity": "Moderate"
+    }
+  ],
+  "interactions": [
+    {
+      "drug_a": "Rifampicin",
+      "drug_b": "Itraconazole",
+      "severity": "High",
+      "mechanism": "Potent enzyme induction can reduce azole exposure.",
+      "recommendation": "Avoid or monitor response and adjust with specialist guidance.",
+      "interaction": "Avoid or monitor response and adjust with specialist guidance."
+    },
+    {
+      "drug_a": "Rifampicin",
+      "drug_b": "Phenobarbital",
+      "severity": "Moderate",
+      "mechanism": "Rifampicin may increase metabolism of barbiturates.",
+      "recommendation": "Monitor seizure control and drug levels where possible.",
+      "interaction": "Monitor seizure control and drug levels where possible."
+    },
+    {
+      "drug_a": "Theophylline",
+      "drug_b": "Enrofloxacin",
+      "severity": "High",
+      "mechanism": "Fluoroquinolones can increase theophylline concentrations.",
+      "recommendation": "Avoid if possible or monitor for toxicity.",
+      "interaction": "Avoid if possible or monitor for toxicity."
+    },
+    {
+      "drug_a": "Theophylline",
+      "drug_b": "Cimetidine",
+      "severity": "Moderate",
+      "mechanism": "Cimetidine may increase theophylline concentrations.",
+      "recommendation": "Monitor closely or choose alternatives.",
+      "interaction": "Monitor closely or choose alternatives."
+    },
+    {
+      "drug_a": "Theophylline",
+      "drug_b": "Ketamine",
+      "severity": "High",
+      "mechanism": "Combination may increase seizure risk.",
+      "recommendation": "Use caution, especially in seizure-prone patients.",
+      "interaction": "Use caution, especially in seizure-prone patients."
+    },
+    {
+      "drug_a": "Sotalol",
+      "drug_b": "Calcium channel blockers",
+      "severity": "High",
+      "mechanism": "Additive negative chronotropy and AV conduction effects.",
+      "recommendation": "Avoid or monitor ECG/heart rate closely.",
+      "interaction": "Avoid or monitor ECG/heart rate closely."
+    },
+    {
+      "drug_a": "Spironolactone",
+      "drug_b": "ACE inhibitors",
+      "severity": "Moderate",
+      "mechanism": "Combined therapy may increase potassium and renal risk.",
+      "recommendation": "Monitor potassium and renal values.",
+      "interaction": "Monitor potassium and renal values."
+    },
+    {
+      "drug_a": "Hydrochlorothiazide",
+      "drug_b": "Furosemide",
+      "severity": "High",
+      "mechanism": "Additive diuresis and hypokalaemia risk.",
+      "recommendation": "Use only with electrolyte/renal monitoring.",
+      "interaction": "Use only with electrolyte/renal monitoring."
+    },
+    {
+      "drug_a": "Hydrochlorothiazide",
+      "drug_b": "Digoxin",
+      "severity": "High",
+      "mechanism": "Thiazide-induced hypokalaemia can increase digoxin toxicity.",
+      "recommendation": "Monitor potassium and digoxin toxicity signs.",
+      "interaction": "Monitor potassium and digoxin toxicity signs."
+    },
+    {
+      "drug_a": "Prednisolone",
+      "drug_b": "NSAIDs",
+      "severity": "High",
+      "mechanism": "Additive GI ulceration and renal/perfusion risk.",
+      "recommendation": "Avoid combination unless strongly justified.",
+      "interaction": "Avoid combination unless strongly justified."
+    },
+    {
+      "drug_a": "Prednisolone",
+      "drug_b": "Insulin",
+      "severity": "Moderate",
+      "mechanism": "Glucocorticoids can antagonize insulin effects.",
+      "recommendation": "Monitor diabetic patients closely.",
+      "interaction": "Monitor diabetic patients closely."
+    },
+    {
+      "drug_a": "Vincristine",
+      "drug_b": "Asparaginase",
+      "severity": "High",
+      "mechanism": "Asparaginase can reduce vincristine clearance if sequencing is wrong.",
+      "recommendation": "Give vincristine 12-24h before asparaginase when used together.",
+      "interaction": "Give vincristine 12-24h before asparaginase when used together."
+    },
+    {
+      "drug_a": "Vincristine",
+      "drug_b": "Azole antifungals",
+      "severity": "High",
+      "mechanism": "CYP inhibition may increase vincristine exposure.",
+      "recommendation": "Avoid or use oncology specialist guidance.",
+      "interaction": "Avoid or use oncology specialist guidance."
+    },
+    {
+      "drug_a": "Diphenhydramine",
+      "drug_b": "Benzodiazepines",
+      "severity": "Moderate",
+      "mechanism": "Additive sedation.",
+      "recommendation": "Use reduced sedative dosing and monitor.",
+      "interaction": "Use reduced sedative dosing and monitor."
+    },
+    {
+      "drug_a": "Prazosin",
+      "drug_b": "Furosemide",
+      "severity": "Moderate",
+      "mechanism": "Increased first-dose hypotension risk.",
+      "recommendation": "Monitor blood pressure and perfusion.",
+      "interaction": "Monitor blood pressure and perfusion."
+    },
+    {
+      "drug_a": "Latanoprost",
+      "drug_b": "Thiomersal-containing eye preparations",
+      "severity": "Moderate",
+      "mechanism": "Incompatibility/irritation concern.",
+      "recommendation": "Avoid concurrent topical use.",
+      "interaction": "Avoid concurrent topical use."
+    },
+    {
+      "drug_a": "Tetracaine",
+      "drug_b": "Schirmer tear testing",
+      "severity": "Moderate",
+      "mechanism": "Topical anaesthetics block reflex tearing.",
+      "recommendation": "Perform Schirmer testing before anaesthetic application.",
+      "interaction": "Perform Schirmer testing before anaesthetic application."
+    },
+    {
+      "drug_a": "Xylazine",
+      "drug_b": "Sympathomimetics",
+      "severity": "High",
+      "mechanism": "Alpha-2 effects and myocardial sensitization increase cardiovascular risk.",
+      "recommendation": "Avoid combination where possible.",
+      "interaction": "Avoid combination where possible."
+    },
+    {
+      "drug_a": "Thiamazole",
+      "drug_b": "Phenobarbital",
+      "severity": "Moderate",
+      "mechanism": "Phenobarbital may reduce antithyroid clinical effect.",
+      "recommendation": "Monitor thyroid response.",
+      "interaction": "Monitor thyroid response."
+    },
+    {
+      "drug_a": "Thiamazole",
+      "drug_b": "Benzimidazoles",
+      "severity": "Moderate",
+      "mechanism": "Reduced hepatic oxidation may increase thiamazole concentrations.",
+      "recommendation": "Monitor adverse effects.",
+      "interaction": "Monitor adverse effects."
+    },
+    {
+      "drug_a": "Milbemycin oxime",
+      "drug_b": "Ciclosporin",
+      "severity": "High",
+      "mechanism": "P-glycoprotein effects may increase macrocyclic lactone CNS exposure.",
+      "recommendation": "Avoid or monitor carefully.",
+      "interaction": "Avoid or monitor carefully."
+    },
+    {
+      "drug_a": "Tricaine methanesulfonate",
+      "drug_b": "Unbuffered/acidic water",
+      "severity": "High",
+      "mechanism": "Acidic solutions increase stress and toxicity risk.",
+      "recommendation": "Buffer and monitor pH/water quality.",
+      "interaction": "Buffer and monitor pH/water quality."
+    }
+  ]
+}

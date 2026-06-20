@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { Activity, ArrowRightLeft, Droplets, Flame, Gauge, GlassWater, Pill, Syringe } from "lucide-react";
+import { Activity, ArrowRightLeft, Calculator, Droplets, Flame, Gauge, GlassWater, Pill, Syringe } from "lucide-react";
 import { ToolTileGrid } from "./VetLearnUI";
 
 const quickCalculatorOptions = [
+  { id: "drug", label: "Main Drug", fullLabel: "Main Drug Calculator", icon: Calculator },
   { id: "prednisolone", label: "Pred Taper", fullLabel: "Prednisolone Taper", icon: Pill },
   { id: "energy", label: "Energy", fullLabel: "Energy", icon: Flame },
   { id: "convert", label: "Units", fullLabel: "Unit Conversion", icon: ArrowRightLeft },
@@ -35,6 +36,15 @@ const prednisoloneTaperStages = [
   { label: "Then Give", min: 0.25, max: 0.5, frequency: "PO every other day for 14 days" }
 ];
 
+const drugCalculatorRows = [
+  { key: "meloxicam-dog-po", drug_name: "Meloxicam", species: "Dog", min_dose: 0.1, max_dose: 0.2, dose_unit: "mg/kg", route: "PO", concentration: 1.5, concentration_unit: "mg/ml", notes: "Use current formulary guidance for duration and patient risk factors." },
+  { key: "meloxicam-cat-po", drug_name: "Meloxicam", species: "Cat", min_dose: 0.05, max_dose: 0.05, dose_unit: "mg/kg", route: "PO", concentration: 0.5, concentration_unit: "mg/ml", notes: "Use with caution and current local guidance." },
+  { key: "methadone-dog-iv-im", drug_name: "Methadone", species: "Dog", min_dose: 0.2, max_dose: 0.4, dose_unit: "mg/kg", route: "IV/IM", concentration: 10, concentration_unit: "mg/ml", notes: "Monitor sedation and respiratory status." },
+  { key: "buprenorphine-cat-iv-im-buccal", drug_name: "Buprenorphine", species: "Cat", min_dose: 0.01, max_dose: 0.02, dose_unit: "mg/kg", route: "IV/IM/Buccal", concentration: 0.3, concentration_unit: "mg/ml", notes: "Dose route and formulation dependent." }
+];
+
+const drugCalculatorSpecies = [...new Set(drugCalculatorRows.map((row) => row.species))];
+
 const panelClass = (darkMode) =>
   darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -57,11 +67,15 @@ const formatNumber = (value, decimals = 2) => {
 
 const gramsToKg = (grams) => toNumber(grams) / 1000;
 
-const activeOptionFor = (id) => quickCalculatorOptions.find((item) => item.id === id) || quickCalculatorOptions[0];
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const normaliseCalculatorId = (id) => id === "basic" ? "drug" : id;
+
+const activeOptionFor = (id) => quickCalculatorOptions.find((item) => item.id === normaliseCalculatorId(id)) || quickCalculatorOptions[0];
 
 const initialCalculator = (storageKey, fallback) => {
   if (!storageKey || typeof window === "undefined") return fallback;
-  const stored = window.localStorage.getItem(storageKey);
+  const stored = normaliseCalculatorId(window.localStorage.getItem(storageKey));
   return quickCalculatorOptions.some((item) => item.id === stored) ? stored : fallback;
 };
 
@@ -69,7 +83,7 @@ export function QuickCalculatorPanel({
   darkMode = false,
   compact = false,
   storageKey = "",
-  defaultCalculator = "prednisolone",
+  defaultCalculator = "drug",
   className = ""
 }) {
   const resultRef = useRef(null);
@@ -156,16 +170,86 @@ export function QuickCalculatorPanel({
 }
 
 function QuickCalculatorBody({ active, darkMode, compact = false }) {
+  const activeCalculator = normaliseCalculatorId(active);
   return (
     <>
-      {active === "prednisolone" && <PrednisoloneTaperCalculator darkMode={darkMode} compact={compact} />}
-      {active === "energy" && <EnergyCalculator darkMode={darkMode} />}
-      {active === "convert" && <UnitConversion darkMode={darkMode} />}
-      {active === "dextrose" && <DextroseCalculator darkMode={darkMode} />}
-      {active === "potassium" && <PotassiumCalculator darkMode={darkMode} />}
-      {active === "sodium" && <SodiumCalculator darkMode={darkMode} />}
-      {active === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
+      {activeCalculator === "drug" && <MainDrugCalculator darkMode={darkMode} />}
+      {activeCalculator === "prednisolone" && <PrednisoloneTaperCalculator darkMode={darkMode} compact={compact} />}
+      {activeCalculator === "energy" && <EnergyCalculator darkMode={darkMode} />}
+      {activeCalculator === "convert" && <UnitConversion darkMode={darkMode} />}
+      {activeCalculator === "dextrose" && <DextroseCalculator darkMode={darkMode} />}
+      {activeCalculator === "potassium" && <PotassiumCalculator darkMode={darkMode} />}
+      {activeCalculator === "sodium" && <SodiumCalculator darkMode={darkMode} />}
+      {activeCalculator === "osmolality" && <OsmolalityCalculator darkMode={darkMode} />}
     </>
+  );
+}
+
+function MainDrugCalculator({ darkMode }) {
+  const [species, setSpecies] = useState("Dog");
+  const [selectedKey, setSelectedKey] = useState("meloxicam-dog-po");
+  const [weightKg, setWeightKg] = useState("");
+  const [dose, setDose] = useState("");
+  const speciesRows = drugCalculatorRows.filter((row) => row.species === species);
+  const selected = speciesRows.find((row) => row.key === selectedKey) || speciesRows[0];
+  const minDose = toNumber(selected?.min_dose);
+  const maxDose = Math.max(toNumber(selected?.max_dose, minDose), minDose || 1);
+  const doseValue = selected ? clamp(toNumber(dose || minDose, minDose), minDose, maxDose) : 0;
+  const weightValue = toNumber(weightKg);
+  const totalDose = weightValue * doseValue;
+  const volume = selected?.concentration ? totalDose / toNumber(selected.concentration) : null;
+
+  const changeSpecies = (nextSpecies) => {
+    const nextRow = drugCalculatorRows.find((row) => row.species === nextSpecies);
+    setSpecies(nextSpecies);
+    setSelectedKey(nextRow?.key || "");
+    setDose(nextRow ? String(nextRow.min_dose) : "");
+  };
+
+  const changeDrug = (nextKey) => {
+    const nextRow = drugCalculatorRows.find((row) => row.key === nextKey);
+    setSelectedKey(nextKey);
+    setDose(nextRow ? String(nextRow.min_dose) : "");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <select className={fieldClass(darkMode)} value={species} onChange={(event) => changeSpecies(event.target.value)}>
+          {drugCalculatorSpecies.map((option) => <option key={option}>{option}</option>)}
+        </select>
+        <label className="relative">
+          <input className={`${fieldClass(darkMode)} pr-10 text-center`} type="number" inputMode="decimal" placeholder="Weight" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} />
+          <span className="absolute right-3 top-3 text-sm font-black opacity-60">kg</span>
+        </label>
+      </div>
+
+      <select className={fieldClass(darkMode)} value={selected?.key || ""} onChange={(event) => changeDrug(event.target.value)}>
+        {speciesRows.map((row) => <option key={row.key} value={row.key}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
+      </select>
+
+      {selected && (
+        <>
+          <div className="space-y-2">
+            <div className="flex justify-between gap-3 text-xs font-black uppercase tracking-widest opacity-55">
+              <span>Dose rate</span>
+              <span>{selected.dose_unit || "mg/kg"}</span>
+            </div>
+            <div className="grid grid-cols-[1fr_96px] gap-3 items-center">
+              <input type="range" min={minDose} max={maxDose} step="0.01" value={doseValue} onChange={(event) => setDose(event.target.value)} className="accent-[#71CFC2]" />
+              <input className={`${fieldClass(darkMode)} text-center`} type="number" step="0.01" value={dose || minDose} onChange={(event) => setDose(event.target.value)} />
+            </div>
+            <p className="text-xs opacity-55">Range: {formatNumber(minDose)} - {formatNumber(maxDose)} {selected.dose_unit || "mg/kg"}</p>
+          </div>
+
+          <ResultGrid items={[
+            ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}`],
+            ["Give", volume ? `${formatNumber(volume)} ml` : "No concentration"]
+          ]} />
+          <p className="text-xs leading-5 opacity-60">{selected.drug_name} | {selected.species} | {selected.route} | {selected.concentration} {selected.concentration_unit}</p>
+        </>
+      )}
+    </div>
   );
 }
 
