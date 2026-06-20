@@ -4,6 +4,7 @@
   const MAILBOX_TOOLS_ID = "vetlearn-admin-mailbox-tools";
   const SELECT_CLASS = "vetlearn-admin-message-type-select";
   const CHIP_CLASS = "vetlearn-mailbox-type-chip";
+  const HISTORY_CARD_CLASS = "vetlearn-admin-message-history-card";
 
   const TYPES = [
     { id: "app_support", label: "App support", short: "Support", keywords: ["app", "support", "help", "issue", "problem", "not working", "screen", "page"] },
@@ -237,6 +238,17 @@
         text-transform: uppercase;
         opacity: 0.62;
       }
+      .${HISTORY_CARD_CLASS} {
+        cursor: pointer;
+        scroll-margin-top: 6rem;
+      }
+      .${HISTORY_CARD_CLASS}:focus {
+        outline: 3px solid rgba(113, 207, 194, 0.7);
+        outline-offset: 3px;
+      }
+      .${HISTORY_CARD_CLASS}[data-vetlearn-history-highlight="true"] {
+        box-shadow: 0 0 0 3px rgba(113, 207, 194, 0.85), 0 18px 36px rgba(11, 55, 96, 0.18);
+      }
       [data-vetlearn-mailbox-hidden="true"] { display: none !important; }
     `;
     document.head.appendChild(style);
@@ -378,13 +390,18 @@
   };
 
   const findAdminDashboardComposers = () => {
-    return [...document.querySelectorAll('textarea[placeholder="Write as Admin..."], textarea[placeholder="Reply as Admin..."]')]
+    const adminAnnouncementTextarea = [...document.querySelectorAll('textarea[placeholder="Message"]')]
+      .filter(textarea => [...document.querySelectorAll("h2")].some(heading => normalise(heading.textContent) === "admin messaging centre" && heading.closest("section")?.contains(textarea)))
+      .map(textarea => ({ textarea, host: textarea.parentElement, storageKey: "admin_announcement" }));
+
+    const supportTextareas = [...document.querySelectorAll('textarea[placeholder="Write as Admin..."], textarea[placeholder="Reply as Admin..."]')]
       .map(textarea => ({
         textarea,
         host: textarea.parentElement,
         storageKey: textarea.placeholder.includes("Reply") ? "admin_reply" : "admin_compose"
-      }))
-      .filter(item => item.host);
+      }));
+
+    return [...adminAnnouncementTextarea, ...supportTextareas].filter(item => item.host);
   };
 
   const addTypeSelector = ({ textarea, host, storageKey }) => {
@@ -394,7 +411,7 @@
     const wrapper = document.createElement("div");
     wrapper.className = "vetlearn-admin-type-field";
     wrapper.innerHTML = `
-      <label>Admin email type</label>
+      <label>Admin message type</label>
       <select class="${SELECT_CLASS}" data-storage-key="${storageKey}">
         ${TYPES.map(type => `<option value="${type.id}">${type.label}</option>`).join("")}
       </select>
@@ -428,25 +445,90 @@
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
+  const prefixAdminAnnouncementTitle = (button) => {
+    const section = button.closest("section");
+    const heading = section?.querySelector("h2");
+    if (normalise(heading?.textContent) !== "admin messaging centre") return;
+    const select = section.querySelector(`.${SELECT_CLASS}`);
+    const titleInput = section.querySelector('input[placeholder="Announcement title"]');
+    if (!select || !titleInput) return;
+    const type = byId(select.value);
+    const raw = String(titleInput.value || "");
+    const withoutOldPrefix = raw.replace(/^\s*\[[^\]]+\]\s*/, "");
+    const nextValue = withoutOldPrefix.trim() ? `[${type.label}] ${withoutOldPrefix}` : `[${type.label}]`;
+    if (nextValue === raw) return;
+    titleInput.value = nextValue;
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
   const maybePrefixOnAction = (event) => {
     const button = event.target?.closest?.("button");
     if (!button) return;
     const label = normalise(button.textContent);
     if (!label.includes("send") && !label.includes("reply")) return;
 
+    prefixAdminAnnouncementTitle(button);
+
     const area = button.closest("form")?.querySelector("textarea")
       || button.parentElement?.parentElement?.querySelector("textarea")
-      || button.closest("section")?.querySelector('textarea[placeholder="Reply as Admin..."], textarea[placeholder="Write as Admin..."]');
+      || button.closest("section")?.querySelector('textarea[placeholder="Reply as Admin..."], textarea[placeholder="Write as Admin..."], textarea[placeholder="Message"]');
 
     if (area && (area.placeholder === "Type a message..." || area.placeholder === "Write as Admin..." || area.placeholder === "Reply as Admin...")) {
       prefixTextAreaWithType(area);
     }
   };
 
+  const getMessageHistorySection = () => {
+    return [...document.querySelectorAll("section")].find(section => {
+      const heading = section.querySelector("h2");
+      return normalise(heading?.textContent) === "message history";
+    }) || null;
+  };
+
+  const getHistoryCards = () => {
+    const section = getMessageHistorySection();
+    if (!section) return [];
+    return [...section.querySelectorAll("h3")]
+      .map(heading => heading.closest("div.rounded-lg"))
+      .filter(Boolean);
+  };
+
+  const highlightAndScrollToCard = (card) => {
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.dataset.vetlearnHistoryHighlight = "true";
+    card.focus?.({ preventScroll: true });
+    window.setTimeout(() => {
+      card.dataset.vetlearnHistoryHighlight = "false";
+    }, 1800);
+  };
+
+  const prepareAdminMessageHistory = () => {
+    ensureStyles();
+    getHistoryCards().forEach((card, index) => {
+      card.classList.add(HISTORY_CARD_CLASS);
+      card.tabIndex = 0;
+      card.dataset.vetlearnAdminMessageIndex = String(index + 1);
+      if (card.dataset.vetlearnHistoryReady === "true") return;
+      card.dataset.vetlearnHistoryReady = "true";
+      card.addEventListener("click", event => {
+        if (event.target?.closest?.("button")) return;
+        highlightAndScrollToCard(card);
+      });
+      card.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          highlightAndScrollToCard(card);
+        }
+      });
+    });
+  };
+
   const run = () => {
     injectAdminContact();
     applyMailboxFilters();
     ensureTypeSelectors();
+    prepareAdminMessageHistory();
   };
 
   const scheduleRun = () => window.requestAnimationFrame(run);
@@ -456,6 +538,8 @@
   document.addEventListener("submit", event => {
     const textarea = event.target?.querySelector?.("textarea");
     if (textarea) prefixTextAreaWithType(textarea);
+    const button = event.target?.querySelector?.('button[type="submit"], button');
+    if (button) prefixAdminAnnouncementTitle(button);
   }, true);
   document.addEventListener("click", () => window.setTimeout(run, 80), true);
   window.addEventListener("popstate", scheduleRun);
