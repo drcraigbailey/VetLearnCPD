@@ -1,5 +1,6 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { formatClinicalItemText, getClinicalItemBody } from "./clinicalItemText"
 import { saveOrSharePdf } from "./pdfFile"
 
 const logoImage = "/logo.png"
@@ -101,22 +102,12 @@ export const exportDrugHistory = async (history) => {
 const valueText = (value) => {
   if (value === null || value === undefined) return ""
   if (Array.isArray(value)) return value.map(valueText).filter(Boolean).join(", ")
-  if (typeof value === "object") {
-    return value.description || value.details || value.text || value.content || value.notes ||
-      value.interaction || value.mechanism || value.recommendation || value.pearl ||
-      value.summary || value.warning || value.contraindication || value.parameter || ""
-  }
+  if (typeof value === "object") return getClinicalItemBody(value)
   return String(value).trim()
 }
 
 const listText = (items) => (items || [])
-  .map((item) => {
-    const title = item.title || item.section || item.warning || item.contraindication ||
-      item.parameter || item.drug_b || item.interacting_drug || item.name || item.species
-    const body = valueText(item)
-    const severity = item.severity ? `Severity: ${item.severity}` : ""
-    return [title && title !== body ? title : "", body, severity].filter(Boolean).join("\n")
-  })
+  .map(formatClinicalItemText)
   .filter(Boolean)
 
 const addFooter = (doc, pageWidth, pageHeight, muted) => {

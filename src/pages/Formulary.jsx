@@ -28,6 +28,7 @@ import AppPopup, { popupPresets } from "../components/AppPopup";
 import DrugShareModal from "../components/DrugShareModal";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import { supabase } from "../supabaseClient";
+import { getClinicalItemBody, getClinicalItemSeverity, getClinicalItemTitle } from "../utils/clinicalItemText";
 import { exportDrugHistory, generateDrugMonographPdf } from "../utils/drugsPdfExport";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
@@ -1306,13 +1307,14 @@ function ClinicalList({ items, fallback, darkMode }) {
 }
 
 function ClinicalItem({ item, darkMode }) {
-  const title = item.title || item.section || item.warning || item.contraindication || item.parameter || item.drug_b || item.interacting_drug || item.name;
-  const body = item.description || item.details || item.text || item.content || item.notes || item.interaction || item.mechanism || item.recommendation || item.pearl || item.summary;
+  const title = getClinicalItemTitle(item);
+  const body = getClinicalItemBody(item);
+  const severity = getClinicalItemSeverity(item);
   return (
     <div className={`rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5" : "border-[#DCEDEA] bg-white"}`}>
       {title && <div className="text-xs font-black uppercase tracking-widest opacity-55 mb-1">{title}</div>}
-      <div className="text-sm leading-6 opacity-80">{body || JSON.stringify(item)}</div>
-      {item.severity && <div className="text-[10px] font-black uppercase tracking-widest mt-2 text-amber-600">Severity: {item.severity}</div>}
+      {body ? <div className="text-sm leading-6 opacity-80">{body}</div> : !title && <div className="text-sm leading-6 opacity-55">Details not recorded.</div>}
+      {severity && <div className="text-[10px] font-black uppercase tracking-widest mt-2 text-amber-600">Severity: {severity}</div>}
     </div>
   );
 }

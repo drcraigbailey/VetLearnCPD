@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BriefcaseMedical, Calculator, ChevronDown, ChevronUp, ClipboardList, Eye, EyeOff, FileText, Heart, KeyRound, MessageSquare, Settings, Star, Syringe, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
+import { QuickCalculatorPanel } from "../components/QuickCalculatorPanel";
 import { supabase } from "../supabaseClient";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
-const defaultSections = ["profile", "quickActions", "favourites", "activity", "recent"];
+const defaultSections = ["profile", "quickActions", "calculatorWidget", "favourites", "activity", "recent"];
 
 const quickActions = [
   { title: "Clinical Protocols", path: "/protocols", type: "page", icon: ClipboardList, feature: featureKeys.clinicalProtocols },
@@ -34,12 +35,8 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
     : "bg-white/90 border border-[#DCEDEA] rounded-lg p-5 shadow-[0_14px_35px_rgba(11,55,96,0.07)]";
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async () => {
     if (!user) return;
-    loadDashboard();
-  }, [user]);
-
-  const loadDashboard = async () => {
     setLoading(true);
     const [favRes, recentRes, prefRes, protocolsRes, cpdRes, casesRes] = await Promise.all([
       supabase.from("dashboard_favourites").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
@@ -53,8 +50,8 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
     if (!favRes.error) setFavourites(favRes.data || []);
     if (!recentRes.error) setRecentItems(recentRes.data || []);
     if (!prefRes.error && prefRes.data?.dashboard_config) {
-      setSectionOrder(prefRes.data.dashboard_config.sectionOrder || defaultSections);
-      setHiddenSections(prefRes.data.dashboard_config.hiddenSections || []);
+      setSectionOrder(normaliseSectionOrder(prefRes.data.dashboard_config.sectionOrder));
+      setHiddenSections(cleanSectionList(prefRes.data.dashboard_config.hiddenSections));
     }
     setActivity({
       protocols: protocolsRes.error ? [] : protocolsRes.data || [],
@@ -62,7 +59,12 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
       cases: casesRes.error ? [] : casesRes.data || []
     });
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(loadDashboard, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadDashboard]);
 
   const isFavourite = (path) => favourites.some(item => item.url === path && item.type === "page");
 
@@ -99,9 +101,11 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
   };
 
   const saveLayout = async () => {
+    const cleanOrder = normaliseSectionOrder(sectionOrder).filter(section => availableSections.includes(section));
+    const cleanHidden = cleanSectionList(hiddenSections).filter(section => availableSections.includes(section));
     const { error } = await supabase.from("user_preferences").upsert({
       user_id: user.id,
-      dashboard_config: { sectionOrder, hiddenSections },
+      dashboard_config: { sectionOrder: cleanOrder, hiddenSections: cleanHidden },
       updated_at: new Date().toISOString()
     }, { onConflict: "user_id" });
     if (error) {
@@ -117,7 +121,11 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
   };
 
   const profileInitial = (profile?.full_name || user?.email || "V").charAt(0).toUpperCase();
-  const orderedVisibleSections = useMemo(() => sectionOrder.filter(section => !hiddenSections.includes(section)), [hiddenSections, sectionOrder]);
+  const availableSections = defaultSections.filter(section => section !== "calculatorWidget" || (
+    canUseFeature(featureAccess, featureKeys.clinicalTools, adminAccess)
+    && canUseFeature(featureAccess, featureKeys.additionalCalculators, adminAccess)
+  ));
+  const orderedVisibleSections = normaliseSectionOrder(sectionOrder).filter(section => availableSections.includes(section) && !hiddenSections.includes(section));
   const visibleQuickActions = useMemo(
     () => quickActions.filter(action => canUseFeature(featureAccess, action.feature, adminAccess)),
     [featureAccess, adminAccess]
@@ -187,6 +195,17 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
       );
     }
 
+    if (section === "calculatorWidget") {
+      return (
+        <QuickCalculatorPanel
+          key={section}
+          darkMode={darkMode}
+          compact
+          storageKey="vetlearn-dashboard-calculator-widget"
+        />
+      );
+    }
+
     if (section === "activity") {
       return (
         <section className={panelClass} key={section}>
@@ -238,7 +257,7 @@ export default function HomeDashboard({ user, profile, darkMode, unreadMessageCo
         </div>
         {layoutOpen && (
           <div className="space-y-2">
-            {defaultSections.map(section => (
+            {availableSections.map(section => (
               <div key={section} className={`flex items-center justify-between gap-2 rounded-lg p-3 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>
                 <button onClick={() => toggleSection(section)} className="flex items-center gap-2 text-sm font-bold">
                   {hiddenSections.includes(section) ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -283,11 +302,24 @@ function sectionLabel(section) {
   const labels = {
     profile: "Profile",
     quickActions: "Quick actions",
+    calculatorWidget: "Calculator widget",
     favourites: "Favourites",
     activity: "Activity",
     recent: "Recently viewed"
   };
   return labels[section] || section;
+}
+
+function cleanSectionList(sections) {
+  return Array.isArray(sections) ? sections.filter(section => defaultSections.includes(section)) : [];
+}
+
+function normaliseSectionOrder(sections) {
+  const clean = cleanSectionList(sections);
+  return [
+    ...clean,
+    ...defaultSections.filter(section => !clean.includes(section))
+  ];
 }
 
 function featureForFavourite(path = "") {
