@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Build output and dependencies
 node_modules
 dist
 dist-ssr
@@ -23,13 +24,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# Local environment, secrets, and generated files
 .vercel
 .env
 .env.local
-.npm-cachefirebase-service-account.json
-supabase/.temp/
-.npm-cache/
-firebase-service-account.json
 env
-.env
-.env.local
+.npm-cache/
+supabase/.temp/
+firebase-service-account.json
+.codex-remote-attachments/
