@@ -7,6 +7,7 @@ let settingsListenerUserId = null;
 let lastPushContext = null;
 const PUSH_NAVIGATION_KEY = "vetlearn-last-push-navigation-at";
 const PUSH_NAVIGATION_TTL_MS = 15000;
+const NORMAL_LAUNCH_REDIRECT_SEEN_KEY = "vetlearn-normal-launch-redirect-seen";
 
 const logPush = (...parts) => console.log("[VetLearn Push]", ...parts);
 
@@ -59,6 +60,7 @@ export const markPushNavigationIntent = () => {
   try {
     window.sessionStorage?.setItem(PUSH_NAVIGATION_KEY, timestamp);
     window.localStorage?.setItem(PUSH_NAVIGATION_KEY, timestamp);
+    window.sessionStorage?.setItem(NORMAL_LAUNCH_REDIRECT_SEEN_KEY, "1");
   } catch (error) {
     console.warn("Could not mark push navigation intent:", error?.message || error);
   }
@@ -69,7 +71,18 @@ export const hasRecentPushNavigationIntent = () => {
   try {
     const raw = window.sessionStorage?.getItem(PUSH_NAVIGATION_KEY) || window.localStorage?.getItem(PUSH_NAVIGATION_KEY);
     const timestamp = Number(raw || 0);
-    return Number.isFinite(timestamp) && Date.now() - timestamp < PUSH_NAVIGATION_TTL_MS;
+    const hasRecentPushIntent = Number.isFinite(timestamp) && Date.now() - timestamp < PUSH_NAVIGATION_TTL_MS;
+
+    if (hasRecentPushIntent) {
+      window.sessionStorage?.setItem(NORMAL_LAUNCH_REDIRECT_SEEN_KEY, "1");
+      return true;
+    }
+
+    // NativeLaunchHomeRedirect also uses this as a safety gate before sending the app home.
+    // Let the first cold launch redirect to Dashboard, then suppress later resume redirects.
+    if (window.sessionStorage?.getItem(NORMAL_LAUNCH_REDIRECT_SEEN_KEY) === "1") return true;
+    window.sessionStorage?.setItem(NORMAL_LAUNCH_REDIRECT_SEEN_KEY, "1");
+    return false;
   } catch {
     return false;
   }
