@@ -113,7 +113,8 @@
         background: rgba(255, 255, 255, 0.08);
         border-color: rgba(113, 207, 194, 0.5);
       }
-      .vetlearn-admin-message-avatar {
+      .vetlearn-admin-message-avatar,
+      .vetlearn-mailbox-avatar {
         height: 3rem;
         width: 3rem;
         border-radius: 999px;
@@ -123,6 +124,10 @@
         flex-shrink: 0;
         font-size: 1.125rem;
         font-weight: 900;
+        background: #E8F8F5;
+        color: #0B3760;
+      }
+      .vetlearn-admin-message-avatar {
         background: #71CFC2;
         color: #062F63;
       }
@@ -227,7 +232,8 @@
         color: #062F63;
       }
       .vetlearn-admin-type-field {
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.75rem;
+        width: 100%;
       }
       .vetlearn-admin-type-field label {
         display: block;
@@ -237,6 +243,34 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         opacity: 0.62;
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-layout-grid {
+        display: block !important;
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-thread-column {
+        display: grid !important;
+        gap: 1rem !important;
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-thread-card {
+        width: 100% !important;
+        min-height: 7.25rem;
+        border-radius: 1.5rem !important;
+        padding: 1.35rem 4.75rem 1.35rem 1.35rem !important;
+        box-shadow: 0 10px 28px rgba(11, 55, 96, 0.05);
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-thread-button {
+        display: grid !important;
+        grid-template-columns: 4rem minmax(0, 1fr);
+        align-items: center;
+        gap: 1rem;
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-thread-card h3 {
+        font-size: 1.2rem;
+        line-height: 1.55rem;
+      }
+      [data-vetlearn-mailbox-normal-layout="true"] .vetlearn-mailbox-detail-panel {
+        margin-top: 1rem;
+        border-radius: 1.5rem !important;
       }
       .${HISTORY_CARD_CLASS} {
         cursor: pointer;
@@ -288,6 +322,37 @@
   };
 
   const getCardType = (card) => inferType(card?.textContent || "");
+
+  const ensureCardAvatar = (card) => {
+    const button = card.querySelector("button.w-full");
+    if (!button || button.querySelector(".vetlearn-mailbox-avatar")) return;
+    const name = card.querySelector("h3")?.textContent || "?";
+    const avatar = document.createElement("span");
+    avatar.className = "vetlearn-mailbox-avatar";
+    avatar.textContent = name.trim().charAt(0).toUpperCase() || "?";
+    button.prepend(avatar);
+    button.classList.add("vetlearn-mailbox-thread-button");
+  };
+
+  const applyMailboxNormalLayout = () => {
+    const section = getMailboxSection();
+    if (!section) return;
+    section.dataset.vetlearnMailboxNormalLayout = "true";
+    const cards = getThreadCards(section);
+    cards.forEach(card => {
+      card.classList.add("vetlearn-mailbox-thread-card");
+      ensureCardAvatar(card);
+    });
+    const column = cards[0]?.parentElement;
+    if (column) column.classList.add("vetlearn-mailbox-thread-column");
+    const grid = column?.parentElement;
+    if (grid) {
+      grid.classList.add("vetlearn-mailbox-layout-grid");
+      [...grid.children].forEach(child => {
+        if (child !== column) child.classList.add("vetlearn-mailbox-detail-panel");
+      });
+    }
+  };
 
   const addTypeChip = (card) => {
     const type = getCardType(card);
@@ -342,6 +407,7 @@
     const section = getMailboxSection();
     if (!section) return;
     ensureStyles();
+    applyMailboxNormalLayout();
 
     const cards = getThreadCards(section);
     cards.forEach(addTypeChip);
@@ -383,20 +449,11 @@
   };
 
   const findAdminChatComposer = () => {
-    const hasAdminHeading = [...document.querySelectorAll("h3")].some(heading => normalise(heading.textContent) === "admin");
-    if (!hasAdminHeading) return null;
+    const adminRoute = new URLSearchParams(window.location.search).has("admin") || window.location.href.includes("admin=1");
+    const hasAdminHeading = [...document.querySelectorAll("h1, h2, h3")].some(heading => normalise(heading.textContent) === "admin");
+    if (!adminRoute && !hasAdminHeading) return null;
     const textarea = document.querySelector('textarea[placeholder="Type a message..."]');
     return textarea ? { textarea, host: textarea.closest("form") || textarea.parentElement, storageKey: "user_admin" } : null;
-  };
-
-  const findAdminDashboardComposers = () => {
-    return [...document.querySelectorAll('textarea[placeholder="Write as Admin..."], textarea[placeholder="Reply as Admin..."]')]
-      .map(textarea => ({
-        textarea,
-        host: textarea.parentElement,
-        storageKey: textarea.placeholder.includes("Reply") ? "admin_reply" : "admin_compose"
-      }))
-      .filter(item => item.host);
   };
 
   const addTypeSelector = ({ textarea, host, storageKey }) => {
@@ -406,12 +463,15 @@
     const wrapper = document.createElement("div");
     wrapper.className = "vetlearn-admin-type-field";
     wrapper.innerHTML = `
-      <label>${storageKey === "user_admin" ? "Message type" : "Admin mailbox type"}</label>
+      <label>Message type</label>
       <select class="${SELECT_CLASS}" data-storage-key="${storageKey}">
         ${TYPES.map(type => `<option value="${type.id}">${type.label}</option>`).join("")}
       </select>
     `;
-    textarea.before(wrapper);
+
+    const composerRow = textarea.closest("div.flex") || textarea;
+    if (composerRow.parentElement === host) host.insertBefore(wrapper, composerRow);
+    else textarea.before(wrapper);
 
     const select = wrapper.querySelector("select");
     const saved = window.localStorage?.getItem(`vetlearn-admin-message-type-${storageKey}`);
@@ -424,7 +484,6 @@
   const ensureTypeSelectors = () => {
     const userComposer = findAdminChatComposer();
     if (userComposer) addTypeSelector(userComposer);
-    findAdminDashboardComposers().forEach(addTypeSelector);
   };
 
   const prefixTextAreaWithType = (textarea) => {
@@ -444,15 +503,10 @@
     const button = event.target?.closest?.("button");
     if (!button) return;
     const label = normalise(button.textContent);
-    if (!label.includes("send") && !label.includes("reply")) return;
+    if (!label.includes("send")) return;
 
-    const area = button.closest("form")?.querySelector("textarea")
-      || button.parentElement?.parentElement?.querySelector("textarea")
-      || button.closest("section")?.querySelector('textarea[placeholder="Reply as Admin..."], textarea[placeholder="Write as Admin..."]');
-
-    if (area && (area.placeholder === "Type a message..." || area.placeholder === "Write as Admin..." || area.placeholder === "Reply as Admin...")) {
-      prefixTextAreaWithType(area);
-    }
+    const area = button.closest("form")?.querySelector('textarea[placeholder="Type a message..."]');
+    if (area) prefixTextAreaWithType(area);
   };
 
   const getMessageHistorySection = () => {
@@ -513,7 +567,7 @@
   document.addEventListener("input", () => window.setTimeout(run, 0), true);
   document.addEventListener("pointerdown", maybePrefixOnAction, true);
   document.addEventListener("submit", event => {
-    const textarea = event.target?.querySelector?.("textarea");
+    const textarea = event.target?.querySelector?.('textarea[placeholder="Type a message..."]');
     if (textarea) prefixTextAreaWithType(textarea);
   }, true);
   document.addEventListener("click", () => window.setTimeout(run, 80), true);
