@@ -5,6 +5,7 @@
   const SELECT_CLASS = "vetlearn-admin-message-type-select";
   const CHIP_CLASS = "vetlearn-mailbox-type-chip";
   const HISTORY_CARD_CLASS = "vetlearn-admin-message-history-card";
+  const ADMIN_CHAT_FLAG = "vetlearn-opened-admin-chat-at";
 
   const TYPES = [
     { id: "app_support", label: "App support", short: "Support", keywords: ["app", "support", "help", "issue", "problem", "not working", "screen", "page"] },
@@ -19,6 +20,19 @@
 
   const normalise = (value) => String(value || "").trim().toLowerCase();
   const byId = (id) => TYPES.find(type => type.id === id) || TYPES[0];
+
+  const markAdminChatOpening = () => {
+    try { window.sessionStorage?.setItem(ADMIN_CHAT_FLAG, String(Date.now())); } catch {}
+  };
+
+  const hasRecentAdminChatOpening = () => {
+    try {
+      const openedAt = Number(window.sessionStorage?.getItem(ADMIN_CHAT_FLAG) || 0);
+      return openedAt > 0 && Date.now() - openedAt < 30000;
+    } catch {
+      return false;
+    }
+  };
 
   const getExplicitType = (text) => {
     const match = String(text || "").match(/^\s*\[([^\]]+)\]/);
@@ -61,6 +75,7 @@
   };
 
   const openAdminChat = () => {
+    markAdminChatOpening();
     const target = "/messages?admin=1";
     if (window.location.pathname === "/messages") {
       window.history.pushState({}, "", target);
@@ -451,7 +466,8 @@
   const findAdminChatComposer = () => {
     const adminRoute = new URLSearchParams(window.location.search).has("admin") || window.location.href.includes("admin=1");
     const hasAdminHeading = [...document.querySelectorAll("h1, h2, h3")].some(heading => normalise(heading.textContent) === "admin");
-    if (!adminRoute && !hasAdminHeading) return null;
+    const hasSelector = Boolean(document.querySelector(`.${SELECT_CLASS}[data-storage-key="user_admin"]`));
+    if (!adminRoute && !hasAdminHeading && !hasSelector && !hasRecentAdminChatOpening()) return null;
     const textarea = document.querySelector('textarea[placeholder="Type a message..."]');
     return textarea ? { textarea, host: textarea.closest("form") || textarea.parentElement, storageKey: "user_admin" } : null;
   };
@@ -484,6 +500,25 @@
   const ensureTypeSelectors = () => {
     const userComposer = findAdminChatComposer();
     if (userComposer) addTypeSelector(userComposer);
+  };
+
+  const applyAdminConversationDisplay = () => {
+    const composer = findAdminChatComposer();
+    if (!composer?.textarea) return;
+    const form = composer.textarea.closest("form");
+    const panel = form?.parentElement || document.body;
+    const header = [...panel.querySelectorAll("h3")].find(item => item.offsetParent !== null) || [...document.querySelectorAll("h3")].reverse().find(item => item.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (header) {
+      header.textContent = "Admin";
+      const subtitle = header.parentElement?.querySelector("p");
+      if (subtitle) subtitle.textContent = "VetLearn Support";
+      const headerRow = header.closest(".flex") || header.parentElement?.parentElement;
+      const avatar = headerRow?.querySelector("div.h-11.w-11, div.rounded-full");
+      if (avatar) {
+        avatar.textContent = "A";
+        avatar.setAttribute("aria-label", "Admin");
+      }
+    }
   };
 
   const prefixTextAreaWithType = (textarea) => {
@@ -559,6 +594,7 @@
     injectAdminContact();
     applyMailboxFilters();
     ensureTypeSelectors();
+    applyAdminConversationDisplay();
     prepareAdminMessageHistory();
   };
 
