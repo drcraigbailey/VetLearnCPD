@@ -38,7 +38,9 @@ import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
+import { openPdfViewer } from "../utils/pdfViewerBridge";
 import { sendMessagePushNotification } from "../utils/pushNotifications";
+import { createInlineImageDataUrl, fileToDataUrl, isLikelyImageFile, isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
 
 const adminTabs = [
   { id: "overview", label: "Overview", icon: BarChart3 },
@@ -51,6 +53,9 @@ const adminTabs = [
   { id: "audit", label: "Site Analytics", icon: Lock },
   { id: "settings", label: "Settings", icon: Settings }
 ];
+
+const limitedAdminTabIds = new Set(["overview", "users", "permissions", "messages", "mailbox"]);
+const getAdminTabsForRole = (role) => role === "super_admin" ? adminTabs : adminTabs.filter(tab => limitedAdminTabIds.has(tab.id));
 
 const ADMIN_ALERT_TYPES = ["admin_new_signup", "admin_support_message", "admin_group_message"];
 const ADMIN_USER_ALERT_TYPES = ["admin_new_signup"];
@@ -86,6 +91,7 @@ const userTypeLabels = {
 };
 
 const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
+const MAX_INLINE_ATTACHMENT_SIZE = 8 * 1024 * 1024;
 
 const normaliseAttachments = (attachments) => (Array.isArray(attachments) ? attachments : []);
 
@@ -99,6 +105,7 @@ const formatFileSize = (size) => {
 function AdminMessageAttachmentList({ attachments, darkMode }) {
   const cleanAttachments = normaliseAttachments(attachments);
   const [signedUrls, setSignedUrls] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,18 +138,15 @@ function AdminMessageAttachmentList({ attachments, darkMode }) {
     <div className="mt-2 space-y-2">
       {cleanAttachments.map((attachment, index) => {
         const signedUrl = attachment.path ? signedUrls[attachment.path] : null;
+        const inlineUrl = attachment.data_url || attachment.inline_url || "";
+        const attachmentUrl = inlineUrl || signedUrl;
         const isImage = attachment.type?.startsWith("image/");
+        const isPdf = attachment.type === "application/pdf" || /\.pdf$/i.test(attachment.name || attachment.path || "");
         const label = attachment.name || "Attachment";
-        return (
-          <a
-            key={`${attachment.path || label}-${index}`}
-            href={signedUrl || undefined}
-            target="_blank"
-            rel="noreferrer"
-            className={`flex items-center gap-3 rounded-lg border p-2 text-xs font-bold transition ${darkMode ? "border-white/10 bg-white/10 text-white hover:bg-white/15" : "border-[#DCEDEA] bg-[#F0F6F5] text-[#113247] hover:bg-white"}`}
-          >
-            {isImage && signedUrl ? (
-              <img src={signedUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
+        const content = (
+          <>
+            {isImage && attachmentUrl ? (
+              <img src={attachmentUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
             ) : (
               <span className={`grid h-12 w-12 place-items-center rounded-md ${darkMode ? "bg-black/20" : "bg-white"}`}>
                 {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
@@ -152,14 +156,63 @@ function AdminMessageAttachmentList({ attachments, darkMode }) {
               <span className="block truncate">{label}</span>
               {attachment.size ? <span className="block text-[10px] font-semibold opacity-55">{formatFileSize(attachment.size)}</span> : null}
             </span>
+          </>
+        );
+        const className = `flex items-center gap-3 rounded-lg border p-2 text-xs font-bold transition ${darkMode ? "border-white/10 bg-white/10 text-white hover:bg-white/15" : "border-[#DCEDEA] bg-[#F0F6F5] text-[#113247] hover:bg-white"}`;
+        if (isImage && attachmentUrl) {
+          return (
+            <button
+              key={`${attachment.path || label}-${index}`}
+              type="button"
+              onClick={() => setPreviewImage({ url: attachmentUrl, label })}
+              className={`${className} w-full text-left`}
+            >
+              {content}
+            </button>
+          );
+        }
+        if (isPdf) {
+          return (
+            <button
+              key={`${attachment.path || label}-${index}`}
+              type="button"
+              onClick={() => {
+                if (!attachmentUrl) return toast.error("PDF link is still loading");
+                // Supabase signed admin attachment URLs are passed to the shared in-app PDF viewer first.
+                openPdfViewer({ source: attachmentUrl, filename: label, title: label });
+              }}
+              className={`${className} w-full text-left`}
+            >
+              {content}
+            </button>
+          );
+        }
+        return (
+          <a
+            key={`${attachment.path || label}-${index}`}
+            href={attachmentUrl || undefined}
+            download={inlineUrl ? label : undefined}
+            target={inlineUrl ? undefined : "_blank"}
+            rel="noreferrer"
+            className={className}
+          >
+            {content}
           </a>
         );
       })}
+      {previewImage && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4" onClick={() => setPreviewImage(null)}>
+          <button type="button" className="absolute right-5 top-5 rounded-full bg-white/15 p-2 text-white" aria-label="Close image preview">
+            <X size={22} />
+          </button>
+          <img src={previewImage.url} alt={previewImage.label} className="max-h-[86vh] max-w-full rounded-xl object-contain shadow-2xl" />
+        </div>
+      )}
     </div>
   );
 }
 
-const normaliseAdminTab = (tab) => adminTabs.some(item => item.id === tab) ? tab : "overview";
+const normaliseAdminTab = (tab, role = "super_admin") => getAdminTabsForRole(role).some(item => item.id === tab) ? tab : "overview";
 
 export default function AdminDashboard({ user, darkMode }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -192,6 +245,7 @@ export default function AdminDashboard({ user, darkMode }) {
   const [working, setWorking] = useState(false);
   const [statsError, setStatsError] = useState("");
   const [usersError, setUsersError] = useState("");
+  const activeSectionRef = useRef(null);
 
   const panelClass = darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -227,6 +281,9 @@ export default function AdminDashboard({ user, darkMode }) {
     }, { replace: true });
     if (tabId === "users") markAdminAlertsRead(ADMIN_USER_ALERT_TYPES);
     if (tabId === "mailbox") markAdminAlertsRead(ADMIN_MAILBOX_ALERT_TYPES);
+    requestAnimationFrame(() => {
+      activeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const loadAdminData = async () => {
@@ -345,12 +402,27 @@ export default function AdminDashboard({ user, darkMode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const isSuperAdmin = adminRole === "super_admin";
+  const visibleAdminTabs = useMemo(() => getAdminTabsForRole(adminRole), [adminRole]);
+  const effectiveActiveTab = visibleAdminTabs.some(item => item.id === activeTab) ? activeTab : "overview";
+
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && adminTabs.some(item => item.id === tab)) {
+    if (tab && visibleAdminTabs.some(item => item.id === tab)) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, visibleAdminTabs]);
+
+  useEffect(() => {
+    if (!adminRole || visibleAdminTabs.some(item => item.id === activeTab)) return;
+    setActiveTab("overview");
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", "overview");
+      next.delete("conversation");
+      return next;
+    }, { replace: true });
+  }, [activeTab, adminRole, setSearchParams, visibleAdminTabs]);
 
   useEffect(() => {
     if (!adminRole) return;
@@ -364,6 +436,7 @@ export default function AdminDashboard({ user, darkMode }) {
     mailbox: adminAlerts.filter(item => ADMIN_MAILBOX_ALERT_TYPES.includes(item.type)).length,
     total: adminAlerts.length
   }), [adminAlerts]);
+  const visibleAdminAlertTotal = isSuperAdmin ? adminAlertCounts.total : adminAlertCounts.users + adminAlertCounts.mailbox;
 
   const getAdminTabBadgeCount = (tabId) => {
     if (tabId === "users") return adminAlertCounts.users;
@@ -389,8 +462,6 @@ export default function AdminDashboard({ user, darkMode }) {
       return true;
     });
   }, [supportFilter, supportThreads]);
-
-  const isSuperAdmin = adminRole === "super_admin";
 
   const loadUsersForExport = async () => {
     const pageSize = 1000;
@@ -736,10 +807,25 @@ export default function AdminDashboard({ user, darkMode }) {
       const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const randomId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const path = `${conversationId}/${randomId}-${cleanName}`;
-      const { error } = await supabase.storage
-        .from(MESSAGE_ATTACHMENT_BUCKET)
-        .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
-      if (error) throw error;
+      const { error } = await uploadFileWithSchemaRetry({
+        bucket: MESSAGE_ATTACHMENT_BUCKET,
+        path,
+        file,
+        options: { upsert: false, contentType: file.type || "application/octet-stream" }
+      });
+      if (error) {
+        if (isSupabaseSchemaCompatibilityError(error) && file.size <= MAX_INLINE_ATTACHMENT_SIZE) {
+          uploaded.push({
+            data_url: isLikelyImageFile(file) ? await createInlineImageDataUrl(file, { maxSide: 1200, quality: 0.74 }) : await fileToDataUrl(file),
+            inline: true,
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size
+          });
+          continue;
+        }
+        throw error;
+      }
       uploaded.push({ path, name: file.name, type: file.type, size: file.size });
     }
     return uploaded;
@@ -753,8 +839,10 @@ export default function AdminDashboard({ user, darkMode }) {
     setSupportReply("");
     setSupportReplyAttachments([]);
 
+    let attachments = [];
+    let replySaved = false;
     try {
-      const attachments = cachedAttachments.length ? await uploadSupportReplyAttachments(selectedSupportThread.conversation_id, cachedAttachments) : [];
+      attachments = cachedAttachments.length ? await uploadSupportReplyAttachments(selectedSupportThread.conversation_id, cachedAttachments) : [];
       const { data: messageId, error } = await supabase.rpc("admin_support_reply", {
         conversation_uuid: selectedSupportThread.conversation_id,
         reply_body: cachedReply.trim(),
@@ -762,6 +850,7 @@ export default function AdminDashboard({ user, darkMode }) {
       });
 
       if (error) throw error;
+      replySaved = true;
       await sendMessagePushNotification({
         recipientId: selectedSupportThread.user_id,
         title: "New message from Admin",
@@ -775,7 +864,10 @@ export default function AdminDashboard({ user, darkMode }) {
       await loadSupportMessages(selectedSupportThread.conversation_id);
       loadAdminData();
     } catch (error) {
-      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send reply");
+      if (!replySaved && attachments.length) {
+        await supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).remove(attachments.map(item => item.path).filter(Boolean));
+      }
+      toast.error(isSupabaseSchemaCompatibilityError(error) ? "Could not upload the attachment because Supabase storage rejected the file request." : isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send reply");
       setSupportReply(cachedReply);
       setSupportReplyAttachments(cachedAttachments);
     } finally {
@@ -791,6 +883,7 @@ export default function AdminDashboard({ user, darkMode }) {
     setWorking(true);
     const cachedBody = supportComposeBody;
     const cachedAttachments = supportComposeAttachments;
+    const uploadedAttachments = [];
 
     try {
       for (const recipientId of recipientIds) {
@@ -800,12 +893,14 @@ export default function AdminDashboard({ user, darkMode }) {
         if (conversationError) throw conversationError;
 
         const attachments = cachedAttachments.length ? await uploadSupportReplyAttachments(conversationId, cachedAttachments) : [];
+        uploadedAttachments.push(...attachments);
         const { data: messageId, error: replyError } = await supabase.rpc("admin_support_reply", {
           conversation_uuid: conversationId,
           reply_body: cachedBody.trim(),
           reply_attachments: attachments
         });
         if (replyError) throw replyError;
+        uploadedAttachments.splice(Math.max(0, uploadedAttachments.length - attachments.length), attachments.length);
 
         await sendMessagePushNotification({
           recipientId,
@@ -826,7 +921,10 @@ export default function AdminDashboard({ user, darkMode }) {
       setSupportComposeOpen(false);
       loadAdminData();
     } catch (error) {
-      toast.error(isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send admin message");
+      if (uploadedAttachments.length) {
+        await supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).remove(uploadedAttachments.map(item => item.path).filter(Boolean));
+      }
+      toast.error(isSupabaseSchemaCompatibilityError(error) ? "Could not upload the attachment because Supabase storage rejected the file request." : isMissingRpcError(error) ? "Run admin_support_mailbox_and_plans.sql first" : error.message || "Could not send admin message");
     } finally {
       setWorking(false);
     }
@@ -917,18 +1015,18 @@ export default function AdminDashboard({ user, darkMode }) {
     <div className="space-y-5 pb-10">
       <PageBanner
         title="Admin Dashboard"
-        subtitle="Manage users, permissions, subscriptions, app content and system activity."
+        subtitle={isSuperAdmin ? "Manage users, permissions, subscriptions, app content and system activity." : "Manage users, roles, permissions and admin emails."}
         darkMode={darkMode}
         badges={[
           { label: adminRole === "super_admin" ? "Super Admin" : "Admin", icon: <ShieldCheck size={14} />, accent: true },
-          ...(adminAlertCounts.total > 0 ? [{ label: `${adminAlertCounts.total} new`, icon: <Bell size={14} />, accent: true }] : [])
+          ...(visibleAdminAlertTotal > 0 ? [{ label: `${visibleAdminAlertTotal} new`, icon: <Bell size={14} />, accent: true }] : [])
         ]}
       />
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {adminTabs.map(tab => {
+        {visibleAdminTabs.map(tab => {
           const Icon = tab.icon;
-          const active = activeTab === tab.id;
+          const active = effectiveActiveTab === tab.id;
           const badgeCount = getAdminTabBadgeCount(tab.id);
           return (
             <button
@@ -950,89 +1048,93 @@ export default function AdminDashboard({ user, darkMode }) {
         })}
       </div>
 
-      {activeTab === "overview" && <Overview stats={stats} error={statsError} panelClass={panelClass} darkMode={darkMode} onRefresh={loadAdminData} />}
-      {activeTab === "users" && (
-        <UsersPanel
-          panelClass={panelClass}
-          darkMode={darkMode}
-          users={filteredUsers}
-          query={query}
-          setQuery={setQuery}
-          onStatus={updateUserStatus}
-          onDelete={deleteUser}
-          onUserType={changeUserType}
-          currentUserId={user.id}
-          isSuperAdmin={isSuperAdmin}
-          working={working}
-          error={usersError}
-          onExportMarketing={() => exportEmailList("marketing")}
-          onExportAllEmails={() => exportEmailList("all")}
-        />
-      )}
-      {activeTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
-      {activeTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
-      {activeTab === "subscriptions" && (
-        <SubscriptionsPanel
-          panelClass={panelClass}
-          darkMode={darkMode}
-          subscriptions={subscriptions}
-          features={appFeatures}
-          userTypeMatrix={featureMatrix}
-          subscriptionMatrix={subscriptionFeatureMatrix}
-          onPlanField={updatePlanField}
-          onSavePlan={savePlan}
-          onToggleFeature={togglePlanFeature}
-          working={working}
-        />
-      )}
-      {activeTab === "messages" && (
-        <MessagingPanel
-          panelClass={panelClass}
-          darkMode={darkMode}
-          message={message}
-          setMessage={setMessage}
-          onSend={sendAdminMessage}
-          working={working}
-          history={adminMessages}
-          onDeleteHistory={deleteAdminMessage}
-        />
-      )}
-      {activeTab === "mailbox" && (
-        <MailboxPanel
-          panelClass={panelClass}
-          darkMode={darkMode}
-          threads={filteredSupportThreads}
-          allThreads={supportThreads}
-          filter={supportFilter}
-          setFilter={setSupportFilter}
-          selectedThread={selectedSupportThread}
-          onSelectThread={selectSupportThread}
-          messages={supportMessages}
-          loading={supportLoading}
-          reply={supportReply}
-          setReply={setSupportReply}
-          replyAttachments={supportReplyAttachments}
-          setReplyAttachments={setSupportReplyAttachments}
-          users={users}
-          composeOpen={supportComposeOpen}
-          setComposeOpen={setSupportComposeOpen}
-          composeQuery={supportComposeQuery}
-          setComposeQuery={setSupportComposeQuery}
-          composeRecipientIds={supportComposeRecipientIds}
-          setComposeRecipientIds={setSupportComposeRecipientIds}
-          composeBody={supportComposeBody}
-          setComposeBody={setSupportComposeBody}
-          composeAttachments={supportComposeAttachments}
-          setComposeAttachments={setSupportComposeAttachments}
-          onSendCompose={sendSupportCompose}
-          onReply={sendSupportReply}
-          onStatus={updateSupportStatus}
-          onRequestDeleteThread={setSupportThreadToDelete}
-          working={working}
-        />
-      )}
-      {activeTab === "audit" && <AdminActivityExplorer darkMode={darkMode} />}
-      {activeTab === "settings" && <AdminSettings panelClass={panelClass} />}
+      <div ref={activeSectionRef}>
+        {effectiveActiveTab === "overview" && <Overview stats={stats} error={statsError} panelClass={panelClass} darkMode={darkMode} onRefresh={loadAdminData} />}
+        {effectiveActiveTab === "users" && (
+          <UsersPanel
+            panelClass={panelClass}
+            darkMode={darkMode}
+            users={filteredUsers}
+            query={query}
+            setQuery={setQuery}
+            onStatus={updateUserStatus}
+            onDelete={deleteUser}
+            onUserType={changeUserType}
+            currentUserId={user.id}
+            canDeleteUsers={isSuperAdmin}
+            working={working}
+            error={usersError}
+            onExportMarketing={() => exportEmailList("marketing")}
+            onExportAllEmails={() => exportEmailList("all")}
+          />
+        )}
+        {effectiveActiveTab === "permissions" && <PermissionsPanel panelClass={panelClass} darkMode={darkMode} isSuperAdmin={isSuperAdmin} />}
+        {effectiveActiveTab === "features" && <FeaturesPanel panelClass={panelClass} darkMode={darkMode} matrix={featureMatrix} onToggle={toggleUserTypeFeature} working={working} />}
+        {effectiveActiveTab === "subscriptions" && (
+          <SubscriptionsPanel
+            panelClass={panelClass}
+            darkMode={darkMode}
+            subscriptions={subscriptions}
+            features={appFeatures}
+            userTypeMatrix={featureMatrix}
+            subscriptionMatrix={subscriptionFeatureMatrix}
+            onPlanField={updatePlanField}
+            onSavePlan={savePlan}
+            onToggleFeature={togglePlanFeature}
+            working={working}
+          />
+        )}
+        {effectiveActiveTab === "messages" && (
+          <MessagingPanel
+            panelClass={panelClass}
+            darkMode={darkMode}
+            message={message}
+            setMessage={setMessage}
+            onSend={sendAdminMessage}
+            working={working}
+            history={adminMessages}
+            onDeleteHistory={deleteAdminMessage}
+            canDeleteHistory={isSuperAdmin}
+          />
+        )}
+        {effectiveActiveTab === "mailbox" && (
+          <MailboxPanel
+            panelClass={panelClass}
+            darkMode={darkMode}
+            threads={filteredSupportThreads}
+            allThreads={supportThreads}
+            filter={supportFilter}
+            setFilter={setSupportFilter}
+            selectedThread={selectedSupportThread}
+            onSelectThread={selectSupportThread}
+            messages={supportMessages}
+            loading={supportLoading}
+            reply={supportReply}
+            setReply={setSupportReply}
+            replyAttachments={supportReplyAttachments}
+            setReplyAttachments={setSupportReplyAttachments}
+            users={users}
+            composeOpen={supportComposeOpen}
+            setComposeOpen={setSupportComposeOpen}
+            composeQuery={supportComposeQuery}
+            setComposeQuery={setSupportComposeQuery}
+            composeRecipientIds={supportComposeRecipientIds}
+            setComposeRecipientIds={setSupportComposeRecipientIds}
+            composeBody={supportComposeBody}
+            setComposeBody={setSupportComposeBody}
+            composeAttachments={supportComposeAttachments}
+            setComposeAttachments={setSupportComposeAttachments}
+            onSendCompose={sendSupportCompose}
+            onReply={sendSupportReply}
+            onStatus={updateSupportStatus}
+            onRequestDeleteThread={setSupportThreadToDelete}
+            canDeleteThreads={isSuperAdmin}
+            working={working}
+          />
+        )}
+        {effectiveActiveTab === "audit" && <AdminActivityExplorer panelClass={panelClass} darkMode={darkMode} users={users} />}
+        {effectiveActiveTab === "settings" && <AdminSettings panelClass={panelClass} />}
+      </div>
 
       {supportThreadToDelete && (
         <AppPopup
@@ -1127,7 +1229,7 @@ function Overview({ stats, error, panelClass, darkMode, onRefresh }) {
   );
 }
 
-function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, isSuperAdmin, working, error, onExportMarketing, onExportAllEmails }) {
+function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, onDelete, onUserType, currentUserId, canDeleteUsers, working, error, onExportMarketing, onExportAllEmails }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
 
   return (
@@ -1186,13 +1288,15 @@ function UsersPanel({ panelClass, darkMode, users, query, setQuery, onStatus, on
                 >
                   {item.account_status === "active" ? "Suspend" : "Reactivate"}
                 </button>
-                <button
-                  disabled={working || !isSuperAdmin || item.user_id === currentUserId}
-                  onClick={() => setDeleteCandidate(item)}
-                  className={`col-span-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-300 hover:bg-red-500/20" : "bg-[#FFF0F1] text-[#E00019] hover:bg-[#FFE5E7]"}`}
-                >
-                  <Trash2 size={19} /> Delete user and data
-                </button>
+                {canDeleteUsers && (
+                  <button
+                    disabled={working || item.user_id === currentUserId}
+                    onClick={() => setDeleteCandidate(item)}
+                    className={`col-span-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-300 hover:bg-red-500/20" : "bg-[#FFF0F1] text-[#E00019] hover:bg-[#FFE5E7]"}`}
+                  >
+                    <Trash2 size={19} /> Delete user and data
+                  </button>
+                )}
               </div>
             </article>
           );
@@ -1382,6 +1486,7 @@ function MailboxPanel({
   onReply,
   onStatus,
   onRequestDeleteThread,
+  canDeleteThreads,
   working
 }) {
   const filterClass = (value) => `rounded-full px-3 py-2 text-xs font-black transition ${
@@ -1568,16 +1673,18 @@ function MailboxPanel({
                       <span>{thread.last_message_at ? new Date(thread.last_message_at).toLocaleDateString("en-GB") : "No date"}</span>
                     </div>
                   </button>
-                  <button
-                    type="button"
-                    disabled={working}
-                    onClick={() => onRequestDeleteThread(thread)}
-                    className={`absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg transition disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`}
-                    aria-label={`Delete mailbox thread from ${thread.sender_name || "user"}`}
-                    title="Delete mailbox thread"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canDeleteThreads && (
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => onRequestDeleteThread(thread)}
+                      className={`absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg transition disabled:opacity-40 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`}
+                      aria-label={`Delete mailbox thread from ${thread.sender_name || "user"}`}
+                      title="Delete mailbox thread"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -1598,9 +1705,11 @@ function MailboxPanel({
                     <button disabled={working} onClick={() => onStatus(selectedThread, selectedThread.status === "resolved" ? "open" : "resolved")} className={`rounded-lg px-3 py-2 text-xs font-black disabled:opacity-50 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
                       {selectedThread.status === "resolved" ? "Reopen" : "Resolve"}
                     </button>
-                    <button disabled={working} onClick={() => onRequestDeleteThread(selectedThread)} className={`grid h-9 w-9 place-items-center rounded-lg disabled:opacity-50 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} aria-label="Delete mailbox thread" title="Delete mailbox thread">
-                      <Trash2 size={15} />
-                    </button>
+                    {canDeleteThreads && (
+                      <button disabled={working} onClick={() => onRequestDeleteThread(selectedThread)} className={`grid h-9 w-9 place-items-center rounded-lg disabled:opacity-50 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} aria-label="Delete mailbox thread" title="Delete mailbox thread">
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1664,7 +1773,7 @@ function MailboxPanel({
   );
 }
 
-function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, working, history, onDeleteHistory }) {
+function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, working, history, onDeleteHistory, canDeleteHistory }) {
   const [deleteCandidate, setDeleteCandidate] = useState(null);
 
   return (
@@ -1691,7 +1800,7 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
       <section className={panelClass}>
         <div className="flex items-start gap-3 mb-4">
           <MessageSquare className="text-[#0F8F83] shrink-0" />
-          <div><h2 className="text-xl font-black">Message History</h2><p className="text-sm opacity-65">Delete removes the announcement notification rows from users' notification panels.</p></div>
+          <div><h2 className="text-xl font-black">Message History</h2><p className="text-sm opacity-65">{canDeleteHistory ? "Delete removes the announcement notification rows from users' notification panels." : "Previous admin emails are shown for reference."}</p></div>
         </div>
         {history.length === 0 ? (
           <div className={`rounded-lg p-4 text-sm opacity-65 ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}>No admin messages found yet.</div>
@@ -1705,7 +1814,9 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
                     <p className="mt-1 text-sm opacity-70 leading-6 whitespace-pre-wrap">{item.body}</p>
                     <p className="mt-2 text-xs opacity-55">{new Date(item.createdAt).toLocaleString()} · {item.count} notification{item.count === 1 ? "" : "s"} · {item.unreadCount} unread</p>
                   </div>
-                  <button disabled={working} onClick={() => setDeleteCandidate(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
+                  {canDeleteHistory && (
+                    <button disabled={working} onClick={() => setDeleteCandidate(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
+                  )}
                 </div>
               </div>
             ))}

@@ -46,6 +46,15 @@ const exoticSpecies = [
   "Rabbit/Rodent", "Rabbit/Small Herbivore", "Rat/Mouse", "Gerbil/Rat/Mouse",
   "Other"
 ];
+const calculatorSpeciesGroups = [
+  { label: "Small animals", species: ["Dog", "Cat"] },
+  { label: "Small mammals", species: ["Rabbit", "Guinea Pig", "Ferret", "Rodent", "Rat", "Mouse", "Hamster", "Gerbil", "Chinchilla", "Other Rodent", "Small Mammal", "Hedgehog", "Sugar Glider", "Primate", "Rabbit/Rodent", "Rabbit/Small Herbivore", "Rat/Mouse", "Gerbil/Rat/Mouse"] },
+  { label: "Birds", species: ["Bird", "Parrot", "Amazon Parrot", "Parakeet", "Canary", "Zebra Finch", "Pigeon/Passerine", "Raptor"] },
+  { label: "Reptiles", species: ["Reptile", "Bearded Dragon", "Chameleon", "Red-eared Slider", "Turtle", "Tortoise", "Ball Python"] },
+  { label: "Amphibians", species: ["Amphibian", "Northern Leopard Frog", "Eastern Hellbender"] },
+  { label: "Fish", species: ["Fish", "Fish/Pond"] },
+  { label: "Other", species: ["Other"] }
+];
 const formularySpeciesFilters = [
   { id: "all", label: "All" },
   { id: "small-animal", label: "Dog & Cat" },
@@ -59,6 +68,24 @@ const calculatorModeOptions = [
 ];
 
 const normalise = (value) => String(value || "").toLowerCase().trim();
+const isSourceCategory = (value) => /vetlearn\s+exotics\s+(feed|seed)|\b(feed|seed)\s+v\d+\b/i.test(String(value || ""));
+const cleanDrugCategory = (...values) => values.find((value) => value && !isSourceCategory(value)) || "";
+
+const groupSpeciesOptions = (speciesOptions, query = "") => {
+  const allowed = new Set(speciesOptions.map(normalise));
+  const search = normalise(query);
+  const seen = new Set();
+  const matchesSearch = (species) => !search || normalise(species).includes(search);
+  const groups = calculatorSpeciesGroups
+    .map((group) => {
+      const options = group.species.filter((species) => allowed.has(normalise(species)) && matchesSearch(species));
+      options.forEach((species) => seen.add(normalise(species)));
+      return { ...group, options };
+    })
+    .filter((group) => group.options.length > 0);
+  const uncategorised = speciesOptions.filter((species) => !seen.has(normalise(species)) && matchesSearch(species));
+  return uncategorised.length ? [...groups, { label: "Other", options: uncategorised }] : groups;
+};
 
 const isExoticSpecies = (species) => {
   const normalised = normalise(species);
@@ -142,6 +169,8 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const canUseExoticsFormulary = canUseFeature(featureAccess, featureKeys.exoticsFormulary, adminAccess);
   const isMyDrugsPath = location.pathname === "/drugs/my-drugs" || location.pathname === "/drugs/my-monographs";
   const [activeTab, setActiveTab] = useState(isMyDrugsPath ? "my-drugs" : "library");
+  const activeSectionRef = useRef(null);
+  const pendingTabScrollRef = useRef(false);
   const searchInputRef = useRef(null);
   const [drugs, setDrugs] = useState([]);
   const [allAliases, setAllAliases] = useState([]);
@@ -324,6 +353,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       const brandNames = aliasRows.filter((alias) => alias.is_trade_name || alias.type === "brand").map((alias) => alias.alias || alias.name).filter(Boolean);
       const collaboration = drugCollaborations[String(drug.id)];
       const isOwned = drug.user_id === user.id;
+      const category = cleanDrugCategory(drug.category, drug.drug_class);
 
       if (!map.has(key)) {
         map.set(key, {
@@ -332,7 +362,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
           name: drug.name,
           species: drug.species || "General",
           speciesList: unique([drug.species].filter(Boolean)),
-          category: drug.category || drug.drug_class || "Uncategorised",
+          category,
           indication: drug.indication || drug.indications || details.indication || "",
           summary: drug.summary || drug.clinical_summary || drug.notes || details.summary || "",
           aliases,
@@ -353,6 +383,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         existing.brandNames = unique([...existing.brandNames, ...brandNames]);
         existing.searchTerms = unique([...existing.searchTerms, ...(Array.isArray(drug.search_terms) ? drug.search_terms : [])]);
         existing.speciesList = unique([...(existing.speciesList || []), drug.species].filter(Boolean));
+        existing.category = existing.category || category;
       }
     });
 
@@ -765,10 +796,37 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     return () => window.clearTimeout(focusTimer);
   }, [canUseLibrary, loading, location.search]);
 
+  const scrollToActiveSection = useCallback(() => {
+    const target = activeSectionRef.current;
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY - 12;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.scrollToFormularyTab) pendingTabScrollRef.current = true;
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!pendingTabScrollRef.current || loading) return undefined;
+    const timer = window.setTimeout(() => {
+      pendingTabScrollRef.current = false;
+      scrollToActiveSection();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, loading, location.pathname, scrollToActiveSection]);
+
   const selectTab = (tabId) => {
+    pendingTabScrollRef.current = true;
     setActiveTab(tabId);
-    if (tabId === "my-drugs") navigate("/drugs/my-drugs");
-    else if (isMyDrugsPath) navigate("/drugs");
+    if (tabId === "my-drugs") navigate("/drugs/my-drugs", { state: { scrollToFormularyTab: true } });
+    else if (isMyDrugsPath) navigate("/drugs", { state: { scrollToFormularyTab: true } });
+    else if (tabId === activeTab) {
+      window.setTimeout(() => {
+        pendingTabScrollRef.current = false;
+        scrollToActiveSection();
+      }, 80);
+    }
   };
 
   const copyDrugSummary = () => {
@@ -866,7 +924,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
           <p className="font-bold opacity-70 text-sm tracking-widest uppercase text-[#71CFC2]">Loading Formulary...</p>
         </div>
       ) : (
-        <div className="animate-in fade-in">
+        <div ref={activeSectionRef} className="animate-in fade-in scroll-mt-6">
           {canUseLibrary && activeTab === "library" && (
             <LibraryTab
               darkMode={darkMode}
@@ -1204,7 +1262,7 @@ function DrugResultCard({ drug, darkMode, panelClass, search, onOpen }) {
           {matchedAlias && <span className="ml-2 text-sm font-normal opacity-60">({matchedAlias})</span>}
         </h3>
         <div className="flex gap-2 flex-wrap">
-          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>{drug.category}</span>
+          {drug.category && <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${darkMode ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-500"}`}>{drug.category}</span>}
           {drug.brandNames.slice(0, 2).map((brand) => <span key={brand} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#E8F8F5] text-[#0F8F83]">{brand}</span>)}
           {drug.isCustom && (
             <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full flex items-center gap-1 bg-[#71CFC2]/25 text-[#0F8F83] ring-1 ring-[#71CFC2]/50">
@@ -1470,12 +1528,19 @@ function CalculatorTab(props) {
 
   const [calculatorMode, setCalculatorMode] = useState("dose");
   const [calculatorSearch, setCalculatorSearch] = useState("");
+  const [speciesSearch, setSpeciesSearch] = useState("");
   const availableCalculatorModes = canUseExoticsFormulary
     ? calculatorModeOptions
     : calculatorModeOptions.filter((mode) => mode.id !== "exotics");
   const calculatorSpecies = calculatorMode === "exotics"
     ? exoticSpecies
     : canUseExoticsFormulary ? formularySpeciesOptions : smallAnimalSpecies;
+  const groupedCalculatorSpecies = useMemo(
+    () => groupSpeciesOptions(calculatorSpecies, speciesSearch),
+    [calculatorSpecies, speciesSearch]
+  );
+  const selectedSpeciesInOptions = calculatorSpecies.some((species) => normalise(species) === normalise(calcPatient.species));
+  const selectedSpeciesVisible = groupedCalculatorSpecies.some((group) => group.options.some((species) => normalise(species) === normalise(calcPatient.species)));
 
   useEffect(() => {
     if (!canUseExoticsFormulary && calculatorMode === "exotics") {
@@ -1500,10 +1565,16 @@ function CalculatorTab(props) {
 
   const chooseCalculatorMode = (mode) => {
     setCalculatorMode(mode);
+    setSpeciesSearch("");
     if (mode === "exotics" && !isExoticSpecies(calcPatient.species)) {
       setCalcPatient({ ...calcPatient, species: "Rabbit" });
       setSelectedCalcDrugs([]);
     }
+  };
+
+  const chooseSpecies = (species) => {
+    setCalcPatient({ ...calcPatient, species });
+    setSelectedCalcDrugs([]);
   };
 
   return (
@@ -1525,8 +1596,26 @@ function CalculatorTab(props) {
           <input className={fieldClass} placeholder="Patient name" value={calcPatient.name} onChange={(event) => setCalcPatient({ ...calcPatient, name: event.target.value })} />
           <input className={fieldClass} type="number" placeholder="Weight kg" value={calcPatient.weight} onChange={(event) => setCalcPatient({ ...calcPatient, weight: event.target.value })} />
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-5">
-          {calculatorSpecies.map((species) => <button key={species} onClick={() => { setCalcPatient({ ...calcPatient, species }); setSelectedCalcDrugs([]); }} className={`min-h-10 px-2 py-2 rounded-lg font-bold text-sm leading-tight ${calcPatient.species === species ? "bg-[#71CFC2] text-[#071A24]" : darkMode ? "bg-white/10 text-slate-400" : "bg-slate-100 text-slate-500"}`}>{species}</button>)}
+        <div className="mb-5 grid gap-2">
+          <label className="text-xs font-black uppercase tracking-widest opacity-55">Species</label>
+          <div className="relative">
+            <Search size={17} className="absolute left-3 top-3.5 opacity-45" />
+            <input
+              className={`${fieldClass} pl-10`}
+              placeholder="Search species..."
+              value={speciesSearch}
+              onChange={(event) => setSpeciesSearch(event.target.value)}
+            />
+          </div>
+          <select className={fieldClass} value={calcPatient.species} onChange={(event) => chooseSpecies(event.target.value)}>
+            {selectedSpeciesInOptions && !selectedSpeciesVisible && <option value={calcPatient.species}>{calcPatient.species}</option>}
+            {groupedCalculatorSpecies.length === 0 && <option value={calcPatient.species}>No matching species</option>}
+            {groupedCalculatorSpecies.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map((species) => <option key={species} value={species}>{species}</option>)}
+              </optgroup>
+            ))}
+          </select>
         </div>
 
         <div className="border-t border-slate-200 dark:border-white/10 pt-5 mt-5">

@@ -227,7 +227,26 @@ export default function History({ user, darkMode = false }) {
         </div>
       )}
 
-      <h1 className={`text-3xl font-black mb-5 ${darkMode ? "text-white" : "text-[#113247]"}`}>History</h1>
+      <div className={`relative overflow-hidden bg-gradient-to-br border rounded-lg p-6 mb-6 shadow-[0_18px_45px_rgba(11,55,96,0.08)] ${darkMode ? "from-[#12323A] to-[#0B242B] border-white/10" : "from-white to-[#DFF7F3] border-[#CDEBE7]"}`}>
+        <img
+          src="/logo.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -right-8 -bottom-12 w-44 h-44 object-contain opacity-[0.10] pointer-events-none"
+        />
+        <div className="relative">
+          <div className={`w-fit border rounded-full px-3 py-2 text-xs font-bold mb-5 flex items-center gap-1 ${darkMode ? "bg-white/10 text-[#71CFC2] border-white/10" : "bg-white text-[#0F8F83] border-[#DCEDEA]"}`}>
+            <Clock3 size={13} />
+            {history.length} saved
+          </div>
+          <h1 className={`text-3xl font-black leading-tight tracking-normal mb-2 ${darkMode ? "text-white" : "text-[#113247]"}`}>
+            History
+          </h1>
+          <p className={`text-sm leading-6 max-w-[260px] ${darkMode ? "text-slate-300" : "text-slate-600"}`}>
+            Review completed CPD, reflections, shared records and exported learning evidence.
+          </p>
+        </div>
+      </div>
 
       <div className={`${darkMode ? "bg-white/10 border-white/10" : "bg-white/90 border-[#DCEDEA]"} border rounded-lg p-3 mb-5 flex gap-2`}>
         <Search size={18} className={darkMode ? "text-slate-400" : "text-slate-500"} />

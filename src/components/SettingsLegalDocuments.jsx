@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, ExternalLink, FileText, Lock, Mail, Shield, Trash2 } from "lucide-react";
 import UserDataExportButton from "./UserDataExportButton";
+import { openPdfViewer } from "../utils/pdfViewerBridge";
 
 const updatedDate = "5 June 2026";
 
@@ -273,16 +274,31 @@ export default function SettingsLegalDocuments({ darkMode = false }) {
         </div>
         <div className="grid gap-2">
           {resources.map((resource) => (
-            <a
-              key={resource.href}
-              href={resource.href}
-              target="_blank"
-              rel="noreferrer"
-              className={`flex items-center justify-between gap-3 rounded-lg p-3 text-sm font-bold transition ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`}
-            >
-              <span>{resource.label}</span>
-              <ExternalLink size={15} />
-            </a>
+            /\.pdf($|\?)/i.test(resource.href) ? (
+              <button
+                key={resource.href}
+                type="button"
+                onClick={() => {
+                  // External PDF guidance URLs are passed to the shared in-app PDF viewer first.
+                  openPdfViewer({ source: resource.href, filename: `${resource.label}.pdf`, title: resource.label });
+                }}
+                className={`flex items-center justify-between gap-3 rounded-lg p-3 text-left text-sm font-bold transition ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              >
+                <span>{resource.label}</span>
+                <FileText size={15} />
+              </button>
+            ) : (
+              <a
+                key={resource.href}
+                href={resource.href}
+                target="_blank"
+                rel="noreferrer"
+                className={`flex items-center justify-between gap-3 rounded-lg p-3 text-sm font-bold transition ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+              >
+                <span>{resource.label}</span>
+                <ExternalLink size={15} />
+              </a>
+            )
           ))}
         </div>
       </div>

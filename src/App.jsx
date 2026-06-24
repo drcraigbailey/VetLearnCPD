@@ -12,10 +12,13 @@ import FloatingReadingTimer from "./components/FloatingReadingTimer";
 import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
+import PdfViewerModal from "./components/PdfViewerModal";
 import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric, syncBiometricSession } from "./utils/biometricAuth";
 import { canUseFeature, defaultFeatureAccess, featureKeys, loadFeatureAccess } from "./utils/featureAccess";
+import { subscribePdfViewer } from "./utils/pdfViewerBridge";
 import { setupPushNotifications } from "./utils/pushNotifications";
+import { configureStatusBar } from "./lib/statusBar";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import AuthPage from "./pages/AuthPage";
@@ -36,6 +39,54 @@ function ScrollToTop() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+}
+
+function scrollBackToTop() {
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  } catch {
+    window.scrollTo(0, 0);
+  }
+}
+
+function GlobalScrollTopButton({ darkMode }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const updateVisibility = () => {
+      ticking = false;
+      setVisible(window.scrollY > 350);
+    };
+
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(updateVisibility);
+    };
+
+    updateVisibility();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={scrollBackToTop}
+      aria-label="Scroll back to top"
+      className={`fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-50 rounded-full px-4 py-2.5 text-sm font-black shadow-[0_12px_28px_rgba(11,55,96,0.18)] transition active:scale-95 ${
+        darkMode
+          ? "border border-white/10 bg-[#071A24]/95 text-[#71CFC2] backdrop-blur-xl"
+          : "border border-[#DCEDEA] bg-white/95 text-[#0B3760] backdrop-blur-xl"
+      }`}
+    >
+      ↑ Top
+    </button>
+  );
 }
 
 const routeLabels = {
@@ -123,7 +174,7 @@ function NativeBackButtonHandler() {
   return null;
 }
 
-function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotifications, onToggleDarkMode, onSignOut, onLockApp }) {
+function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotifications, onToggleDarkMode, onSignOut, onLockApp, onScrollTop }) {
   const location = useLocation();
   const navigate = useNavigate();
   const showBack = location.pathname !== "/";
@@ -146,11 +197,13 @@ function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotif
                 <ArrowLeft size={19} />
               </button>
             )}
-            <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
-            <div className="min-w-0">
-              <h1 className={`text-xl font-black tracking-normal ${darkMode ? "text-white" : "text-[#113247]"}`}>VetLearn</h1>
-              <p className="text-sm text-[#0F8F83] font-semibold truncate">{displayName}</p>
-            </div>
+            <button type="button" onClick={onScrollTop} className="flex min-w-0 items-center gap-2 text-left" aria-label="Scroll back to top">
+              <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
+              <span className="min-w-0">
+                <span className={`block text-xl font-black tracking-normal ${darkMode ? "text-white" : "text-[#113247]"}`}>VetLearn</span>
+                <span className="block text-sm text-[#0F8F83] font-semibold truncate">{displayName}</span>
+              </span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -302,11 +355,17 @@ function App() {
     const saved = localStorage.getItem("vetlearn-active-reading");
     return saved ? JSON.parse(saved) : null;
   });
+  const [pdfViewer, setPdfViewer] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("vetlearn-theme") === "dark");
 
   useEffect(() => {
     localStorage.setItem("vetlearn-theme", darkMode ? "dark" : "light");
+    configureStatusBar(darkMode);
   }, [darkMode]);
+
+  useEffect(() => subscribePdfViewer((payload) => {
+    if (payload?.source) setPdfViewer(payload);
+  }), []);
 
   useEffect(() => {
     if (activeReading) localStorage.setItem("vetlearn-active-reading", JSON.stringify(activeReading));
@@ -775,7 +834,7 @@ function App() {
       <RecentRouteTracker user={session.user} />
       <HybridToaster darkMode={darkMode} />
       <AndroidClipboardToolbar darkMode={darkMode} />
-      <div className={shellClass}>
+      <div className={`${shellClass} vetlearn-app-shell`}>
         <AppHeader
           darkMode={darkMode}
           displayName={displayName}
@@ -784,6 +843,7 @@ function App() {
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onSignOut={signOut}
           onLockApp={lockApp}
+          onScrollTop={scrollBackToTop}
         />
 
         <NotificationDrawer isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} setNotifications={setNotifications} darkMode={darkMode} />
@@ -840,7 +900,9 @@ function App() {
           />
         )}
         {biometricLocked && <BiometricGate darkMode={darkMode} checking={biometricChecking} onUnlock={unlockWithBiometric} onPasswordFallback={usePasswordFallback} />}
+        <PdfViewerModal viewer={pdfViewer} darkMode={darkMode} onClose={() => setPdfViewer(null)} />
         <FloatingReadingTimer session={activeReading} onFinish={() => finishReadingSession()} onCancel={cancelReadingSession} darkMode={darkMode} />
+        <GlobalScrollTopButton darkMode={darkMode} />
         <Navbar darkMode={darkMode} onOpenMenu={() => setMenuOpen(true)} menuBadgeCount={menuBadgeCount} featureAccess={featureAccess} adminAccess={adminAccess} />
       </div>
     </BrowserRouter>

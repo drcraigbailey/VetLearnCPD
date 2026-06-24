@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Briefcase,
@@ -80,6 +80,7 @@ const networkPostMediaUrl = (path) => {
 
 export default function Network({ user, darkMode = false }) {
   const [activeTab, setActiveTab] = useState("posts");
+  const activeSectionRef = useRef(null);
   const [connections, setConnections] = useState([]);
   const [requests, setRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
@@ -159,6 +160,13 @@ export default function Network({ user, darkMode = false }) {
     { id: "colleagues", label: "Colleagues", icon: Users },
     { id: "search", label: "Find Colleagues", icon: Search }
   ];
+
+  const selectNetworkTab = (tabId) => {
+    setActiveTab(tabId);
+    requestAnimationFrame(() => {
+      activeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   async function loadNetworkData() {
     if (!user) return;
@@ -643,44 +651,46 @@ export default function Network({ user, darkMode = false }) {
         darkMode={darkMode} 
         badges={[{ label: `${requests.length} pending`, icon: <UserPlus size={13} />, accent: true }]} 
       />
-      <PageToolbar items={networkTabs} activeId={activeTab} onChange={setActiveTab} darkMode={darkMode} className="mb-6" />
+      <PageToolbar items={networkTabs} activeId={activeTab} onChange={selectNetworkTab} darkMode={darkMode} className="mb-6" />
 
-      {activeTab === "posts" && (
-        <PostsTab
-          darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass}
-          postsAvailable={postsAvailable} postSearchQuery={postSearchQuery} setPostSearchQuery={setPostSearchQuery}
-          activeCategory={activeCategory} setActiveCategory={setActiveCategory}
-          composerOpen={composerOpen} setComposerOpen={setComposerOpen}
-          postForm={postForm} postSaving={postSaving} shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs}
-          updatePostForm={updatePostForm} attachOwnItem={attachOwnItem} clearAttachment={clearAttachment} requestPostSave={() => requestPostSave("create")}
-          posts={posts} postLoading={postLoading} user={user}
-          editForm={editForm} editingPostId={editingPostId} postUpdating={postUpdating}
-          startEditingPost={startEditingPost} cancelEditingPost={cancelEditingPost} updateEditForm={updateEditForm}
-          onRemoveExistingImage={(path) => {
-            setEditForm(prev => ({ ...prev, existing_urls: prev.existing_urls.filter(p => p !== path) }));
-            setImagesToDelete(prev => [...prev, path]);
-          }}
-          requestUpdateSave={() => requestPostSave("edit")} deletePost={requestDeletePost}
-          setSharedViewer={openSharedPost} setFullImagePreview={setFullImagePreview}
-        />
-      )}
+      <div ref={activeSectionRef}>
+        {activeTab === "posts" && (
+          <PostsTab
+            darkMode={darkMode} panelClass={panelClass} fieldClass={fieldClass}
+            postsAvailable={postsAvailable} postSearchQuery={postSearchQuery} setPostSearchQuery={setPostSearchQuery}
+            activeCategory={activeCategory} setActiveCategory={setActiveCategory}
+            composerOpen={composerOpen} setComposerOpen={setComposerOpen}
+            postForm={postForm} postSaving={postSaving} shareableCases={shareableCases} shareableProtocols={shareableProtocols} shareableDrugs={shareableDrugs}
+            updatePostForm={updatePostForm} attachOwnItem={attachOwnItem} clearAttachment={clearAttachment} requestPostSave={() => requestPostSave("create")}
+            posts={posts} postLoading={postLoading} user={user}
+            editForm={editForm} editingPostId={editingPostId} postUpdating={postUpdating}
+            startEditingPost={startEditingPost} cancelEditingPost={cancelEditingPost} updateEditForm={updateEditForm}
+            onRemoveExistingImage={(path) => {
+              setEditForm(prev => ({ ...prev, existing_urls: prev.existing_urls.filter(p => p !== path) }));
+              setImagesToDelete(prev => [...prev, path]);
+            }}
+            requestUpdateSave={() => requestPostSave("edit")} deletePost={requestDeletePost}
+            setSharedViewer={openSharedPost} setFullImagePreview={setFullImagePreview}
+          />
+        )}
 
-      {activeTab === "colleagues" && (
-        <ColleaguesTab 
-          requests={requests} connections={connections} supportContact={supportContact} supportUserId={supportUserId} panelClass={panelClass}
-          darkMode={darkMode} busyId={busyId} onRespond={handleRespond} 
-          onOpenProfile={openColleagueProfile} onOpenAdminContact={setSelectedAdminContact} onRemoveConnection={requestRemoveConnection}
-        />
-      )}
-      
-      {activeTab === "search" && (
-        <SearchTab 
-          darkMode={darkMode} searchQuery={searchQuery} setSearchQuery={setSearchQuery} 
-          searching={searching} searchResults={searchResults} sentRequests={sentRequests} 
-          requests={requests} sentRequestDetails={sentRequestDetails} panelClass={panelClass} 
-          busyId={busyId} onSendRequest={handleSendRequest} onRespond={handleRespond} 
-        />
-      )}
+        {activeTab === "colleagues" && (
+          <ColleaguesTab 
+            requests={requests} connections={connections} supportContact={supportContact} supportUserId={supportUserId} panelClass={panelClass}
+            darkMode={darkMode} busyId={busyId} onRespond={handleRespond} 
+            onOpenProfile={openColleagueProfile} onOpenAdminContact={setSelectedAdminContact} onRemoveConnection={requestRemoveConnection}
+          />
+        )}
+        
+        {activeTab === "search" && (
+          <SearchTab 
+            darkMode={darkMode} searchQuery={searchQuery} setSearchQuery={setSearchQuery} 
+            searching={searching} searchResults={searchResults} sentRequests={sentRequests} 
+            requests={requests} sentRequestDetails={sentRequestDetails} panelClass={panelClass} 
+            busyId={busyId} onSendRequest={handleSendRequest} onRespond={handleRespond} 
+          />
+        )}
+      </div>
     </div>
   );
 }

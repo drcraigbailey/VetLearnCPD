@@ -12,6 +12,7 @@ const quickCalculatorOptions = [
   { id: "sodium", label: "Sodium", fullLabel: "Sodium", icon: GlassWater },
   { id: "osmolality", label: "Osmolality", fullLabel: "Osmolality", icon: Gauge }
 ];
+const additionalCalculatorOptions = quickCalculatorOptions.filter((item) => item.id !== "drug");
 
 const unitConversions = {
   weight: [
@@ -73,10 +74,10 @@ const normaliseCalculatorId = (id) => id === "basic" ? "drug" : id;
 
 const activeOptionFor = (id) => quickCalculatorOptions.find((item) => item.id === normaliseCalculatorId(id)) || quickCalculatorOptions[0];
 
-const initialCalculator = (storageKey, fallback) => {
+const initialCalculator = (storageKey, fallback, options = quickCalculatorOptions) => {
   if (!storageKey || typeof window === "undefined") return fallback;
   const stored = normaliseCalculatorId(window.localStorage.getItem(storageKey));
-  return quickCalculatorOptions.some((item) => item.id === stored) ? stored : fallback;
+  return options.some((item) => item.id === stored) ? stored : fallback;
 };
 
 export function QuickCalculatorPanel({
@@ -87,7 +88,11 @@ export function QuickCalculatorPanel({
   className = ""
 }) {
   const resultRef = useRef(null);
-  const [active, setActive] = useState(() => initialCalculator(storageKey, defaultCalculator));
+  const visibleCalculatorOptions = compact ? quickCalculatorOptions : additionalCalculatorOptions;
+  const fallbackCalculator = visibleCalculatorOptions.some((item) => item.id === defaultCalculator)
+    ? defaultCalculator
+    : visibleCalculatorOptions[0]?.id || "drug";
+  const [active, setActive] = useState(() => initialCalculator(storageKey, fallbackCalculator, visibleCalculatorOptions));
   const activeCalculator = activeOptionFor(active);
   const ActiveIcon = activeCalculator.icon;
 
@@ -137,7 +142,7 @@ export function QuickCalculatorPanel({
         </div>
 
         <ToolTileGrid className="grid-cols-3">
-          {quickCalculatorOptions.map((item) => (
+          {visibleCalculatorOptions.map((item) => (
             <QuickCalculatorTile
               key={item.id}
               icon={item.icon}
@@ -274,7 +279,7 @@ function QuickCalculatorTile({ icon: Icon, title, active, darkMode, onClick }) {
 }
 
 function PrednisoloneTaperCalculator({ darkMode, compact = false }) {
-  const [species, setSpecies] = useState("Cat");
+  const [species, setSpecies] = useState("Dog");
   const [weightKg, setWeightKg] = useState("");
   const weightValue = toNumber(weightKg);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Dashboard from "./Dashboard";
 import FutureReading from "./FutureReading";
 import History from "./History";
@@ -7,6 +7,7 @@ import PageBanner from "../components/PageBanner";
 
 export default function CPD({ user, profile, darkMode, activeReading, onStartReading, onFinishReading, onSaveManualReading, savingReading }) {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const activeContentRef = useRef(null);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard" },
@@ -14,6 +15,13 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
     { id: "history", label: "History" },
     { id: "analytics", label: "Analytics" }
   ];
+
+  const selectTab = (tabId) => {
+    setActiveTab(tabId);
+    requestAnimationFrame(() => {
+      activeContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   return (
     <div>
@@ -27,7 +35,7 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => selectTab(tab.id)}
             className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition shrink-0 ${
               activeTab === tab.id
                 ? "bg-[#71CFC2] text-[#062F63] shadow-md"
@@ -39,7 +47,7 @@ export default function CPD({ user, profile, darkMode, activeReading, onStartRea
         ))}
       </div>
 
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div ref={activeContentRef} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === "dashboard" && (
           <Dashboard user={user} profile={profile} darkMode={darkMode} activeReading={activeReading} onStartReading={onStartReading} onFinishReading={onFinishReading} onSaveManualReading={onSaveManualReading} savingReading={savingReading} />
         )}

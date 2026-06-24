@@ -20,11 +20,15 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import PageBanner from "../components/PageBanner";
 import { supabase } from "../supabaseClient";
+import { openPdfViewer } from "../utils/pdfViewerBridge";
 import { sendAdminSupportPushNotification, sendMessagePushNotification } from "../utils/pushNotifications";
+import { createInlineImageDataUrl, fileToDataUrl, isLikelyImageFile, isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
 
 const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
 const MAX_ATTACHMENTS = 6;
+const MAX_INLINE_ATTACHMENT_SIZE = 8 * 1024 * 1024;
 
 const isMissingFunctionError = (error) => error?.code === "PGRST202" || error?.message?.toLowerCase().includes("function");
 
@@ -40,6 +44,7 @@ const formatFileSize = (size) => {
 function MessageAttachmentList({ attachments, darkMode }) {
   const cleanAttachments = normaliseAttachments(attachments);
   const [signedUrls, setSignedUrls] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,18 +77,15 @@ function MessageAttachmentList({ attachments, darkMode }) {
     <div className="mt-2 space-y-2">
       {cleanAttachments.map((attachment, index) => {
         const signedUrl = attachment.path ? signedUrls[attachment.path] : null;
+        const inlineUrl = attachment.data_url || attachment.inline_url || "";
+        const attachmentUrl = inlineUrl || signedUrl;
         const isImage = attachment.type?.startsWith("image/");
+        const isPdf = attachment.type === "application/pdf" || /\.pdf$/i.test(attachment.name || attachment.path || "");
         const label = attachment.name || "Attachment";
-        return (
-          <a
-            key={`${attachment.path || label}-${index}`}
-            href={signedUrl || undefined}
-            target="_blank"
-            rel="noreferrer"
-            className={`flex items-center gap-3 rounded-lg border p-2 text-xs font-bold transition ${darkMode ? "border-white/10 bg-white/10 text-white hover:bg-white/15" : "border-[#DCEDEA] bg-[#F0F6F5] text-[#113247] hover:bg-white"}`}
-          >
-            {isImage && signedUrl ? (
-              <img src={signedUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
+        const content = (
+          <>
+            {isImage && attachmentUrl ? (
+              <img src={attachmentUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
             ) : (
               <span className={`grid h-12 w-12 place-items-center rounded-md ${darkMode ? "bg-black/20" : "bg-white"}`}>
                 {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
@@ -93,9 +95,58 @@ function MessageAttachmentList({ attachments, darkMode }) {
               <span className="block truncate">{label}</span>
               {attachment.size ? <span className="block text-[10px] font-semibold opacity-55">{formatFileSize(attachment.size)}</span> : null}
             </span>
+          </>
+        );
+        const className = `flex items-center gap-3 rounded-lg border p-2 text-xs font-bold transition ${darkMode ? "border-white/10 bg-white/10 text-white hover:bg-white/15" : "border-[#DCEDEA] bg-[#F0F6F5] text-[#113247] hover:bg-white"}`;
+        if (isImage && attachmentUrl) {
+          return (
+            <button
+              key={`${attachment.path || label}-${index}`}
+              type="button"
+              onClick={() => setPreviewImage({ url: attachmentUrl, label })}
+              className={`${className} w-full text-left`}
+            >
+              {content}
+            </button>
+          );
+        }
+        if (isPdf) {
+          return (
+            <button
+              key={`${attachment.path || label}-${index}`}
+              type="button"
+              onClick={() => {
+                if (!attachmentUrl) return toast.error("PDF link is still loading");
+                // Supabase signed attachment URLs are passed to the shared in-app PDF viewer first.
+                openPdfViewer({ source: attachmentUrl, filename: label, title: label });
+              }}
+              className={`${className} w-full text-left`}
+            >
+              {content}
+            </button>
+          );
+        }
+        return (
+          <a
+            key={`${attachment.path || label}-${index}`}
+            href={attachmentUrl || undefined}
+            download={inlineUrl ? label : undefined}
+            target={inlineUrl ? undefined : "_blank"}
+            rel="noreferrer"
+            className={className}
+          >
+            {content}
           </a>
         );
       })}
+      {previewImage && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4" onClick={() => setPreviewImage(null)}>
+          <button type="button" className="absolute right-5 top-5 rounded-full bg-white/15 p-2 text-white" aria-label="Close image preview">
+            <X size={22} />
+          </button>
+          <img src={previewImage.url} alt={previewImage.label} className="max-h-[86vh] max-w-full rounded-xl object-contain shadow-2xl" />
+        </div>
+      )}
     </div>
   );
 }
@@ -122,6 +173,8 @@ export default function Messages({ user, darkMode }) {
   const messagesEndRef = useRef(null);
   const chatInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
+  const messagePanelRef = useRef(null);
+  const conversationListRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -673,10 +726,25 @@ export default function Messages({ user, darkMode }) {
       const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const randomId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const path = `${conversationId}/${randomId}-${cleanName}`;
-      const { error } = await supabase.storage
-        .from(MESSAGE_ATTACHMENT_BUCKET)
-        .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
-      if (error) throw error;
+      const { error } = await uploadFileWithSchemaRetry({
+        bucket: MESSAGE_ATTACHMENT_BUCKET,
+        path,
+        file,
+        options: { upsert: false, contentType: file.type || "application/octet-stream" }
+      });
+      if (error) {
+        if (isSupabaseSchemaCompatibilityError(error) && file.size <= MAX_INLINE_ATTACHMENT_SIZE) {
+          uploaded.push({
+            data_url: isLikelyImageFile(file) ? await createInlineImageDataUrl(file, { maxSide: 1200, quality: 0.74 }) : await fileToDataUrl(file),
+            inline: true,
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size
+          });
+          continue;
+        }
+        throw error;
+      }
       uploaded.push({ path, name: file.name, type: file.type, size: file.size });
     }
     return uploaded;
@@ -730,8 +798,10 @@ export default function Messages({ user, darkMode }) {
     setPendingAttachments([]);
     setSending(true);
 
+    let attachments = [];
+    let messageSaved = false;
     try {
-      const attachments = cachedAttachments.length ? await uploadMessageAttachments(activeChat.id, cachedAttachments) : [];
+      attachments = cachedAttachments.length ? await uploadMessageAttachments(activeChat.id, cachedAttachments) : [];
       const rpcResult = await supabase.rpc("send_conversation_message", {
         conversation_uuid: activeChat.id,
         message_body: content,
@@ -759,13 +829,17 @@ export default function Messages({ user, darkMode }) {
       }
 
       if (saveError) throw saveError;
+      messageSaved = true;
 
       setChatItems(prev => prev.some(item => item.id === data.id) ? prev : [...prev, data]);
       setConversations(prev => prev.map(conversation => conversation.id === activeChat.id ? { ...conversation, lastMsg: data, messages: [data, ...(conversation.messages || [])], updated_at: data.created_at } : conversation));
       notifyRecipients(data);
       chatInputRef.current?.focus();
     } catch (error) {
-      toast.error("Message failed to send");
+      if (!messageSaved && attachments.length) {
+        await supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).remove(attachments.map(item => item.path).filter(Boolean));
+      }
+      toast.error(isSupabaseSchemaCompatibilityError(error) ? "Could not upload the attachment because Supabase storage rejected the file request." : "Message failed to send");
       setNewMessage(cachedMessage);
       setPendingAttachments(cachedAttachments);
     } finally {
@@ -797,13 +871,38 @@ export default function Messages({ user, darkMode }) {
     ? "bg-white/10 border border-white/10 rounded-xl shadow-[0_14px_35px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden"
     : "bg-white/90 border border-[#DCEDEA] rounded-xl shadow-[0_14px_35px_rgba(11,55,96,0.07)] flex flex-col overflow-hidden";
   const textPrimary = darkMode ? "text-white" : "text-[#113247]";
-  const tabClass = (tab) => `flex-1 rounded-lg px-3 py-2.5 text-center text-xs font-black transition ${activeTab === tab ? "bg-[#71CFC2] text-[#062F63] shadow-sm" : darkMode ? "text-slate-300 hover:bg-white/10" : "text-[#0B3760] hover:bg-white"}`;
+  const tabClass = (tab) => `px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition shrink-0 ${
+    activeTab === tab
+      ? "bg-[#71CFC2] text-[#062F63] shadow-md"
+      : darkMode ? "bg-white/10 text-slate-300" : "bg-[#E8F8F5] text-[#0B3760]"
+  }`;
+  const selectConversationTab = (tab) => {
+    setActiveTab(tab);
+    requestAnimationFrame(() => {
+      messagePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      conversationListRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
 
   return (
     <div className="pb-8">
-      <div className="h-[calc(100vh-120px)] w-full max-w-4xl mx-auto relative flex flex-col">
+      <PageBanner
+        title="Messages"
+        subtitle="Keep track of conversations, unread updates and shared clinical records."
+        darkMode={darkMode}
+      />
+
+      <div className="h-[calc(100vh-300px)] min-h-[520px] w-full max-w-4xl mx-auto relative flex flex-col">
+        {!activeChat && !isNewChatMode && (
+          <div className="mb-4 flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+            <button className={tabClass("unread")} onClick={() => selectConversationTab("unread")}>Unread {unreadConversations.length}</button>
+            <button className={tabClass("read")} onClick={() => selectConversationTab("read")}>Read</button>
+            <button className={tabClass("all")} onClick={() => selectConversationTab("all")}>All</button>
+          </div>
+        )}
+
         {!activeChat && (
-          <div className={`w-full h-full ${panelClass}`}>
+          <div ref={messagePanelRef} className={`w-full flex-1 min-h-0 ${panelClass}`}>
             <div className="p-4 border-b border-inherit">
               <div className="flex justify-between items-start gap-3 mb-4">
                 <div>
@@ -823,14 +922,6 @@ export default function Messages({ user, darkMode }) {
                   <span>{isNewChatMode ? "Cancel" : "Compose"}</span>
                 </button>
               </div>
-
-              {!isNewChatMode && (
-                <div className={`mb-4 flex items-center gap-1 rounded-xl border p-1 ${darkMode ? "border-white/10 bg-black/20" : "border-[#DCEDEA] bg-[#F0F6F5]"}`}>
-                  <button className={tabClass("unread")} onClick={() => setActiveTab("unread")}>Unread {unreadConversations.length}</button>
-                  <button className={tabClass("read")} onClick={() => setActiveTab("read")}>Read</button>
-                  <button className={tabClass("all")} onClick={() => setActiveTab("all")}>All</button>
-                </div>
-              )}
 
               {isNewChatMode && (
                 <div className={`mb-4 rounded-xl border p-4 ${darkMode ? "border-white/10 bg-black/20" : "border-[#DCEDEA] bg-[#F8FCFB]"}`}>
@@ -871,7 +962,7 @@ export default function Messages({ user, darkMode }) {
               </div>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto p-3">
+            <div ref={conversationListRef} className="flex-1 space-y-3 overflow-y-auto p-3">
               {isNewChatMode ? (
                 filteredColleagues.length === 0 ? <div className="p-8 text-center opacity-50 text-sm">No colleagues found in your network.</div> : filteredColleagues.map(colleague => {
                   const selected = selectedRecipients.some(item => String(item.id) === String(colleague.id));

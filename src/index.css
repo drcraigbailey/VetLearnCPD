@@ -19,6 +19,11 @@ body,
   color: #062f63;
 }
 
+.vetlearn-app-shell {
+  background-color: var(--vetlearn-status-bar-bg, transparent);
+  padding-top: env(safe-area-inset-top, 0);
+}
+
 .dark ::selection {
   background: rgba(113, 207, 194, 0.5);
   color: #f8fafc;

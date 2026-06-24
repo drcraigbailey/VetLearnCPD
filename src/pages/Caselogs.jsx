@@ -9,6 +9,9 @@ import { exportCaseLogs } from "../utils/casePdfExport";
 import { saveLocalFile, getLocalFileUrl, deleteLocalFile } from "../utils/localFiles";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import PageBanner from "../components/PageBanner";
+import { openPdfViewer } from "../utils/pdfViewerBridge";
+import { isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
 
 export default function Caselogs({ user, darkMode = false }) {
   const [logs, setLogs] = useState([]);
@@ -230,10 +233,13 @@ export default function Caselogs({ user, darkMode = false }) {
     setShareBusyId(friendId);
     try {
       let finalId = String(log.id);
+      let sharedWithoutMediaDueRelay = false;
 
       if (includeMedia && log.media_urls && log.media_urls.length > 0) {
         toast.loading("Encrypting and uploading media to relay...", { id: "share" });
         const relayFolder = `relay_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+        const uploadedRelayPaths = [];
+        let relayUnavailable = false;
         
         for (const urlId of log.media_urls) {
           if (urlId.startsWith("http")) continue; 
@@ -244,9 +250,31 @@ export default function Caselogs({ user, darkMode = false }) {
           const blob = await response.blob();
           
           // Push securely to the temporary cloud relay
-          await supabase.storage.from('relay').upload(`${relayFolder}/${urlId}`, blob);
+          const relayPath = `${relayFolder}/${urlId}`;
+          const { error: relayError } = await uploadFileWithSchemaRetry({
+            bucket: "relay",
+            path: relayPath,
+            file: blob,
+            options: { upsert: false, contentType: blob.type || "application/octet-stream" }
+          });
+
+          if (relayError) {
+            if (isSupabaseSchemaCompatibilityError(relayError)) {
+              relayUnavailable = true;
+              break;
+            }
+            throw relayError;
+          }
+          uploadedRelayPaths.push(relayPath);
         }
-        finalId = `${log.id}:::${relayFolder}`;
+
+        if (relayUnavailable) {
+          if (uploadedRelayPaths.length) await supabase.storage.from("relay").remove(uploadedRelayPaths);
+          sharedWithoutMediaDueRelay = true;
+          finalId = `${log.id}:::nomedia`;
+        } else {
+          finalId = `${log.id}:::${relayFolder}`;
+        }
       } else {
         finalId = `${log.id}:::nomedia`;
       }
@@ -256,7 +284,7 @@ export default function Caselogs({ user, darkMode = false }) {
       });
       if (error) throw error;
       
-      toast.success(`Case shared successfully!`, { id: "share" });
+      toast.success(sharedWithoutMediaDueRelay ? "Case shared without attachments" : "Case shared successfully!", { id: "share" });
       setSharingLog(null);
     } catch (err) {
       toast.error("Failed to share case.", { id: "share" });
@@ -267,9 +295,14 @@ export default function Caselogs({ user, darkMode = false }) {
 
   const openViewer = async (urlId) => {
     const isPdf = urlId.toLowerCase().includes(".pdf");
-    setPreviewType(isPdf ? "pdf" : "image");
 
     if (urlId.startsWith("http")) {
+      if (isPdf) {
+        // Remote case-log PDF URLs are passed to the shared in-app PDF viewer first.
+        openPdfViewer({ source: urlId, filename: urlId.split("/").pop() || "Case-attachment.pdf", title: "Case attachment" });
+        return;
+      }
+      setPreviewType("image");
       setPreviewUrl(urlId);
     } else {
       setIsViewerLoading(true);
@@ -280,6 +313,12 @@ export default function Caselogs({ user, darkMode = false }) {
         toast.error("File not found on this device.");
         return;
       }
+      if (isPdf) {
+        // Local case-log PDF blob URLs are passed to the shared in-app PDF viewer first.
+        openPdfViewer({ source: blobUrl, filename: urlId.split("/").pop() || "Case-attachment.pdf", title: "Case attachment" });
+        return;
+      }
+      setPreviewType("image");
       setPreviewUrl(blobUrl);
     }
   };
@@ -386,8 +425,6 @@ export default function Caselogs({ user, darkMode = false }) {
               <HeartbeatLoader size={80} />
               <p className="font-bold opacity-70 text-sm tracking-widest uppercase text-[#71CFC2]">Loading local file...</p>
             </div>
-          ) : previewType === "pdf" ? (
-            <iframe src={previewUrl} className="w-full h-[85vh] max-w-4xl bg-white rounded-lg" />
           ) : (
             <img src={previewUrl} className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" alt="Preview" />
           )}
@@ -468,16 +505,11 @@ export default function Caselogs({ user, darkMode = false }) {
         </div>
       )}
 
-      {/* Header */}
-      <div className={`relative overflow-hidden bg-gradient-to-br border rounded-lg p-6 mb-4 shadow-[0_18px_45px_rgba(11,55,96,0.08)] ${darkMode ? "from-[#12323A] to-[#0B242B] border-white/10" : "from-white to-[#DFF7F3] border-[#CDEBE7]"}`}>
-        <img src="/logo.png" alt="" aria-hidden="true" className="absolute -right-8 -bottom-12 w-44 h-44 object-contain opacity-[0.10] pointer-events-none" />
-        <div className="relative">
-          <h1 className={`text-3xl font-black leading-tight tracking-normal mb-2 ${darkMode ? "text-white" : "text-[#113247]"}`}>Caselogs</h1>
-          <p className={`text-sm leading-6 max-w-[260px] ${darkMode ? "text-slate-300" : "text-slate-600"}`}>
-            Track, search, and export detailed clinical case reports. Share with your network directly.
-          </p>
-        </div>
-      </div>
+      <PageBanner
+        title="Caselogs"
+        subtitle="Track, search, and export detailed clinical case reports. Share with your network directly."
+        darkMode={darkMode}
+      />
 
       {/* Actions Toolbar */}
       <div className={`${panelClass} mb-6 !p-3 flex flex-wrap gap-2`}>

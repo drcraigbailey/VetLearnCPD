@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Calculator, ClipboardList, Pill } from "lucide-react";
+import { Calculator, ClipboardList, Clock, Pill } from "lucide-react";
 import AdditionalClinicalCalculators from "../components/AdditionalClinicalCalculators";
 import FeatureUnavailable from "../components/FeatureUnavailable";
 import PageBanner from "../components/PageBanner";
 import PillCounter from "../components/PillCounter";
 import { PageToolbar } from "../components/VetLearnUI";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
-import ClinicalTools from "./ClinicalTools";
+import ClinicalTools, { ClinicalToolsHistory } from "./ClinicalTools";
 import Protocols from "./Protocols";
 
 const calculatorTabs = new Set([
@@ -63,6 +63,11 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
       return;
     }
 
+    if (requestedSection === "history") {
+      setActiveSection("history");
+      return;
+    }
+
     if (requestedCalculator) {
       setActiveSection("calculators");
     }
@@ -92,8 +97,9 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
 
   const sectionTabs = [
     { id: "calculators", label: "Calculator", icon: Calculator },
-    ...(canUsePillCount ? [{ id: "pillCounter", label: "Pill Count", icon: Pill }] : []),
     ...(canUseProtocols ? [{ id: "protocols", label: "Protocols", icon: ClipboardList }] : []),
+    { id: "history", label: "History", icon: Clock },
+    ...(canUsePillCount ? [{ id: "pillCounter", label: "Pill Count", icon: Pill }] : []),
   ];
 
   return (
@@ -133,6 +139,8 @@ export default function ClinicalToolsPage({ user, darkMode = false, featureAcces
           <FeatureUnavailable darkMode={darkMode} title="Clinical Protocols" />
         )
       )}
+
+      {activeSection === "history" && <ClinicalToolsHistory user={user} darkMode={darkMode} />}
     </div>
   );
 }

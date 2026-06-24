@@ -7,11 +7,47 @@ import {
   CalendarDays,
   Check,
   ExternalLink,
+  FileText,
   Loader2,
+  Upload,
   Trash2
 } from "lucide-react";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import { logFileUpload } from "../utils/activityTracking";
+import { openPdfViewer } from "../utils/pdfViewerBridge";
+import { isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
+
+const FUTURE_READING_BUCKET = "cpd-future-reading";
+const FUTURE_READING_STORAGE_PREFIX = `storage://${FUTURE_READING_BUCKET}/`;
+const MAX_PDF_SIZE = 25 * 1024 * 1024;
+
+const isFutureReadingStorageUrl = (value = "") => String(value || "").startsWith(FUTURE_READING_STORAGE_PREFIX);
+const futureReadingStoragePath = (value = "") => String(value || "").replace(FUTURE_READING_STORAGE_PREFIX, "");
+const futureReadingStorageUrl = (path = "") => `${FUTURE_READING_STORAGE_PREFIX}${path}`;
+const cleanFileName = (name = "future-reading.pdf") => name.replace(/[^a-zA-Z0-9._-]/g, "_");
+const titleFromFileName = (name = "") => cleanFileName(name).replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").trim();
+
+const insertFutureReadingFallback = async (payload) => {
+  const { status, due_date, notes, ...withoutStatusDueNotes } = payload;
+  const attempts = [
+    payload,
+    { ...withoutStatusDueNotes, due_date, notes },
+    { ...withoutStatusDueNotes, status, notes },
+    { ...withoutStatusDueNotes, status, due_date },
+    withoutStatusDueNotes
+  ];
+  let lastError = null;
+
+  for (const attempt of attempts) {
+    const { error } = await supabase.from("future_reading").insert(attempt);
+    if (!error) return null;
+    lastError = error;
+    if (!isSupabaseSchemaCompatibilityError(error)) return error;
+  }
+
+  return lastError;
+};
 
 export default function FutureReading({ user, darkMode = false }) {
 
@@ -20,12 +56,13 @@ export default function FutureReading({ user, darkMode = false }) {
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [appPopup, setAppPopup] = useState(null)
+  const [pdfFile, setPdfFile] = useState(null)
+  const [signedPdfUrls, setSignedPdfUrls] = useState({})
 
   const [form, setForm] = useState({
     title: "",
     url: "",
     category: "Medicine",
-    priority: "Medium",
     due_date: "",
     notes: ""
   })
@@ -39,8 +76,6 @@ export default function FutureReading({ user, darkMode = false }) {
     "Neurology",
     "Other"
   ]
-
-  const priorities = ["High", "Medium", "Low"]
 
   // Updated to handle dark mode inputs
   const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 mb-3 transition ${
@@ -70,8 +105,39 @@ export default function FutureReading({ user, darkMode = false }) {
       return
     }
 
-    setItems(data || [])
+    const rows = data || []
+    setItems(rows)
+    await loadSignedPdfUrls(rows)
     setLoading(false)
+  }
+
+  const loadSignedPdfUrls = async (rows = items) => {
+    const paths = rows
+      .map(item => item.url)
+      .filter(isFutureReadingStorageUrl)
+      .map(futureReadingStoragePath)
+      .filter(Boolean)
+
+    if (paths.length === 0) {
+      setSignedPdfUrls({})
+      return
+    }
+
+    const { data, error } = await supabase.storage
+      .from(FUTURE_READING_BUCKET)
+      .createSignedUrls(paths, 60 * 60)
+
+    if (error) {
+      setSignedPdfUrls({})
+      return
+    }
+
+    const nextUrls = {}
+    ;(data || []).forEach((item, index) => {
+      const path = item.path || paths[index]
+      if (item.signedUrl) nextUrls[futureReadingStorageUrl(path)] = item.signedUrl
+    })
+    setSignedPdfUrls(nextUrls)
   }
 
   const updateForm = (field, value) => {
@@ -81,33 +147,97 @@ export default function FutureReading({ user, darkMode = false }) {
     })
   }
 
+  const handlePdfPick = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+    if (!isPdf) {
+      toast.error("Please choose a PDF file")
+      return
+    }
+    if (file.size > MAX_PDF_SIZE) {
+      toast.error("PDF must be 25 MB or smaller")
+      return
+    }
+    setPdfFile(file)
+    if (!form.title.trim()) updateForm("title", titleFromFileName(file.name))
+  }
+
+  const uploadFuturePdf = async (file) => {
+    const randomId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const path = `${user.id}/${randomId}-${cleanFileName(file.name)}`
+    const { error } = await uploadFileWithSchemaRetry({
+      bucket: FUTURE_READING_BUCKET,
+      path,
+      file,
+      options: { upsert: false, contentType: file.type || "application/pdf" }
+    })
+
+    if (error) throw error
+    await logFileUpload({ userId: user.id, file, context: "CPD Future Reads", storagePath: path })
+    return futureReadingStorageUrl(path)
+  }
+
   const addItem = async () => {
     if (!user) {
       toast.error("Please sign in first")
       return
     }
 
-    if (!form.title.trim()) {
+    const title = form.title.trim() || (pdfFile ? titleFromFileName(pdfFile.name) : "")
+    if (!title) {
       toast.error("Add a title first")
       return
     }
 
     setSaving(true)
+    let nextUrl = form.url.trim() || null
+    let uploadedPdfPath = ""
 
-    const { error } = await supabase
+    try {
+      if (pdfFile) {
+        nextUrl = await uploadFuturePdf(pdfFile)
+        uploadedPdfPath = futureReadingStoragePath(nextUrl)
+      }
+    } catch (error) {
+      const raw = String(error?.message || "")
+      if (isSupabaseSchemaCompatibilityError(error)) {
+        toast.error("Could not upload the PDF because Supabase storage rejected the file request.")
+      } else {
+        toast.error(raw.toLowerCase().includes("bucket") ? "PDF storage is not ready. Run the CPD future reading storage SQL first." : raw || "Could not upload PDF")
+      }
+      setSaving(false)
+      return
+    }
+
+    const insertPayload = {
+      user_id: user.id,
+      title,
+      url: nextUrl,
+      category: form.category,
+      due_date: form.due_date || null,
+      notes: form.notes.trim() || null,
+      status: "planned"
+    }
+
+    let { error } = await supabase
       .from("future_reading")
-      .insert({
+      .insert(insertPayload)
+
+    if (error && isSupabaseSchemaCompatibilityError(error)) {
+      error = await insertFutureReadingFallback({
         user_id: user.id,
-        title: form.title.trim(),
-        url: form.url.trim() || null,
-        category: form.category,
-        priority: form.priority,
+        title,
+        url: nextUrl,
         due_date: form.due_date || null,
         notes: form.notes.trim() || null,
         status: "planned"
       })
+    }
 
     if (error) {
+      if (uploadedPdfPath) await supabase.storage.from(FUTURE_READING_BUCKET).remove([uploadedPdfPath])
       toast.error(error.message)
       setSaving(false)
       return
@@ -118,10 +248,10 @@ export default function FutureReading({ user, darkMode = false }) {
       title: "",
       url: "",
       category: "Medicine",
-      priority: "Medium",
       due_date: "",
       notes: ""
     })
+    setPdfFile(null)
     setSaving(false)
     loadFutureReading()
   }
@@ -154,6 +284,7 @@ export default function FutureReading({ user, darkMode = false }) {
 
   const deleteItem = async (id) => {
     setBusyId(id)
+    const itemToDelete = items.find(item => item.id === id)
 
     const { error } = await supabase
       .from("future_reading")
@@ -165,6 +296,10 @@ export default function FutureReading({ user, darkMode = false }) {
       toast.error(error.message)
       setBusyId(null)
       return
+    }
+
+    if (isFutureReadingStorageUrl(itemToDelete?.url)) {
+      await supabase.storage.from(FUTURE_READING_BUCKET).remove([futureReadingStoragePath(itemToDelete.url)])
     }
 
     setItems(items.filter(item => item.id !== id))
@@ -184,6 +319,16 @@ export default function FutureReading({ user, darkMode = false }) {
   }
 
   const plannedCount = items.filter(item => item.status !== "done").length
+
+  const openPdfItem = (item) => {
+    const signedUrl = signedPdfUrls[item.url]
+    if (!signedUrl) {
+      toast.error("PDF link is still loading")
+      loadSignedPdfUrls()
+      return
+    }
+    openPdfViewer({ source: signedUrl, filename: item.title.endsWith(".pdf") ? item.title : `${item.title}.pdf`, title: item.title })
+  }
 
   return (
     <div>
@@ -236,7 +381,30 @@ export default function FutureReading({ user, darkMode = false }) {
           onChange={(e) => updateForm("url", e.target.value)}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`mb-3 rounded-lg border p-3 ${darkMode ? "border-white/10 bg-white/10" : "border-[#DCEDEA] bg-[#F0F6F5]"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className={`text-sm font-black ${darkMode ? "text-white" : "text-[#113247]"}`}>PDF upload</p>
+              <p className={`truncate text-xs ${darkMode ? "text-slate-300" : "text-slate-500"}`}>
+                {pdfFile ? pdfFile.name : "Optional: attach a PDF instead of a link."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {pdfFile && (
+                <button type="button" onClick={() => setPdfFile(null)} className={`rounded-lg px-3 py-2 text-xs font-black ${darkMode ? "bg-white/10 text-slate-200" : "bg-white text-[#0B3760]"}`}>
+                  Clear
+                </button>
+              )}
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#71CFC2] px-3 py-2 text-xs font-black text-[#062F63]">
+                <Upload size={14} />
+                Choose PDF
+                <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={handlePdfPick} />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
           <select
             className={fieldClass}
             value={form.category}
@@ -244,16 +412,6 @@ export default function FutureReading({ user, darkMode = false }) {
           >
             {categories.map(category => (
               <option key={category} className={darkMode ? "bg-[#071A24] text-white" : ""}>{category}</option>
-            ))}
-          </select>
-
-          <select
-            className={fieldClass}
-            value={form.priority}
-            onChange={(e) => updateForm("priority", e.target.value)}
-          >
-            {priorities.map(priority => (
-              <option key={priority} className={darkMode ? "bg-[#071A24] text-white" : ""}>{priority}</option>
             ))}
           </select>
         </div>
@@ -318,12 +476,11 @@ export default function FutureReading({ user, darkMode = false }) {
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
-                    {item.category}
-                  </span>
-                  <span className={`border rounded-full px-3 py-1 text-xs font-bold ${darkMode ? "bg-white/5 border-white/10 text-slate-300" : "bg-white border-[#DCEDEA] text-slate-600"}`}>
-                    {item.priority}
-                  </span>
+                  {item.category && (
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`}>
+                      {item.category}
+                    </span>
+                  )}
                   {item.due_date && (
                     <span className={`border rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1 ${darkMode ? "bg-white/5 border-white/10 text-slate-300" : "bg-white border-[#DCEDEA] text-slate-600"}`}>
                       <CalendarDays size={13} />
@@ -352,7 +509,16 @@ export default function FutureReading({ user, darkMode = false }) {
             )}
 
             <div className="flex justify-end gap-3 mt-4">
-              {item.url && (
+              {isFutureReadingStorageUrl(item.url) ? (
+                <button
+                  type="button"
+                  onClick={() => openPdfItem(item)}
+                  className={`rounded-lg px-3 py-2 text-sm font-bold flex items-center gap-2 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`}
+                >
+                  <FileText size={16} />
+                  Open PDF
+                </button>
+              ) : item.url && (
                 <a
                   href={item.url}
                   target="_blank"

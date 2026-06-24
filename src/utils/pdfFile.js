@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core"
 import { Directory, Filesystem } from "@capacitor/filesystem"
 import { Share } from "@capacitor/share"
 import toast from "react-hot-toast"
+import { openPdfViewer } from "./pdfViewerBridge"
 
 export const isCapacitorAndroid = () =>
   Capacitor.isNativePlatform?.() && Capacitor.getPlatform?.() === "android"
@@ -26,9 +27,16 @@ const blobToBase64 = (blob) => new Promise((resolve, reject) => {
   reader.readAsDataURL(blob)
 })
 
+const isRemotePdfUrl = (value) => typeof value === "string" && /^https?:\/\//i.test(value)
+const isBlobUrl = (value) => typeof value === "string" && value.startsWith("blob:")
+
 const pdfToBase64 = async (pdfSource) => {
   if (pdfSource instanceof Blob) return blobToBase64(pdfSource)
   if (typeof pdfSource === "string") {
+    if (isRemotePdfUrl(pdfSource) || isBlobUrl(pdfSource)) {
+      const response = await fetch(pdfSource)
+      return blobToBase64(await response.blob())
+    }
     return pdfSource.includes(",") ? pdfSource.split(",")[1] : pdfSource
   }
   if (pdfSource?.output) {
@@ -44,6 +52,17 @@ const pdfToBlob = (pdfSource) => {
   throw new Error("Unsupported PDF source")
 }
 
+const openUrlDownload = (url, filename) => {
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  link.target = "_blank"
+  link.rel = "noreferrer"
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
 const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
@@ -56,6 +75,10 @@ const downloadBlob = (blob, filename) => {
 }
 
 const saveDocDirectly = (pdfSource, filename) => {
+  if (isRemotePdfUrl(pdfSource) || isBlobUrl(pdfSource)) {
+    openUrlDownload(pdfSource, filename)
+    return
+  }
   if (pdfSource?.save) {
     pdfSource.save(filename)
     return
@@ -98,6 +121,16 @@ const openBrowserPdfForPrinting = (pdfSource, filename) => {
 }
 
 const shareNativePdf = async (pdfSource, filename, options) => {
+  if (isRemotePdfUrl(pdfSource)) {
+    await Share.share({
+      title: options.title,
+      text: options.text,
+      url: pdfSource,
+      dialogTitle: options.dialogTitle,
+    })
+    return pdfSource
+  }
+
   const result = await Filesystem.writeFile({
     path: `vetlearn-pdfs/${filename}`,
     data: await pdfToBase64(pdfSource),
@@ -129,13 +162,29 @@ export const saveOrSharePdf = async (
     text = "PDF exported from VetLearn.",
     dialogTitle = "Save, share or print PDF",
     print = false,
+    viewFirst = true,
     successMessage,
     errorMessage,
   } = {}
 ) => {
   const safeFilename = cleanPdfFilename(filename)
+  const viewerOptions = { title, text, dialogTitle, successMessage, errorMessage }
 
   try {
+    if (viewFirst && typeof window !== "undefined") {
+      // Generated jsPDF documents, blobs, blob URLs, and Supabase signed URLs all enter the same in-app viewer.
+      const opened = openPdfViewer({
+        source: pdfSource,
+        filename: safeFilename,
+        title,
+        options: viewerOptions,
+      })
+      if (opened) {
+        toast.success(successMessage || (print ? "PDF ready to print" : "PDF generated"))
+        return true
+      }
+    }
+
     if (Capacitor.isNativePlatform?.()) {
       await shareNativePdf(pdfSource, safeFilename, {
         title,
@@ -163,7 +212,10 @@ export const saveOrSharePdf = async (
 }
 
 export const handlePdfDownloadOrShare = (pdfSource, filename, options = {}) =>
-  saveOrSharePdf(pdfSource, filename, { ...options, print: false })
+  saveOrSharePdf(pdfSource, filename, { ...options, print: false, viewFirst: false })
 
 export const handlePdfPrint = (pdfSource, filename, options = {}) =>
-  saveOrSharePdf(pdfSource, filename, { ...options, print: true })
+  saveOrSharePdf(pdfSource, filename, { ...options, print: true, viewFirst: false })
+
+export const handlePdfExternalOpen = (pdfSource, filename, options = {}) =>
+  saveOrSharePdf(pdfSource, filename, { ...options, print: false, viewFirst: false })

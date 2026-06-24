@@ -9,6 +9,7 @@ import AppPopup, { popupPresets } from "../components/AppPopup";
 import { supabase } from "../supabaseClient";
 import { getUserAiApiKey, isAiApiKeyStoredSecurely, removeUserAiApiKey, saveUserAiApiKey } from "../utils/aiApiKeyStorage";
 import { disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric } from "../utils/biometricAuth";
+import { createInlineImageDataUrl, isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
 
 const DEFAULT_CPD_TARGET_HOURS = 35;
 
@@ -350,18 +351,27 @@ export default function Settings({ user, darkMode = false, setDarkMode }) {
     const safeExtension = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension) ? extension : "jpg";
     const filePath = `${user.id}/avatar.${safeExtension}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("profile-images")
-      .upload(filePath, file, { cacheControl: "3600", upsert: true });
+    const { error: uploadError } = await uploadFileWithSchemaRetry({
+      bucket: "profile-images",
+      path: filePath,
+      file,
+      options: { cacheControl: "3600", upsert: true, contentType: file.type || "image/jpeg" }
+    });
 
-    if (uploadError) {
+    let avatarUrl = "";
+
+    if (uploadError && isSupabaseSchemaCompatibilityError(uploadError)) {
+      avatarUrl = await createInlineImageDataUrl(file, { maxSide: 640, quality: 0.78 });
+    } else if (uploadError) {
       setUploadingAvatar(false);
       toast.error(uploadError.message || "Could not upload image. Please run the Supabase storage SQL.");
       return;
     }
 
-    const { data } = supabase.storage.from("profile-images").getPublicUrl(filePath);
-    const avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+    if (!avatarUrl) {
+      const { data } = supabase.storage.from("profile-images").getPublicUrl(filePath);
+      avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+    }
 
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: user.id,
