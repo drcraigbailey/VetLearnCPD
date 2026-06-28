@@ -55,7 +55,7 @@ export default function MyDrugShareCollaborationModal({
             <h2 className="text-2xl font-black leading-tight mt-1">Share or collaborate</h2>
             <p className="text-sm opacity-65 mt-2 truncate">{drug?.name || "Selected monograph"}</p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy} className={`grid h-10 w-10 place-items-center rounded-full shrink-0 disabled:opacity-50 ${darkMode ? "bg-white/10 hover:bg-white/15" : "bg-[#E8F8F5] hover:bg-[#DFF7F3]"}`} aria-label="Close sharing modal">
+          <button type="button" onClick={onClose} disabled={busy} className={`grid h-10 w-10 place-items-center rounded-lg shrink-0 disabled:opacity-50 ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF7F3]"}`} aria-label="Close sharing modal">
             <X size={19} />
           </button>
         </div>

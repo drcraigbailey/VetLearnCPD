@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   BookOpen,
+  CheckCircle2,
   ChevronRight,
   Copy,
   FileText,
@@ -12,7 +13,6 @@ import {
   Pencil,
   Plus,
   Printer,
-  RefreshCw,
   Save,
   Search,
   Share2,
@@ -21,14 +21,29 @@ import {
   Syringe,
   Trash2,
   User as UserIcon,
+  WifiOff,
   X
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import AppPopup, { popupPresets } from "../components/AppPopup";
 import DrugShareModal from "../components/DrugShareModal";
 import HeartbeatLoader from "../components/HeartbeatLoader";
+import { IconButton } from "../components/VetLearnUI";
+import useOnlineStatus from "../hooks/useOnlineStatus";
+import { drugService } from "../services/drugService";
+import {
+  cacheRecentlyViewedDrug,
+  createOfflineDrugSnapshot,
+  getOfflineDrug,
+  getOfflineDrugByName,
+  getOfflineDrugs,
+  getRecentlyViewedDrugs,
+  markDrugRecentlyViewed,
+  removeOfflineDrug,
+  saveDrugOffline
+} from "../services/offlineFormularyService";
 import { supabase } from "../supabaseClient";
-import { getClinicalItemBody, getClinicalItemSeverity, getClinicalItemTitle } from "../utils/clinicalItemText";
+import { getClinicalItemBody, getClinicalItemSeverity, getClinicalItemTitle, stripFormularySourceLabel } from "../utils/clinicalItemText";
 import { exportDrugHistory, generateDrugMonographPdf } from "../utils/drugsPdfExport";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
 
@@ -57,7 +72,7 @@ const calculatorSpeciesGroups = [
 ];
 const formularySpeciesFilters = [
   { id: "all", label: "All" },
-  { id: "small-animal", label: "Dog & Cat" },
+  { id: "small-animal", label: "Cat & Dog" },
   { id: "exotics", label: "Exotics" }
 ];
 const formularySpeciesOptions = [...smallAnimalSpecies, ...exoticSpecies];
@@ -68,8 +83,52 @@ const calculatorModeOptions = [
 ];
 
 const normalise = (value) => String(value || "").toLowerCase().trim();
-const isSourceCategory = (value) => /vetlearn\s+exotics\s+(feed|seed)|\b(feed|seed)\s+v\d+\b/i.test(String(value || ""));
-const cleanDrugCategory = (...values) => values.find((value) => value && !isSourceCategory(value)) || "";
+const cleanDrugCategory = (...values) => values
+  .map(stripFormularySourceLabel)
+  .find(Boolean) || "";
+const speciesAliases = {
+  dog: /\b(dog|dogs|canine|canines)\b/i,
+  cat: /\b(cat|cats|feline|felines)\b/i
+};
+const generalSpeciesPattern = /^(all(?: species)?|general|any|both|small animals?|companion animals?|dog\s*(?:\/|&|and)\s*cat|cat\s*(?:\/|&|and)\s*dog|canine\s*(?:\/|&|and)\s*feline|feline\s*(?:\/|&|and)\s*canine)$/i;
+const clinicalSpeciesFields = ["species", "species_name", "target_species", "applicable_species", "animal_species"];
+
+const matchesMonographSpecies = (value, speciesScope) => {
+  if (!speciesScope) return true;
+  const text = String(Array.isArray(value) ? value.join(", ") : value || "").trim();
+  if (!text) return true;
+  if (generalSpeciesPattern.test(text)) return true;
+  if (speciesScope === "small-animal") return speciesAliases.dog.test(text) || speciesAliases.cat.test(text);
+  if (speciesScope === "exotics") return isExoticSpecies(text);
+  return speciesAliases[speciesScope]?.test(text) || false;
+};
+
+const clinicalItemMatchesSpecies = (item, species) => {
+  if (!species || item === null || item === undefined) return true;
+  if (typeof item !== "object" || Array.isArray(item)) return true;
+
+  const explicitSpecies = clinicalSpeciesFields
+    .map((field) => item[field])
+    .find((value) => value !== null && value !== undefined && String(value).trim());
+  if (explicitSpecies) return matchesMonographSpecies(explicitSpecies, species);
+
+  const itemText = `${getClinicalItemTitle(item)} ${getClinicalItemBody(item)}`.trim();
+  const labelledSpecies = itemText.match(/^\s*([^:|/–—-]+)\s*[:|/–—-]/i)?.[1]?.trim();
+  const recognisedSpeciesLabel = labelledSpecies && (
+    speciesAliases.dog.test(labelledSpecies)
+    || speciesAliases.cat.test(labelledSpecies)
+    || isExoticSpecies(labelledSpecies)
+  );
+  return recognisedSpeciesLabel ? matchesMonographSpecies(labelledSpecies, species) : true;
+};
+
+const filterSummaryForSpecies = (summary, species) => {
+  if (!summary || !species) return summary;
+  return Object.fromEntries(Object.entries(summary).map(([key, value]) => [
+    key,
+    Array.isArray(value) ? value.filter((item) => clinicalItemMatchesSpecies(item, species)) : value
+  ]));
+};
 
 const groupSpeciesOptions = (speciesOptions, query = "") => {
   const allowed = new Set(speciesOptions.map(normalise));
@@ -102,7 +161,7 @@ const matchesSpeciesFilter = (drug, filter) => {
     : [drug.species].filter(Boolean);
 
   if (filter === "small-animal") {
-    return speciesList.some((species) => smallAnimalSpecies.map(normalise).includes(normalise(species)));
+    return speciesList.some((species) => matchesMonographSpecies(species, filter));
   }
 
   if (filter === "exotics") {
@@ -152,6 +211,21 @@ const clinicalItemsFromText = (text) => String(text || "")
   .filter(Boolean)
   .map((description) => ({ description }));
 
+const clinicalItemsToText = (items) => (items || [])
+  .map((item) => getClinicalItemBody(item) || getClinicalItemTitle(item))
+  .filter(Boolean)
+  .join("\n");
+
+const formatOfflineDate = (value) => {
+  if (!value) return "date unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "date unavailable";
+  return date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+};
+
+const offlineRows = (copies) => (copies || []).flatMap((copy) => copy.doses || []);
+const offlineAliases = (copies) => (copies || []).flatMap((copy) => copy.summary?.aliases || []);
+
 const sectionClass = (darkMode) =>
   darkMode
     ? "bg-white/10 border border-white/10 rounded-lg p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"
@@ -165,6 +239,7 @@ const inputClass = (darkMode) =>
 export default function Drugs({ user, darkMode = false, featureAccess, adminAccess = false }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
   const canUseMyDrugs = canUseFeature(featureAccess, featureKeys.myDrugs, adminAccess);
   const canUseExoticsFormulary = canUseFeature(featureAccess, featureKeys.exoticsFormulary, adminAccess);
   const isMyDrugsPath = location.pathname === "/drugs/my-drugs" || location.pathname === "/drugs/my-monographs";
@@ -185,10 +260,13 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
   const [favourites, setFavourites] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [offlineDrugCopies, setOfflineDrugCopies] = useState([]);
+  const [usingOfflineFallback, setUsingOfflineFallback] = useState(false);
 
   const [activeDrugName, setActiveDrugName] = useState("");
   const [activeDrugId, setActiveDrugId] = useState(null);
   const [activeDrugScope, setActiveDrugScope] = useState("library");
+  const [activeMonographSpecies, setActiveMonographSpecies] = useState(null);
   const [activeDrugDoses, setActiveDrugDoses] = useState([]);
   const [activeSummary, setActiveSummary] = useState(null);
   const [summaryCache, setSummaryCache] = useState({});
@@ -197,6 +275,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
   const [noteText, setNoteText] = useState("");
   const [shareDrugTarget, setShareDrugTarget] = useState(null);
   const [printingDrugPdf, setPrintingDrugPdf] = useState(false);
+  const [activeOfflineCopy, setActiveOfflineCopy] = useState(null);
+  const [activeUsingOfflineCopy, setActiveUsingOfflineCopy] = useState(false);
+  const [offlineUnavailableName, setOfflineUnavailableName] = useState("");
+  const [savingOffline, setSavingOffline] = useState(false);
 
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [drugForm, setDrugForm] = useState(emptyDrugForm);
@@ -214,13 +296,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
   const panelClass = sectionClass(darkMode);
   const fieldClass = inputClass(darkMode);
+  const offlineMode = !isOnline || usingOfflineFallback;
 
   useEffect(() => {
     if (!user) return;
     loadDatabase();
     loadDrugCollections();
     loadLocalHistory();
-  }, [user, canUseMyDrugs]);
+  }, [user, canUseMyDrugs, isOnline]);
 
   useEffect(() => {
     if (!canUseMyDrugs && activeDrugScope === "custom") {
@@ -256,6 +339,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     const checkInteractions = async () => {
       setCheckingInteractions(true);
       const names = selectedCalcDrugNames.split(',');
+      const selectedNames = new Set(names.map(normalise));
       const orConditions = [];
 
       for (let i = 0; i < names.length; i++) {
@@ -269,24 +353,69 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
 
       const queryStr = orConditions.join(",");
       try {
+        if (offlineMode) {
+          const cachedInteractions = offlineDrugCopies
+            .flatMap((copy) => copy.summary?.interactions || [])
+            .filter((interaction) => (
+              selectedNames.has(normalise(interaction.drug_name))
+              && selectedNames.has(normalise(interaction.interacting_drug))
+            ));
+          setInteractionResults(cachedInteractions);
+          if (cachedInteractions.length > 0) setShowInteractionModal(true);
+          return;
+        }
+
         const { data } = await supabase.from("drug_interactions").select("*").or(queryStr);
         setInteractionResults(data || []);
         if (data && data.length > 0) {
           setShowInteractionModal(true); // Automatically pop up the modal if an interaction is found
         }
-      } catch (error) {
-        toast.error("Failed to check interactions");
-        setInteractionResults([]);
+      } catch {
+        const cachedInteractions = offlineDrugCopies
+          .flatMap((copy) => copy.summary?.interactions || [])
+          .filter((interaction) => (
+            selectedNames.has(normalise(interaction.drug_name))
+            && selectedNames.has(normalise(interaction.interacting_drug))
+          ));
+        setInteractionResults(cachedInteractions);
+        if (cachedInteractions.length > 0) {
+          setShowInteractionModal(true);
+          toast("Showing cached interaction information");
+        } else {
+          toast.error("Failed to check interactions");
+        }
       } finally {
         setCheckingInteractions(false);
       }
     };
 
     checkInteractions();
-  }, [selectedCalcDrugNames]);
+  }, [selectedCalcDrugNames, selectedCalcDrugs.length, offlineMode, offlineDrugCopies]);
 
-  const loadDatabase = async () => {
+  async function refreshOfflineDrugCopies() {
+    try {
+      const copies = await getOfflineDrugs();
+      setOfflineDrugCopies(copies);
+      return copies;
+    } catch (error) {
+      console.warn("Offline formulary storage is unavailable", error);
+      setOfflineDrugCopies([]);
+      return [];
+    }
+  }
+
+  async function loadDatabase() {
     setLoading(true);
+    const cachedCopies = await refreshOfflineDrugCopies();
+
+    if (!isOnline) {
+      setDrugs((current) => current.length > 0 ? current : offlineRows(cachedCopies));
+      setAllAliases((current) => current.length > 0 ? current : offlineAliases(cachedCopies));
+      setUsingOfflineFallback(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       let drugsQuery = supabase.from("drugs").select("*").eq("active", true).order("name");
       if (!canUseMyDrugs) drugsQuery = drugsQuery.is("user_id", null);
@@ -301,6 +430,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       if (aliasesRes.error) throw aliasesRes.error;
       setDrugs(drugsRes.data || []);
       setAllAliases(aliasesRes.data || []);
+      setUsingOfflineFallback(false);
       if (collaborationsRes.error) {
         console.warn("Drug collaboration access is not installed yet", collaborationsRes.error);
         setDrugCollaborations({});
@@ -309,28 +439,59 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       }
     } catch (error) {
       console.error("Failed to load formulary", error);
-      toast.error("Failed to load formulary");
+      setDrugs((current) => current.length > 0 ? current : offlineRows(cachedCopies));
+      setAllAliases((current) => current.length > 0 ? current : offlineAliases(cachedCopies));
+      setUsingOfflineFallback(true);
+      if (cachedCopies.length > 0) toast("Supabase is unavailable. Showing offline formulary copies.");
+      else toast.error("Failed to load formulary");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const loadDrugCollections = async () => {
+  async function loadDrugCollections() {
     const localFavs = JSON.parse(localStorage.getItem("vetlearn-fav-drugs") || "[]");
     const localRecent = JSON.parse(localStorage.getItem("vetlearn-recent-drugs") || "[]");
     setFavourites(localFavs.map((title) => ({ id: title, title, url: `/drugs/${encodeURIComponent(title)}`, local: true })));
-    setRecentlyViewed(localRecent.map((title) => ({ id: title, title, url: `/drugs/${encodeURIComponent(title)}`, local: true })));
+    try {
+      const cachedRecent = await getRecentlyViewedDrugs();
+      const cachedNames = new Set(cachedRecent.map((copy) => normalise(copy.drug_name)));
+      setRecentlyViewed([
+        ...cachedRecent.map((copy) => ({ id: copy.drug_id, title: copy.drug_name, local: true, offline: true })),
+        ...localRecent
+          .filter((title) => !cachedNames.has(normalise(title)))
+          .map((title) => ({ id: title, title, url: `/drugs/${encodeURIComponent(title)}`, local: true }))
+      ].slice(0, 8));
+    } catch (error) {
+      console.warn("Could not load cached recent drugs", error);
+      setRecentlyViewed(localRecent.map((title) => ({ id: title, title, url: `/drugs/${encodeURIComponent(title)}`, local: true })));
+    }
 
-    const [favRes, recentRes] = await Promise.all([
-      supabase.from("dashboard_favourites").select("*").eq("user_id", user.id).eq("type", "drug").order("created_at", { ascending: false }).limit(12),
-      supabase.from("recently_viewed").select("*").eq("user_id", user.id).eq("item_type", "drug").order("viewed_at", { ascending: false }).limit(8)
-    ]);
+    if (!isOnline) return;
 
-    if (!favRes.error) setFavourites(favRes.data || []);
-    if (!recentRes.error) setRecentlyViewed(recentRes.data || []);
-  };
+    try {
+      const [favRes, recentRes] = await Promise.all([
+        supabase.from("dashboard_favourites").select("*").eq("user_id", user.id).eq("type", "drug").order("created_at", { ascending: false }).limit(12),
+        supabase.from("recently_viewed").select("*").eq("user_id", user.id).eq("item_type", "drug").order("viewed_at", { ascending: false }).limit(8)
+      ]);
 
-  const loadLocalHistory = () => {
+      if (!favRes.error) setFavourites(favRes.data || []);
+      if (!recentRes.error && recentRes.data?.length) {
+        setRecentlyViewed((current) => {
+          const localCached = current.filter((item) => item.offline);
+          const cachedNames = new Set(localCached.map((item) => normalise(item.title)));
+          return [
+            ...localCached,
+            ...(recentRes.data || []).filter((item) => !cachedNames.has(normalise(item.title)))
+          ].slice(0, 8);
+        });
+      }
+    } catch (error) {
+      console.warn("Could not refresh saved drug collections", error);
+    }
+  }
+
+  function loadLocalHistory() {
     try {
       const saved = JSON.parse(localStorage.getItem("euthapp-drug-history") || "[]");
       const validHistory = Array.isArray(saved) ? saved.filter((item) => item.timestamp > Date.now() - 24 * 60 * 60 * 1000) : [];
@@ -339,7 +500,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     } catch {
       setHistory([]);
     }
-  };
+  }
 
   const buildDrugList = useCallback((sourceDrugs, isCustom) => {
     const map = new Map();
@@ -453,24 +614,54 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     : (activeDrugScope === "custom" ? myDrugsList : libraryDrugsList)
       .find((drug) => normalise(drug.name) === normalise(activeDrugName)));
   const isActiveFavourite = favourites.some((item) => normalise(item.title) === normalise(activeDrugName));
+  const storedActiveOfflineCopy = offlineDrugCopies.find((copy) => (
+    String(copy.drug_id) === String(activeDrugId || "")
+    || copy.dose_ids?.some((id) => String(id) === String(activeDrugDoses[0]?.id || ""))
+    || normalise(copy.drug_name) === normalise(activeDrugName)
+  )) || activeOfflineCopy;
+  const isActiveSavedOffline = activeDrugScope === "library" && storedActiveOfflineCopy?.saved_offline === true;
 
-  const saveRecentlyViewedDrug = async (drugName) => {
+  const saveRecentlyViewedDrug = async (drugName, snapshot = null) => {
     const updatedRecent = [drugName, ...JSON.parse(localStorage.getItem("vetlearn-recent-drugs") || "[]").filter((name) => name !== drugName)].slice(0, 8);
     localStorage.setItem("vetlearn-recent-drugs", JSON.stringify(updatedRecent));
     setRecentlyViewed(updatedRecent.map((title) => ({ id: title, title, local: true })));
 
-    const { error } = await supabase.from("recently_viewed").insert({
-      user_id: user.id,
-      item_type: "drug",
-      item_id: drugName,
-      title: drugName,
-      url: "/drugs",
-      metadata: { source: "formulary" }
-    });
-    if (!error) loadDrugCollections();
+    let cachedCopy = null;
+    if (snapshot) {
+      try {
+        cachedCopy = await cacheRecentlyViewedDrug(snapshot);
+        await refreshOfflineDrugCopies();
+        const cachedRecent = await getRecentlyViewedDrugs();
+        setRecentlyViewed(cachedRecent.map((copy) => ({
+          id: copy.drug_id,
+          title: copy.drug_name,
+          local: true,
+          offline: true
+        })));
+      } catch (error) {
+        console.warn("Could not cache recently viewed drug", error);
+      }
+    }
+
+    if (isOnline) {
+      try {
+        await supabase.from("recently_viewed").insert({
+          user_id: user.id,
+          item_type: "drug",
+          item_id: drugName,
+          title: drugName,
+          url: "/drugs",
+          metadata: { source: "formulary" }
+        });
+      } catch (error) {
+        console.warn("Could not sync recently viewed drug", error);
+      }
+    }
+
+    return cachedCopy;
   };
 
-  const openMonograph = useCallback(async (drugName, scope = "library", drugId = null) => {
+  const openMonograph = async (drugName, scope = "library", drugId = null, speciesScope = null) => {
     if (!drugName) return;
     if (scope === "custom" && !canUseMyDrugs) {
       toast.error("My Drugs is not available for your account");
@@ -478,7 +669,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     }
     const formattedName = normalise(drugName);
     const cacheKey = `${scope}:${formattedName}`;
-    const doses = availableDrugRows.filter((drug) => (
+    const currentDoses = availableDrugRows.filter((drug) => (
       normalise(drug.name) === formattedName
       && (
         scope === "custom"
@@ -486,68 +677,111 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
           : !drug.user_id
       )
     ));
-    if (doses.length === 0) return toast.error("This drug is not available");
 
     setActiveDrugName(drugName);
-    setActiveDrugId(scope === "custom" ? drugId || doses[0]?.id || null : null);
+    setActiveDrugId(scope === "custom" ? drugId || currentDoses[0]?.id || null : null);
     setActiveDrugScope(scope);
-    setActiveDrugDoses(doses);
-    const customDetails = doses[0]?.custom_details || {};
-    setActiveSummary(scope === "custom" ? {
-      aliases: [],
-      warnings: clinicalItemsFromText(customDetails.warnings),
-      contraindications: clinicalItemsFromText(customDetails.contraindications),
-      interactions: clinicalItemsFromText(customDetails.interactions),
-      monitoring: clinicalItemsFromText(customDetails.monitoring),
-      speciesWarnings: [],
-      drugInformation: clinicalItemsFromText(customDetails.summary || customDetails.indication),
-      adverseEffects: [],
-      clinicalPearls: []
-    } : summaryCache[cacheKey] || null);
+    setActiveMonographSpecies(scope === "library" && ["small-animal", "exotics"].includes(speciesScope) ? speciesScope : null);
+    setOfflineUnavailableName("");
+    setActiveOfflineCopy(null);
+    setActiveUsingOfflineCopy(false);
     setMonographOpen(true);
 
     const savedNotes = JSON.parse(localStorage.getItem("vetlearn-drug-notes") || "{}");
     setNoteText(savedNotes[formattedName] || "");
-    saveRecentlyViewedDrug(drugName);
 
-    if (scope === "custom" || summaryCache[cacheKey] || doses.length === 0) return;
+    if (scope === "custom") {
+      if (currentDoses.length === 0) {
+        setMonographOpen(false);
+        toast.error("This drug is not available");
+        return;
+      }
+      const customDetails = currentDoses[0]?.custom_details || {};
+      setActiveDrugDoses(currentDoses);
+      setActiveSummary({
+        aliases: [],
+        warnings: clinicalItemsFromText(customDetails.warnings),
+        contraindications: clinicalItemsFromText(customDetails.contraindications),
+        interactions: clinicalItemsFromText(customDetails.interactions),
+        monitoring: clinicalItemsFromText(customDetails.monitoring),
+        speciesWarnings: [],
+        drugInformation: clinicalItemsFromText(customDetails.summary || customDetails.indication),
+        adverseEffects: [],
+        clinicalPearls: []
+      });
+      setLoadingSummary(false);
+      saveRecentlyViewedDrug(drugName);
+      return;
+    }
 
+    setActiveDrugDoses(currentDoses);
+    setActiveSummary(summaryCache[cacheKey] || null);
     setLoadingSummary(true);
-    const drugNames = unique(doses.map((drug) => drug.name));
-    const drugIds = doses.map((drug) => drug.id);
 
     try {
-      const [aliases, warnings, contraindications, interactions, monitoring, speciesWarnings, drugInfo, adverseEffects, pearls] = await Promise.all([
-        supabase.from("drug_aliases").select("*").in("drug_id", drugIds),
-        supabase.from("drug_warnings").select("*").in("drug_name", drugNames),
-        supabase.from("contraindications").select("*").in("drug_name", drugNames),
-        supabase.from("drug_interactions").select("*").in("drug_name", drugNames),
-        supabase.from("monitoring_recommendations").select("*").in("drug_name", drugNames),
-        supabase.from("species_warnings").select("*").in("drug_name", drugNames),
-        supabase.from("drug_information").select("*").in("drug_name", drugNames),
-        supabase.from("adverse_effects").select("*").in("drug_name", drugNames),
-        supabase.from("clinical_pearls").select("*").in("drug_name", drugNames)
-      ]);
+      if (!isOnline) throw new Error("Offline");
 
-      const summary = {
-        aliases: aliases.data || [],
-        warnings: warnings.data || [],
-        contraindications: contraindications.data || [],
-        interactions: interactions.data || [],
-        monitoring: monitoring.data || [],
-        speciesWarnings: speciesWarnings.data || [],
-        drugInformation: drugInfo.data || [],
-        adverseEffects: adverseEffects.data || [],
-        clinicalPearls: pearls.data || []
-      };
+      const remoteSnapshot = await drugService.getOfficialDrugSnapshot(drugName);
+      if (!remoteSnapshot?.doses?.length) throw new Error("Drug not found");
+
+      const summary = remoteSnapshot.summary;
+      const remoteDoses = remoteSnapshot.doses;
+      setDrugs((current) => [
+        ...current.filter((drug) => drug.user_id || normalise(drug.name) !== formattedName),
+        ...remoteDoses
+      ]);
+      setAllAliases((current) => [
+        ...current.filter((alias) => !remoteDoses.some((drug) => String(drug.id) === String(alias.drug_id))),
+        ...(summary.aliases || [])
+      ]);
+      setActiveDrugDoses(remoteDoses);
       setSummaryCache((prev) => ({ ...prev, [cacheKey]: summary }));
       setActiveSummary(summary);
-    } catch {
-      toast.error("Could not load drug details");
+      setUsingOfflineFallback(false);
+
+      const snapshot = createOfflineDrugSnapshot({
+        drug: remoteSnapshot.drug,
+        doses: remoteDoses,
+        summary,
+        source: "official"
+      });
+      const cachedCopy = await saveRecentlyViewedDrug(drugName, snapshot);
+      setActiveOfflineCopy(cachedCopy);
+      setActiveUsingOfflineCopy(false);
+    } catch (error) {
+      console.warn("Could not load the latest formulary copy", error);
+      const cachedCopy = drugId
+        ? await getOfflineDrug(drugId)
+        : await getOfflineDrugByName(drugName);
+
+      if (cachedCopy) {
+        setDrugs((current) => [
+          ...current.filter((drug) => drug.user_id || normalise(drug.name) !== formattedName),
+          ...(cachedCopy.doses || [])
+        ]);
+        setAllAliases((current) => [
+          ...current.filter((alias) => !cachedCopy.dose_ids?.includes(String(alias.drug_id))),
+          ...(cachedCopy.summary?.aliases || [])
+        ]);
+        setActiveDrugDoses(cachedCopy.doses || []);
+        setActiveSummary(cachedCopy.summary || {});
+        setSummaryCache((prev) => ({ ...prev, [cacheKey]: cachedCopy.summary || {} }));
+        setActiveOfflineCopy(cachedCopy);
+        setActiveUsingOfflineCopy(true);
+        await markDrugRecentlyViewed(cachedCopy.drug_id);
+        await saveRecentlyViewedDrug(drugName);
+        await refreshOfflineDrugCopies();
+        toast("Showing offline copy");
+      } else {
+        setActiveDrugDoses([]);
+        setActiveSummary(null);
+        setOfflineUnavailableName(drugName);
+        setActiveUsingOfflineCopy(true);
+      }
     } finally {
       setLoadingSummary(false);
     }
-  }, [availableDrugRows, canUseMyDrugs, summaryCache, user.id]);
+  };
 
   const handleToggleFav = async (drugName) => {
     const existing = favourites.find((item) => normalise(item.title) === normalise(drugName));
@@ -720,6 +954,87 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     navigate("/drugs/my-drugs", { replace: true });
   };
 
+  const saveActiveDrugForOffline = async () => {
+    if (activeDrugScope !== "library" || loadingSummary) return;
+
+    const snapshot = storedActiveOfflineCopy || (
+      activeDrugDoses.length > 0 && activeSummary
+        ? createOfflineDrugSnapshot({
+          drug: activeDrugRecord || activeDrugDoses[0],
+          doses: activeDrugDoses,
+          summary: activeSummary,
+          source: "official"
+        })
+        : null
+    );
+
+    if (!snapshot) {
+      toast.error("Open this drug online before saving it offline");
+      return;
+    }
+
+    setSavingOffline(true);
+    try {
+      const savedCopy = await saveDrugOffline(snapshot);
+      setActiveOfflineCopy(savedCopy);
+      await refreshOfflineDrugCopies();
+      toast.success("Drug available offline");
+    } catch (error) {
+      console.error("Could not save drug offline", error);
+      toast.error("Unable to save this drug offline");
+    } finally {
+      setSavingOffline(false);
+    }
+  };
+
+  const removeSavedFormularyDrug = async (copy) => {
+    if (!copy?.drug_id) return;
+
+    setSavingOffline(true);
+    try {
+      await removeOfflineDrug(copy.drug_id);
+      const copies = await refreshOfflineDrugCopies();
+      if (normalise(copy.drug_name) === normalise(activeDrugName)) {
+        setActiveOfflineCopy(copies.find((item) => normalise(item.drug_name) === normalise(activeDrugName)) || null);
+      }
+      toast.success("Offline copy removed");
+    } catch (error) {
+      console.error("Could not remove saved offline drug", error);
+      toast.error("Unable to remove this offline save");
+    } finally {
+      setSavingOffline(false);
+    }
+  };
+
+  const duplicateOfflineDrugToMyDrugs = (copy) => {
+    if (!canUseMyDrugs) return toast.error("My Drugs is not available for your account");
+    const dose = copy?.doses?.[0] || {};
+    const summary = copy?.summary || {};
+    const drug = copy?.drug || dose;
+
+    setDrugForm({
+      id: null,
+      name: `${copy.drug_name} (My Drug)`,
+      species: dose.species || drug.species || "Dog",
+      concentration: dose.concentration ?? "",
+      dose_min: dose.dose_min ?? "",
+      dose_max: dose.dose_max ?? "",
+      route: dose.route || "",
+      category: cleanDrugCategory(drug.category, drug.drug_class) || "Custom",
+      indication: drug.indication || drug.indications || "",
+      summary: clinicalItemsToText([...(summary.clinicalPearls || []), ...(summary.drugInformation || [])]) || drug.summary || drug.clinical_summary || "",
+      warnings: clinicalItemsToText(summary.warnings),
+      contraindications: clinicalItemsToText(summary.contraindications),
+      interactions: clinicalItemsToText(summary.interactions),
+      monitoring: clinicalItemsToText(summary.monitoring)
+    });
+    setShowAddDrug(true);
+    setMonographOpen(false);
+    setActiveTab("my-drugs");
+    navigate("/drugs/my-drugs", { state: { scrollToFormularyTab: true } });
+    toast("Official copy duplicated into an editable My Drug draft");
+  };
+
   const addDrugToActiveCalc = (drug) => {
     if (selectedCalcDrugs.some((item) => String(item.id) === String(drug.id))) return;
     setSelectedCalcDrugs((prev) => [...prev, { ...drug, selectedDose: parseSafeNumber(drug.dose_min, 0) }]);
@@ -755,8 +1070,42 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     toast.success("Saved to 24h history");
   };
 
+  const activeMonographDoses = useMemo(
+    () => activeMonographSpecies
+      ? activeDrugDoses.filter((dose) => matchesMonographSpecies(dose.species, activeMonographSpecies))
+      : activeDrugDoses,
+    [activeDrugDoses, activeMonographSpecies]
+  );
+  const activeMonographDrugRecord = useMemo(() => {
+    if (!activeMonographSpecies || !activeMonographDoses[0]) return activeDrugRecord;
+    const scopedCategories = unique(activeMonographDoses
+      .flatMap((dose) => [dose.category, dose.drug_class])
+      .map(stripFormularySourceLabel)
+      .filter(Boolean));
+    const scopedIndications = unique(activeMonographDoses
+      .flatMap((dose) => [dose.indication, dose.indications])
+      .map(stripFormularySourceLabel)
+      .filter(Boolean));
+    const scopedSummaries = unique(activeMonographDoses
+      .flatMap((dose) => [dose.summary, dose.clinical_summary])
+      .map(stripFormularySourceLabel)
+      .filter(Boolean));
+    return {
+      ...activeDrugRecord,
+      ...activeMonographDoses[0],
+      category: scopedCategories.join(", ") || activeDrugRecord?.category || "",
+      indication: scopedIndications.join(" • ") || activeDrugRecord?.indication || "",
+      summary: scopedSummaries.join("\n") || activeDrugRecord?.summary || "",
+      aliases: activeDrugRecord?.aliases || [],
+      brandNames: activeDrugRecord?.brandNames || []
+    };
+  }, [activeDrugRecord, activeMonographDoses, activeMonographSpecies]);
+  const activeMonographSummary = useMemo(
+    () => filterSummaryForSpecies(activeSummary, activeMonographSpecies),
+    [activeSummary, activeMonographSpecies]
+  );
   const groupedDoses = useMemo(() => {
-    return activeDrugDoses.reduce((groups, dose) => {
+    return activeMonographDoses.reduce((groups, dose) => {
       const species = dose.species || "General";
       const route = dose.route || "General";
       groups[species] = groups[species] || {};
@@ -764,8 +1113,9 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
       groups[species][route].push(dose);
       return groups;
     }, {});
-  }, [activeDrugDoses]);
+  }, [activeMonographDoses]);
 
+  const savedOfflineCopies = offlineDrugCopies.filter((copy) => copy.saved_offline === true);
   const availableCalcDrugs = availableDrugRows.filter((drug) => normalise(drug.species) === normalise(calcPatient.species));
   const canUseCalculator = canUseFeature(featureAccess, featureKeys.drugCalculator, adminAccess);
   const canUseLibrary = canUseFeature(featureAccess, featureKeys.library, adminAccess);
@@ -844,9 +1194,9 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
     try {
       await generateDrugMonographPdf({
         drugName: activeDrugName,
-        drug: activeDrugRecord,
-        doses: activeDrugDoses,
-        summary: activeSummary,
+        drug: activeMonographDrugRecord,
+        doses: activeMonographDoses,
+        summary: activeMonographSummary,
         noteText,
         print: true,
       });
@@ -865,10 +1215,11 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         onClose={() => setMonographOpen(false)}
         darkMode={darkMode}
         drugName={activeDrugName}
-        drug={activeDrugRecord}
-        doses={activeDrugDoses}
+        drug={activeMonographDrugRecord}
+        doses={activeMonographDoses}
         groupedDoses={groupedDoses}
-        summary={activeSummary}
+        summary={activeMonographSummary}
+        speciesScope={activeMonographSpecies}
         loading={loadingSummary}
         favourites={favourites}
         isFavourite={isActiveFavourite}
@@ -879,6 +1230,14 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         onCopy={copyDrugSummary}
         onPrintPdf={printDrugMonographPdf}
         printingPdf={printingDrugPdf}
+        offlineMode={offlineMode || activeUsingOfflineCopy}
+        offlineCopy={storedActiveOfflineCopy}
+        offlineUnavailable={Boolean(offlineUnavailableName)}
+        canSaveOffline={activeDrugScope === "library"}
+        isSavedOffline={isActiveSavedOffline}
+        savingOffline={savingOffline}
+        onSaveOffline={saveActiveDrugForOffline}
+        onRemoveOffline={() => removeSavedFormularyDrug(storedActiveOfflineCopy)}
         onEdit={() => startEditDrug(activeDrugDoses[0]?.id)}
         canManageCustom={canUseMyDrugs && activeDrugScope === "custom" && Boolean(activeDrugRecord?.canEdit)}
         canShareCustom={activeDrugScope === "custom" && Boolean(activeDrugRecord?.isOwned)}
@@ -886,9 +1245,9 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         onOpenShare={() => openDrugShareModal(activeDrugRecord)}
         onDelete={() => requestDeleteDrug(activeDrugRecord)}
         onAddToCalculator={() => {
-          if (activeDrugDoses[0]) {
-            setCalcPatient((prev) => ({ ...prev, species: activeDrugDoses[0].species || "Dog" }));
-            addDrugToActiveCalc(activeDrugDoses[0]);
+          if (activeMonographDoses[0]) {
+            setCalcPatient((prev) => ({ ...prev, species: activeMonographDoses[0].species || "Dog" }));
+            addDrugToActiveCalc(activeMonographDoses[0]);
             selectTab("calculator");
             setMonographOpen(false);
           }
@@ -907,7 +1266,11 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
         title="Formulary"
         subtitle="Search drugs, calculate doses, and open clinical monographs without scrolling through the whole database."
         darkMode={darkMode}
-        badges={[{ label: `${uniqueDrugsList.length} active drugs`, icon: <Syringe size={14} />, accent: true }]}
+        badges={[
+          { label: `${uniqueDrugsList.length} active drugs`, icon: <Syringe size={14} />, accent: true },
+          ...(offlineMode ? [{ label: "Offline formulary", icon: <WifiOff size={14} /> }] : []),
+          ...(savedOfflineCopies.length ? [{ label: `${savedOfflineCopies.length} saved offline`, icon: <Save size={14} /> }] : [])
+        ]}
       />
 
       <div className="flex overflow-x-auto gap-2 mb-6 pb-2 scrollbar-hide">
@@ -944,7 +1307,7 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               setVisibleCount={setVisibleCount}
               favourites={favourites}
               recentlyViewed={recentlyViewed}
-              openMonograph={(name, isCustom = false, drugId = null) => openMonograph(name, isCustom ? "custom" : "library", drugId)}
+              openMonograph={(name, isCustom = false, drugId = null, speciesScope = null) => openMonograph(name, isCustom ? "custom" : "library", drugId, speciesScope)}
               handleToggleFav={handleToggleFav}
             />
           )}
@@ -966,6 +1329,10 @@ export default function Drugs({ user, darkMode = false, featureAccess, adminAcce
               onQuickShare={openDrugShareModal}
               onDelete={requestDeleteDrug}
               onOpen={(drug) => openMonograph(drug.name, "custom", drug.id)}
+              savedFormularyDrugs={savedOfflineCopies}
+              onOpenSaved={(copy) => openMonograph(copy.drug_name, "library", copy.drug_id)}
+              onRemoveSaved={removeSavedFormularyDrug}
+              onDuplicateSaved={duplicateOfflineDrugToMyDrugs}
               onCloseForm={() => {
                 setShowAddDrug(false);
                 setDrugForm(emptyDrugForm);
@@ -1136,7 +1503,14 @@ function LibraryTab(props) {
           </div>
 
           {visibleLibrary.map((drug) => (
-            <DrugResultCard key={`${drug.isCustom ? "mine" : "formulary"}-${drug.id}`} drug={drug} darkMode={darkMode} panelClass={panelClass} search={drugSearch} onOpen={() => openMonograph(drug.name, drug.isCustom, drug.id)} />
+            <DrugResultCard
+              key={`${drug.isCustom ? "mine" : "formulary"}-${drug.id}`}
+              drug={drug}
+              darkMode={darkMode}
+              panelClass={panelClass}
+              search={drugSearch}
+              onOpen={() => openMonograph(drug.name, drug.isCustom, drug.id, speciesFilter)}
+            />
           ))}
 
           {filteredLibrary.length === 0 && <div className={`${panelClass} text-center opacity-60 text-sm`}>No drugs found.</div>}
@@ -1167,15 +1541,30 @@ function MyDrugsTab({
   onQuickShare,
   onDelete,
   onOpen,
+  savedFormularyDrugs,
+  onOpenSaved,
+  onRemoveSaved,
+  onDuplicateSaved,
   onCloseForm
 }) {
+  const [view, setView] = useState("personal");
+  const visibleSavedDrugs = (savedFormularyDrugs || []).filter((copy) => (
+    !search || [
+      copy.drug_name,
+      copy.drug?.category,
+      copy.drug?.indication,
+      ...(copy.doses || []).map((dose) => dose.species)
+    ].map(normalise).some((value) => value.includes(normalise(search)))
+  ));
+  const visibleDrugs = view === "saved" ? visibleSavedDrugs : drugs;
+
   return (
     <div className="space-y-5">
       <section className={panelClass}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-black text-xl">My Drugs</h2>
-            <p className="text-sm opacity-65 mt-1">Create your own drug monographs and share them with colleagues.</p>
+            <p className="text-sm opacity-65 mt-1">Keep editable personal monographs separate from read-only official formulary saves.</p>
           </div>
           <button onClick={onCreate} className="bg-[#71CFC2] text-[#062F63] px-3 py-2 rounded-lg font-black text-xs flex items-center gap-1 shrink-0">
             <Plus size={14} /> Add Drug
@@ -1183,8 +1572,26 @@ function MyDrugsTab({
         </div>
       </section>
 
+      <div className={`grid grid-cols-2 gap-2 rounded-xl p-1 ${darkMode ? "bg-white/5" : "bg-[#E8F8F5]"}`}>
+        <button
+          type="button"
+          onClick={() => setView("personal")}
+          className={`rounded-lg px-3 py-2 text-xs font-black transition ${view === "personal" ? "bg-[#71CFC2] text-[#062F63] shadow-sm" : "opacity-65"}`}
+        >
+          My Drugs ({drugs.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("saved")}
+          className={`rounded-lg px-3 py-2 text-xs font-black transition ${view === "saved" ? "bg-[#71CFC2] text-[#062F63] shadow-sm" : "opacity-65"}`}
+        >
+          Saved from Formulary ({savedFormularyDrugs?.length || 0})
+        </button>
+      </div>
+
       {showForm && (
         <CustomDrugForm
+          darkMode={darkMode}
           panelClass={panelClass}
           fieldClass={fieldClass}
           drugForm={drugForm}
@@ -1198,18 +1605,44 @@ function MyDrugsTab({
         <Search size={20} className="opacity-50" />
         <input
           className="w-full py-4 outline-none bg-transparent text-sm font-bold"
-          placeholder="Search My Drugs..."
+          placeholder={view === "saved" ? "Search saved formulary drugs..." : "Search My Drugs..."}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
         {search && <button onClick={() => setSearch("")}><X size={16} /></button>}
       </div>
 
-      {drugs.length === 0 ? (
+      {visibleDrugs.length === 0 ? (
         <div className={`${panelClass} text-center`}>
           <BookOpen className="mx-auto mb-3 text-[#0F8F83]" size={30} />
-          <h3 className="font-black">{search ? "No matching drugs" : "No personal monographs yet"}</h3>
-          <p className="text-sm opacity-60 mt-2">{search ? "Try another search." : "Use Add Drug to create your first monograph."}</p>
+          <h3 className="font-black">{search ? "No matching drugs" : view === "saved" ? "No official drugs saved offline yet" : "No personal monographs yet"}</h3>
+          <p className="text-sm opacity-60 mt-2">
+            {search
+              ? "Try another search."
+              : view === "saved"
+                ? "Open an official formulary monograph and choose Save offline."
+                : "Use Add Drug to create your first monograph."}
+          </p>
+        </div>
+      ) : view === "saved" ? (
+        <div className="space-y-3">
+          {visibleSavedDrugs.map((copy) => (
+            <div key={copy.drug_id} className={`${panelClass} flex items-center gap-3`}>
+              <button className="min-w-0 flex-1 text-left" onClick={() => onOpenSaved(copy)}>
+                <h3 className="font-black text-lg truncate">{copy.drug_name}</h3>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="text-sm opacity-60">{copy.drug?.category || "Official formulary"}</span>
+                  <span className="rounded-full bg-[#E8F8F5] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#0F8F83]">
+                    Read-only official
+                  </span>
+                </div>
+                <p className="mt-2 text-xs opacity-50">Saved {formatOfflineDate(copy.local_saved_at || copy.local_updated_at)}</p>
+              </button>
+              <IconButton icon={Copy} label={`Duplicate ${copy.drug_name} to My Drugs`} darkMode={darkMode} onClick={() => onDuplicateSaved(copy)} />
+              <IconButton icon={Trash2} label={`Remove offline ${copy.drug_name}`} variant="danger" darkMode={darkMode} onClick={() => onRemoveSaved(copy)} />
+              <IconButton icon={ChevronRight} label={`Open ${copy.drug_name}`} variant="primary" darkMode={darkMode} onClick={() => onOpenSaved(copy)} />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-3">
@@ -1227,23 +1660,15 @@ function MyDrugsTab({
                 </div>
               </button>
               {drug.isOwned && (
-                <button onClick={() => onQuickShare(drug)} className={`p-2.5 rounded-lg ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"} text-[#0F8F83]`} aria-label={`Share ${drug.name}`}>
-                  <Share2 size={17} />
-                </button>
+                <IconButton icon={Share2} label={`Share ${drug.name}`} darkMode={darkMode} onClick={() => onQuickShare(drug)} />
               )}
               {drug.canEdit && (
-                <button onClick={() => onEdit(drug.id)} className={`p-2.5 rounded-lg ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"} text-[#0F8F83]`} aria-label={`Edit ${drug.name}`}>
-                  <Pencil size={17} />
-                </button>
+                <IconButton icon={Pencil} label={`Edit ${drug.name}`} darkMode={darkMode} onClick={() => onEdit(drug.id)} />
               )}
               {drug.isOwned && (
-                <button onClick={() => onDelete(drug)} className={`p-2.5 rounded-lg ${darkMode ? "bg-red-500/15" : "bg-red-50"} text-red-500`} aria-label={`Delete ${drug.name}`}>
-                  <Trash2 size={17} />
-                </button>
+                <IconButton icon={Trash2} label={`Delete ${drug.name}`} variant="danger" darkMode={darkMode} onClick={() => onDelete(drug)} />
               )}
-              <button onClick={() => onOpen(drug)} className="p-2.5 rounded-lg bg-[#71CFC2] text-[#062F63]" aria-label={`Open ${drug.name}`}>
-                <ChevronRight size={17} />
-              </button>
+              <IconButton icon={ChevronRight} label={`Open ${drug.name}`} variant="primary" darkMode={darkMode} onClick={() => onOpen(drug)} />
             </div>
           ))}
         </div>
@@ -1294,7 +1719,7 @@ function DrugChips({ title, icon, items, empty, onOpen, onRemove, darkMode }) {
   );
 }
 
-function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDrug, onClose }) {
+function CustomDrugForm({ darkMode, panelClass, fieldClass, drugForm, setDrugForm, saveDrug, onClose }) {
   const [additionalField, setAdditionalField] = useState("");
   const selectedField = additionalDrugFields.find((field) => field.key === additionalField);
   const speciesOptions = formularySpeciesOptions;
@@ -1303,7 +1728,7 @@ function CustomDrugForm({ panelClass, fieldClass, drugForm, setDrugForm, saveDru
     <div className={`${panelClass} border-l-4 border-l-[#71CFC2] animate-in slide-in-from-top-2`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-black">{drugForm.id ? "Edit My Drug" : "Add My Drug"}</h2>
-        <button onClick={onClose}><X size={20} className="opacity-50" /></button>
+        <IconButton icon={X} label="Close drug form" darkMode={darkMode} onClick={onClose} />
       </div>
       <div className="grid grid-cols-[2fr_1fr] gap-3 mb-3">
         <input className={fieldClass} placeholder="Drug name" value={drugForm.name} onChange={(event) => setDrugForm({ ...drugForm, name: event.target.value })} />
@@ -1354,6 +1779,7 @@ function DrugMonograph(props) {
     groupedDoses,
     doses,
     summary,
+    speciesScope,
     loading,
     isFavourite,
     onToggleFavourite,
@@ -1363,6 +1789,14 @@ function DrugMonograph(props) {
     onCopy,
     onPrintPdf,
     printingPdf,
+    offlineMode,
+    offlineCopy,
+    offlineUnavailable,
+    canSaveOffline,
+    isSavedOffline,
+    savingOffline,
+    onSaveOffline,
+    onRemoveOffline,
     onEdit,
     canManageCustom,
     canShareCustom,
@@ -1374,9 +1808,18 @@ function DrugMonograph(props) {
 
   if (!open) return null;
 
-  const aliases = unique([...(drug?.aliases || []), ...(summary?.aliases || []).map((item) => item.alias || item.name)]);
-  const brandNames = unique([...(drug?.brandNames || []), ...(summary?.aliases || []).filter((item) => item.is_trade_name || item.type === "brand").map((item) => item.alias || item.name)]);
+  const aliases = unique([...(drug?.aliases || []), ...(summary?.aliases || []).map((item) => item.alias || item.name)])
+    .map(stripFormularySourceLabel)
+    .filter(Boolean);
+  const brandNames = unique([...(drug?.brandNames || []), ...(summary?.aliases || []).filter((item) => item.is_trade_name || item.type === "brand").map((item) => item.alias || item.name)])
+    .map(stripFormularySourceLabel)
+    .filter(Boolean);
   const summaryItems = [...(summary?.clinicalPearls || []), ...(summary?.drugInformation || [])];
+  const speciesLabel = speciesScope === "small-animal"
+    ? "Cat & Dog monograph"
+    : speciesScope === "exotics"
+      ? "Exotics monograph"
+      : null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in">
@@ -1386,17 +1829,31 @@ function DrugMonograph(props) {
             <div className="min-w-0">
               <h2 className="text-3xl font-black leading-tight mb-2">{drugName}</h2>
               <div className="flex flex-wrap gap-2">
-                <PillLabel>{drug?.category || "Uncategorised"}</PillLabel>
+                <PillLabel>{stripFormularySourceLabel(drug?.category) || "Uncategorised"}</PillLabel>
+                {speciesLabel && <PillLabel>{speciesLabel}</PillLabel>}
                 {Object.keys(groupedDoses).length > 0 && <PillLabel>{Object.keys(groupedDoses).join(", ")}</PillLabel>}
               </div>
             </div>
-            <button onClick={onClose} className={`p-2 rounded-full transition ${darkMode ? "bg-white/10" : "bg-slate-100"}`}><X size={20} /></button>
+            <IconButton icon={X} label="Close monograph" darkMode={darkMode} onClick={onClose} />
           </div>
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
             <ActionButton onClick={onToggleFavourite} active={isFavourite} icon={<Star size={14} className={isFavourite ? "fill-current" : ""} />}>{isFavourite ? "Favourited" : "Favourite"}</ActionButton>
-            <ActionButton onClick={onAddToCalculator} icon={<Syringe size={14} />}>Calc Dose</ActionButton>
-            <ActionButton onClick={onPrintPdf} disabled={printingPdf || loading || (!drug && (!doses || doses.length === 0))} icon={printingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}>{printingPdf ? "Preparing" : "Print PDF"}</ActionButton>
+            <ActionButton onClick={onAddToCalculator} disabled={offlineUnavailable || !doses?.length} icon={<Syringe size={14} />}>Calc Dose</ActionButton>
+            <ActionButton onClick={onPrintPdf} disabled={offlineUnavailable || printingPdf || loading || (!drug && (!doses || doses.length === 0))} icon={printingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}>{printingPdf ? "Preparing" : "Print PDF"}</ActionButton>
             <ActionButton onClick={onCopy} icon={<Copy size={14} />}>Copy</ActionButton>
+            {canSaveOffline && !offlineUnavailable && !isSavedOffline && (
+              <ActionButton onClick={onSaveOffline} disabled={savingOffline || loading} icon={savingOffline ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}>
+                {savingOffline ? "Saving" : "Save offline"}
+              </ActionButton>
+            )}
+            {canSaveOffline && isSavedOffline && (
+              <>
+                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">
+                  <CheckCircle2 size={14} /> Available offline
+                </span>
+                <ActionButton onClick={onRemoveOffline} disabled={savingOffline} icon={<Trash2 size={14} />} danger>Remove offline</ActionButton>
+              </>
+            )}
             {canShareCustom && <ActionButton onClick={onOpenShare} icon={<Share2 size={14} />}>Share</ActionButton>}
             {canManageCustom && <ActionButton onClick={onEdit} icon={<Pencil size={14} />}>Edit</ActionButton>}
             {canDeleteCustom && <ActionButton onClick={onDelete} icon={<Trash2 size={14} />} danger>Delete</ActionButton>}
@@ -1404,7 +1861,23 @@ function DrugMonograph(props) {
         </div>
 
         <div className="p-6 space-y-5">
-          {loading ? (
+          {offlineMode && offlineCopy && (
+            <div className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${darkMode ? "border-[#71CFC2]/30 bg-[#71CFC2]/10 text-slate-200" : "border-[#BDE8E1] bg-[#E8F8F5] text-[#0B3760]"}`}>
+              <WifiOff size={17} className="mt-0.5 shrink-0 text-[#0F8F83]" />
+              <div>
+                <div className="font-black">Offline copy</div>
+                <div className="mt-0.5 opacity-65">Last saved or updated {formatOfflineDate(offlineCopy.local_updated_at || offlineCopy.local_saved_at || offlineCopy.remote_updated_at)}.</div>
+              </div>
+            </div>
+          )}
+
+          {offlineUnavailable ? (
+            <div className={`${sectionClass(darkMode)} text-center py-10`}>
+              <WifiOff className="mx-auto mb-3 text-[#0F8F83]" size={32} />
+              <h3 className="font-black text-lg">This drug is not available offline yet.</h3>
+              <p className="mt-2 text-sm opacity-65">Open it while online to save a copy.</p>
+            </div>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center py-10 gap-3">
               <HeartbeatLoader size={48} />
               <p className="font-bold opacity-70 text-sm text-[#71CFC2]">Fetching clinical summary...</p>
@@ -1412,11 +1885,11 @@ function DrugMonograph(props) {
           ) : (
             <>
               <MonographSection title="Drug Information" icon={<BookOpen size={18} />} darkMode={darkMode}>
-                <InfoRow label="Drug class" value={drug?.category || "Uncategorised"} />
-                <InfoRow label="Indications" value={drug?.indication || "None recorded"} />
+                <InfoRow label="Drug class" value={stripFormularySourceLabel(drug?.category) || "Uncategorised"} />
+                <InfoRow label="Indications" value={stripFormularySourceLabel(drug?.indication) || "None recorded"} />
                 <InfoRow label="Aliases" value={aliases.length ? aliases.join(", ") : "None recorded"} />
                 <InfoRow label="Brand names" value={brandNames.length ? brandNames.join(", ") : "None recorded"} />
-                <ClinicalList items={summaryItems} fallback={drug?.summary || "No clinical summary recorded."} darkMode={darkMode} />
+                <ClinicalList items={summaryItems} fallback={stripFormularySourceLabel(drug?.summary) || "No clinical summary recorded."} darkMode={darkMode} />
               </MonographSection>
 
               <MonographSection title="Dose Information" icon={<Syringe size={18} />} darkMode={darkMode}>
@@ -1431,7 +1904,7 @@ function DrugMonograph(props) {
                             <div className="text-sm">
                               <span className="font-black">{dose.dose_min}{dose.dose_max && dose.dose_max !== dose.dose_min ? ` - ${dose.dose_max}` : ""} mg/kg</span>
                               {dose.concentration && <span className="opacity-60"> | {dose.concentration} mg/ml</span>}
-                              {dose.notes && <div className="opacity-65 mt-1">{dose.notes}</div>}
+                              {stripFormularySourceLabel(dose.notes) && <div className="opacity-65 mt-1">{stripFormularySourceLabel(dose.notes)}</div>}
                             </div>
                           </div>
                         ))}
@@ -1726,9 +2199,7 @@ function InteractionModal({ open, onClose, interactions, darkMode }) {
           <h3 className="font-black text-xl flex items-center gap-2 text-amber-500">
             <AlertTriangle size={24} /> Interaction Warnings
           </h3>
-          <button onClick={onClose} className={`p-2 rounded-full transition ${darkMode ? "bg-white/10 hover:bg-white/20" : "bg-slate-100 hover:bg-slate-200"}`}>
-            <X size={20} />
-          </button>
+          <IconButton icon={X} label="Close interaction warnings" darkMode={darkMode} onClick={onClose} />
         </div>
         <div className="p-6 overflow-y-auto space-y-4">
           {interactions.map((result, index) => (

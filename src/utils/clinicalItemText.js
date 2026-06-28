@@ -38,6 +38,14 @@ const bodyFields = [
   "contraindication"
 ]
 
+const formularySourcePattern = /\bVetLearn\s+Exotics\s+(?:Feed|Seed)(?:\s*(?:#\s*[\w.-]+|v(?:ersion)?\s*[\w.-]+))?/gi
+
+export const stripFormularySourceLabel = (value) => String(value || "")
+  .replace(formularySourcePattern, "")
+  .replace(/^[\s:|/–—-]+|[\s:|/–—-]+$/g, "")
+  .replace(/\s{2,}/g, " ")
+  .trim()
+
 const metadataFields = new Set([
   "id",
   "drug_id",
@@ -56,7 +64,7 @@ const textValue = (value) => {
   if (value === null || value === undefined) return ""
   if (Array.isArray(value)) return value.map(textValue).filter(Boolean).join(", ")
   if (typeof value === "object") return ""
-  return String(value).trim()
+  return stripFormularySourceLabel(value)
 }
 
 const firstFieldText = (item, fields) => {

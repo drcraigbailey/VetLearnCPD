@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import { IconButton } from "../components/VetLearnUI";
 import { logFileUpload } from "../utils/activityTracking";
 import { openPdfViewer } from "../utils/pdfViewerBridge";
 import { isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
@@ -490,16 +491,15 @@ export default function FutureReading({ user, darkMode = false }) {
                 </div>
               </div>
 
-              <button
+              <IconButton
+                icon={busyId === item.id ? Loader2 : Check}
+                label={item.status === "done" ? "Mark as planned" : "Mark as completed"}
+                variant={item.status === "done" ? "primary" : "default"}
+                darkMode={darkMode}
+                disabled={busyId === item.id}
+                className={busyId === item.id ? "[&_svg]:animate-spin" : ""}
                 onClick={() => markDone(item)}
-                className={`h-10 w-10 shrink-0 rounded-full grid place-items-center transition-colors ${
-                  item.status === "done"
-                    ? (darkMode ? "bg-[#71CFC2] text-[#071A24]" : "bg-[#0F8F83] text-white")
-                    : (darkMode ? "bg-white/10 text-slate-300 hover:text-white" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#d4f1ec]")
-                }`}
-              >
-                {busyId === item.id ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
-              </button>
+              />
             </div>
 
             {item.notes && (

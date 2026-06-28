@@ -1,5 +1,17 @@
 import { supabase } from '../supabaseClient';
 
+const officialDetailQueries = (drugIds, drugNames) => [
+  supabase.from("drug_aliases").select("*").in("drug_id", drugIds),
+  supabase.from("drug_warnings").select("*").in("drug_name", drugNames),
+  supabase.from("contraindications").select("*").in("drug_name", drugNames),
+  supabase.from("drug_interactions").select("*").in("drug_name", drugNames),
+  supabase.from("monitoring_recommendations").select("*").in("drug_name", drugNames),
+  supabase.from("species_warnings").select("*").in("drug_name", drugNames),
+  supabase.from("drug_information").select("*").in("drug_name", drugNames),
+  supabase.from("adverse_effects").select("*").in("drug_name", drugNames),
+  supabase.from("clinical_pearls").select("*").in("drug_name", drugNames)
+];
+
 export const drugService = {
   async searchDrugs(searchTerm, userId = null) {
     if (!searchTerm) return [];
@@ -90,6 +102,53 @@ export const drugService = {
   async searchCalculatorDrugs(searchTerm, userId = null) {
     const drugs = await this.searchDrugs(searchTerm, userId);
     return drugs;
+  },
+
+  async getOfficialDrugSnapshot(drugName) {
+    const { data: doses, error: dosesError } = await supabase
+      .from("drugs")
+      .select("*")
+      .eq("active", true)
+      .is("user_id", null)
+      .ilike("name", String(drugName || "").trim())
+      .order("name");
+
+    if (dosesError) throw dosesError;
+    if (!doses?.length) return null;
+
+    const drugIds = doses.map((drug) => drug.id).filter(Boolean);
+    const drugNames = [...new Set(doses.map((drug) => drug.name).filter(Boolean))];
+    const results = await Promise.all(officialDetailQueries(drugIds, drugNames));
+    const detailError = results.find((result) => result.error)?.error;
+    if (detailError) throw detailError;
+
+    const [
+      aliases,
+      warnings,
+      contraindications,
+      interactions,
+      monitoring,
+      speciesWarnings,
+      drugInformation,
+      adverseEffects,
+      clinicalPearls
+    ] = results;
+
+    return {
+      drug: doses[0],
+      doses,
+      summary: {
+        aliases: aliases.data || [],
+        warnings: warnings.data || [],
+        contraindications: contraindications.data || [],
+        interactions: interactions.data || [],
+        monitoring: monitoring.data || [],
+        speciesWarnings: speciesWarnings.data || [],
+        drugInformation: drugInformation.data || [],
+        adverseEffects: adverseEffects.data || [],
+        clinicalPearls: clinicalPearls.data || []
+      }
+    };
   },
 
   async getDrugClinicalDetails(drug) {

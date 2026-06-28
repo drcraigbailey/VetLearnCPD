@@ -4,6 +4,7 @@ import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2, Minus, Plus, Printer, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { handlePdfDownloadOrShare, handlePdfExternalOpen, handlePdfPrint } from "../utils/pdfFile";
+import { IconButton } from "./VetLearnUI";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -211,44 +212,28 @@ export default function PdfViewerModal({ viewer, darkMode, onClose }) {
   return (
     <div className="fixed inset-0 z-[140] flex flex-col bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div className={`flex items-center justify-between gap-3 border-b px-3 py-3 sm:px-4 ${darkMode ? "border-white/10 bg-[#071A24] text-white" : "border-[#DCEDEA] bg-white text-[#113247]"}`}>
-        <button onClick={onClose} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Close PDF viewer">
-          <X size={20} />
-        </button>
+        <IconButton icon={X} label="Close PDF viewer" darkMode={darkMode} onClick={onClose} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-black sm:text-base">{title}</h2>
           <p className="text-xs opacity-60">{filename}</p>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => handlePdfDownloadOrShare(source, filename, sourceOptions)} className={`h-10 w-10 rounded-full grid place-items-center ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Download or share PDF">
-            <Download size={18} />
-          </button>
-          <button onClick={() => handlePdfPrint(source, filename, sourceOptions)} className={`h-10 w-10 rounded-full grid place-items-center ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Print PDF">
-            <Printer size={18} />
-          </button>
-          <button onClick={openExternal} className={`h-10 w-10 rounded-full grid place-items-center ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Open PDF externally">
-            <ExternalLink size={18} />
-          </button>
+          <IconButton icon={Download} label="Download or share PDF" darkMode={darkMode} onClick={() => handlePdfDownloadOrShare(source, filename, sourceOptions)} />
+          <IconButton icon={Printer} label="Print PDF" darkMode={darkMode} onClick={() => handlePdfPrint(source, filename, sourceOptions)} />
+          <IconButton icon={ExternalLink} label="Open PDF externally" darkMode={darkMode} onClick={openExternal} />
         </div>
       </div>
 
       <div className={`flex items-center justify-between gap-2 border-b px-3 py-2 text-sm ${darkMode ? "border-white/10 bg-[#0B242B] text-white" : "border-[#DCEDEA] bg-[#F9FCFB] text-[#113247]"}`}>
         <div className="flex items-center gap-1">
-          <button onClick={goToPrevious} disabled={pageNumber <= 1} className={`h-9 w-9 rounded-full grid place-items-center disabled:opacity-40 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Previous PDF page">
-            <ChevronLeft size={18} />
-          </button>
-          <button onClick={goToNext} disabled={!pageCount || pageNumber >= pageCount} className={`h-9 w-9 rounded-full grid place-items-center disabled:opacity-40 ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Next PDF page">
-            <ChevronRight size={18} />
-          </button>
+          <IconButton icon={ChevronLeft} label="Previous PDF page" darkMode={darkMode} disabled={pageNumber <= 1} onClick={goToPrevious} />
+          <IconButton icon={ChevronRight} label="Next PDF page" darkMode={darkMode} disabled={!pageCount || pageNumber >= pageCount} onClick={goToNext} />
         </div>
         <span className="font-bold">Page {pageNumber}{pageCount ? ` / ${pageCount}` : ""}</span>
         <div className="flex items-center gap-1">
-          <button onClick={zoomOut} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Zoom out">
-            <Minus size={17} />
-          </button>
+          <IconButton icon={Minus} label="Zoom out" darkMode={darkMode} onClick={zoomOut} />
           <span className="w-12 text-center text-xs font-black">{Math.round(scale * 100)}%</span>
-          <button onClick={zoomIn} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`} aria-label="Zoom in">
-            <Plus size={17} />
-          </button>
+          <IconButton icon={Plus} label="Zoom in" darkMode={darkMode} onClick={zoomIn} />
         </div>
       </div>
 

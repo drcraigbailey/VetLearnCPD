@@ -128,20 +128,23 @@ export function AppButton({ variant = "primary", icon: Icon, children, className
 
 export function IconButton({ icon: Icon, label, badge, darkMode = false, variant = "default", className = "", type = "button", ...props }) {
   const isDanger = variant === "danger";
+  const isPrimary = variant === "primary";
   return (
     <button
       type={type}
       aria-label={label}
       title={label}
       className={joinClasses(
-        "h-10 w-10 rounded-full grid place-items-center relative transition disabled:opacity-60 disabled:cursor-not-allowed",
-        isDanger
+        "h-10 w-10 shrink-0 rounded-lg grid place-items-center relative transition disabled:opacity-60 disabled:cursor-not-allowed",
+        isPrimary
+          ? "bg-[#71CFC2] text-[#062F63] hover:brightness-95"
+          : isDanger
           ? darkMode
-            ? "bg-transparent text-red-400 hover:bg-red-500/10"
-            : "bg-transparent text-red-600 hover:bg-red-50"
+            ? "bg-red-500/15 text-red-400 hover:bg-red-500/25"
+            : "bg-red-50 text-red-500 hover:bg-red-100"
           : darkMode
-            ? "bg-white/10 text-slate-100 hover:bg-white/15"
-            : "bg-[#E8F8F5] text-[#0B3760] hover:bg-white",
+            ? "bg-white/10 text-[#71CFC2] hover:bg-white/15"
+            : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1]",
         className
       )}
       {...props}

@@ -24,7 +24,20 @@ export default defineConfig({
         // The main app bundle is currently just over that, so raise the limit enough
         // for the JS bundle while excluding the large ONNX/WASM runtime from precache.
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
-        globIgnores: ['**/*.wasm']
+        globIgnores: ['**/*.wasm'],
+        runtimeCaching: [
+          {
+            urlPattern: /(?:\/models\/.*\.onnx$|\.wasm$)/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'vetlearn-local-models',
+              expiration: {
+                maxEntries: 8,
+                maxAgeSeconds: 30 * 24 * 60 * 60
+              }
+            }
+          }
+        ]
       },
 
       manifest: {

@@ -146,7 +146,7 @@ export default function Protocols({ user, darkMode }) {
       {sharingProtocol && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex flex-col items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl flex flex-col relative ${darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]"}`}>
-            <button onClick={() => setSharingProtocol(null)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-500/20 transition"><X size={20} /></button>
+            <button onClick={() => setSharingProtocol(null)} className="absolute top-4 right-4 h-10 w-10 grid place-items-center rounded-lg bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1] transition" aria-label="Close sharing"><X size={20} /></button>
             <h2 className="text-2xl font-black mb-1">Share Protocol</h2>
             <p className="text-sm opacity-70 mb-6">Select a colleague to share "{sharingProtocol.name}" with.</p>
 
@@ -177,7 +177,7 @@ export default function Protocols({ user, darkMode }) {
               <div className="w-full pr-4">
                 <div className="flex justify-between items-start">
                   <h2 className="text-3xl font-black mb-2">{activeProtocol.name}</h2>
-                  <button onClick={() => setActiveProtocol(null)} className="p-2 shrink-0 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"><X size={20} /></button>
+                  <button onClick={() => setActiveProtocol(null)} className="h-10 w-10 shrink-0 grid place-items-center rounded-lg bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1] dark:bg-white/10 dark:text-[#71CFC2] dark:hover:bg-white/15" aria-label="Close protocol"><X size={20} /></button>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider mb-4 mt-2">
                   <span className="px-3 py-1 rounded bg-slate-100 dark:bg-white/10">{activeProtocol.species || "General"}</span>

@@ -92,10 +92,10 @@ export function CustomToast({ toast: toastItem, darkMode = false }) {
         <button
           type="button"
           onClick={() => toast.dismiss(toastItem.id)}
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg transition ${
             darkMode
-              ? "bg-white/10 text-slate-300 hover:bg-white/15"
-              : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF7F3]"
+              ? "bg-white/10 text-[#71CFC2] hover:bg-white/15"
+              : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF7F3]"
           }`}
           aria-label="Dismiss notification"
         >

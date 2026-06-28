@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2, WifiOff, X } from "lucide-react";
 import toast from "react-hot-toast";
+import useOnlineStatus from "../hooks/useOnlineStatus";
+import { cacheCalculatorData, getOfflineProtocols, protocolCacheType } from "../services/calculatorDataService";
 import { supabase } from "../supabaseClient";
 import { IconButton, SearchBox } from "./VetLearnUI";
 
@@ -25,19 +27,27 @@ const toIdList = (value) => {
 const toDoseMap = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
 
 export default function ProtocolContextSelector({ user, darkMode = false, onProtocolChange }) {
+  const isOnline = useOnlineStatus();
   const [protocols, setProtocols] = useState([]);
   const [protocolDrugs, setProtocolDrugs] = useState([]);
+  const [cachedDrugs, setCachedDrugs] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
-  useEffect(() => {
-    loadProtocols();
-  }, [user?.id]);
-
-  const loadProtocols = async () => {
+  async function loadProtocols() {
     if (!user?.id) return;
     setLoading(true);
+    const cached = await getOfflineProtocols(user.id);
+    setProtocols(cached.protocols || []);
+    setCachedDrugs(cached.drugs || []);
+    setCacheUpdatedAt(cached.cached_at || null);
+
+    if (!isOnline) {
+      setLoading(false);
+      return;
+    }
 
     let result = await supabase
       .from("protocols")
@@ -53,10 +63,33 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         .order("name");
     }
 
-    if (result.error) toast.error("Could not load protocols for the calculator");
-    setProtocols(result.data || []);
+    if (result.error) {
+      if (!(cached.protocols || []).length) toast.error("Could not load protocols for the calculator");
+      setLoading(false);
+      return;
+    }
+
+    const remoteProtocols = result.data || [];
+    const linkedIds = [...new Set(remoteProtocols.flatMap((protocol) => toIdList(protocol.drug_ids)).map(String))];
+    const drugResult = linkedIds.length
+      ? await supabase.from("drugs").select("id, name, species, route").in("id", linkedIds)
+      : { data: [], error: null };
+    const remoteDrugs = drugResult.error ? cached.drugs || [] : drugResult.data || [];
+    const cachedAt = new Date().toISOString();
+    setProtocols(remoteProtocols);
+    setCachedDrugs(remoteDrugs);
+    setCacheUpdatedAt(cachedAt);
+    await cacheCalculatorData(protocolCacheType(user.id), {
+      protocols: remoteProtocols,
+      drugs: remoteDrugs,
+      cached_at: cachedAt
+    });
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    loadProtocols();
+  }, [user?.id, isOnline]);
 
   const selectedProtocol = useMemo(() => protocols.find((protocol) => String(protocol.id) === String(selectedId)), [protocols, selectedId]);
   const doseMap = toDoseMap(selectedProtocol?.drug_doses);
@@ -69,16 +102,32 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
         return;
       }
 
+      const localRows = cachedDrugs.filter((drug) => ids.some((id) => String(id) === String(drug.id)));
+      setProtocolDrugs(localRows);
+      if (!isOnline) return;
+
       const { data, error } = await supabase
         .from("drugs")
         .select("id, name, species, route")
         .in("id", ids);
 
-      if (!error) setProtocolDrugs(data || []);
+      if (!error) {
+        const nextDrugs = [
+          ...cachedDrugs.filter((drug) => !(data || []).some((item) => String(item.id) === String(drug.id))),
+          ...(data || [])
+        ];
+        setProtocolDrugs(data || []);
+        setCachedDrugs(nextDrugs);
+        await cacheCalculatorData(protocolCacheType(user.id), {
+          protocols,
+          drugs: nextDrugs,
+          cached_at: new Date().toISOString()
+        });
+      }
     };
 
     loadProtocolDrugs();
-  }, [selectedProtocol?.id]);
+  }, [selectedProtocol?.id, isOnline]);
 
   useEffect(() => {
     if (!selectedProtocol) {
@@ -127,6 +176,13 @@ export default function ProtocolContextSelector({ user, darkMode = false, onProt
       </div>
 
       {loading && <div className="flex items-center gap-2 text-sm opacity-60"><Loader2 size={16} className="animate-spin" /> Loading protocols...</div>}
+      {!isOnline && (
+        <div className={`rounded-lg border p-3 text-sm ${darkMode ? "bg-[#71CFC2]/10 border-[#71CFC2]/20" : "bg-[#E8F8F5] border-[#BDE8E1]"}`}>
+          <div className="flex items-center gap-2 font-black"><WifiOff size={15} /> Offline mode: using saved calculator data</div>
+          {cacheUpdatedAt && <div className="mt-1 text-xs opacity-60">Last updated {new Date(cacheUpdatedAt).toLocaleString()}.</div>}
+          {protocols.length === 0 && <div className="mt-2">This calculator needs saved data before it can be used offline. Open it while online first.</div>}
+        </div>
+      )}
 
       {selectedProtocol && (
         <div className={`rounded-lg border p-3 ${darkMode ? "bg-white/5 border-white/10" : "bg-[#F9FCFB] border-[#DCEDEA]"}`}>

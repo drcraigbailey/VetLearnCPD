@@ -90,7 +90,7 @@ export default function ShareReadingWithColleagueModal({ user, item, darkMode = 
             <h2 className="text-xl font-black">Send to a colleague</h2>
             <p className="mt-1 text-sm opacity-65">Share “{item.title}” in a secure VetLearn conversation.</p>
           </div>
-          <button type="button" onClick={onClose} className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${darkMode ? "bg-white/10" : "bg-[#E8F8F5]"}`}>
+          <button type="button" onClick={onClose} className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0F8F83]"}`} aria-label="Close sharing">
             <X size={18} />
           </button>
         </div>

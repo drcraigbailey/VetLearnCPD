@@ -3,6 +3,7 @@ import { X, Check, Trash2, Bell, MessageSquare, Share2, UserPlus } from "lucide-
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AppPopup, { popupPresets } from "./AppPopup";
+import { IconButton } from "./VetLearnUI";
 import { supabase } from "../supabaseClient";
 
 export default function NotificationDrawer({
@@ -269,7 +270,7 @@ export default function NotificationDrawer({
                 Delete All
               </button>
             )}
-            <button onClick={onClose} className="opacity-70 hover:opacity-100 transition-opacity"><X size={24} /></button>
+            <IconButton icon={X} label="Close notifications" darkMode={darkMode} onClick={onClose} />
           </div>
         </div>
 
@@ -302,21 +303,9 @@ export default function NotificationDrawer({
                   </div>
                   <div className="flex gap-2 ml-2">
                     {!notification.is_read && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); markAsRead(notification); }}
-                        className="p-1 text-[#0F8F83] dark:text-[#71CFC2] hover:bg-black/5 dark:hover:bg-white/10 rounded"
-                        title="Mark as read"
-                      >
-                        <Check size={14} />
-                      </button>
+                      <IconButton icon={Check} label="Mark as read" darkMode={darkMode} onClick={(e) => { e.stopPropagation(); markAsRead(notification); }} />
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); requestDeleteNotification(notification); }}
-                      className="p-1 opacity-50 hover:opacity-100 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-all"
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <IconButton icon={Trash2} label="Delete notification" variant="danger" darkMode={darkMode} onClick={(e) => { e.stopPropagation(); requestDeleteNotification(notification); }} />
                   </div>
                 </div>
                 <div className="text-sm opacity-80 mb-3">{notification.message}</div>

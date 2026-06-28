@@ -101,7 +101,7 @@ export default function AndroidSelectFallback({ darkMode = false }) {
           <button
             type="button"
             onClick={() => setActiveSelect(null)}
-            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${darkMode ? "bg-white/10" : "bg-[#F0F6F5]"}`}
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0F8F83]"}`}
             aria-label="Close options"
           >
             <X size={20} />

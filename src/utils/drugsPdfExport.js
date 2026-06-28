@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { formatClinicalItemText, getClinicalItemBody } from "./clinicalItemText"
+import { formatClinicalItemText, getClinicalItemBody, stripFormularySourceLabel } from "./clinicalItemText"
 import { saveOrSharePdf } from "./pdfFile"
 
 const logoImage = "/logo.png"
@@ -102,12 +102,13 @@ export const exportDrugHistory = async (history) => {
 const valueText = (value) => {
   if (value === null || value === undefined) return ""
   if (Array.isArray(value)) return value.map(valueText).filter(Boolean).join(", ")
-  if (typeof value === "object") return getClinicalItemBody(value)
-  return String(value).trim()
+  if (typeof value === "object") return stripFormularySourceLabel(getClinicalItemBody(value))
+  return stripFormularySourceLabel(value)
 }
 
 const listText = (items) => (items || [])
   .map(formatClinicalItemText)
+  .map(stripFormularySourceLabel)
   .filter(Boolean)
 
 const addFooter = (doc, pageWidth, pageHeight, muted) => {
@@ -167,7 +168,7 @@ const buildDoseRows = (doses = []) => doses
     [dose.dose_min, dose.dose_max && dose.dose_max !== dose.dose_min ? dose.dose_max : ""].filter(Boolean).join(" - ") || "-",
     dose.dose_unit || "mg/kg",
     dose.concentration ? `${dose.concentration} mg/ml` : "",
-    dose.notes || "",
+    stripFormularySourceLabel(dose.notes),
   ])
 
 const safeDrugFilename = (name) => String(name || "Drug")
@@ -220,9 +221,9 @@ export const generateDrugMonographPdf = async ({
   const brandNames = [...new Set([...(drug?.brandNames || []), ...(summary?.aliases || []).filter((item) => item.is_trade_name || item.type === "brand").map((item) => item.alias || item.name)].filter(Boolean))]
 
   const overviewRows = [
-    ["Drug class", drug?.category || drug?.drug_class || ""],
+    ["Drug class", stripFormularySourceLabel(drug?.category || drug?.drug_class || "")],
     ["Species guidance", [...new Set((doses || []).map((dose) => dose.species).filter(Boolean))].join(", ")],
-    ["Indications", drug?.indication || drug?.indications || ""],
+    ["Indications", stripFormularySourceLabel(drug?.indication || drug?.indications || "")],
     ["Aliases", aliases.join(", ")],
     ["Brand names", brandNames.join(", ")],
   ].filter(([, value]) => valueText(value))
@@ -267,7 +268,7 @@ export const generateDrugMonographPdf = async ({
   }
 
   const summaryItems = listText([...(summary?.clinicalPearls || []), ...(summary?.drugInformation || [])])
-  startY = addSection(doc, "Clinical Summary", summaryItems.length ? summaryItems : drug?.summary || drug?.description || "", startY, colours)
+  startY = addSection(doc, "Clinical Summary", summaryItems.length ? summaryItems : stripFormularySourceLabel(drug?.summary || drug?.description || ""), startY, colours)
   startY = addSection(doc, "Contraindications", listText(summary?.contraindications), startY, colours)
   startY = addSection(doc, "Adverse Effects", listText(summary?.adverseEffects), startY, colours)
   startY = addSection(doc, "Monitoring Recommendations", listText(summary?.monitoring), startY, colours)

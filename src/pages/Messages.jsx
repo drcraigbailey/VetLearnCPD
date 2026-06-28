@@ -21,6 +21,7 @@ import {
 import toast from "react-hot-toast";
 import AppPopup, { popupPresets } from "../components/AppPopup";
 import PageBanner from "../components/PageBanner";
+import { IconButton } from "../components/VetLearnUI";
 import { supabase } from "../supabaseClient";
 import { openPdfViewer } from "../utils/pdfViewerBridge";
 import { sendAdminSupportPushNotification, sendMessagePushNotification } from "../utils/pushNotifications";
@@ -141,7 +142,7 @@ function MessageAttachmentList({ attachments, darkMode }) {
       })}
       {previewImage && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4" onClick={() => setPreviewImage(null)}>
-          <button type="button" className="absolute right-5 top-5 rounded-full bg-white/15 p-2 text-white" aria-label="Close image preview">
+          <button type="button" className="absolute right-5 top-5 rounded-lg bg-white/15 p-2 text-white" aria-label="Close image preview">
             <X size={22} />
           </button>
           <img src={previewImage.url} alt={previewImage.label} className="max-h-[86vh] max-w-full rounded-xl object-contain shadow-2xl" />
@@ -1012,7 +1013,13 @@ export default function Messages({ user, darkMode }) {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {isUnread && <div className="h-6 min-w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center px-2 shadow-md">{chat.unread}</div>}
-                      <button onClick={(event) => { event.stopPropagation(); setDeleteCandidate(chat); }} className={`h-9 w-9 rounded-full grid place-items-center transition ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title={chat.isGroup ? "Leave conversation" : "Delete conversation"} aria-label={chat.isGroup ? "Leave conversation" : "Delete conversation"}><Trash2 size={16} /></button>
+                      <IconButton
+                        icon={Trash2}
+                        label={chat.isGroup ? "Leave conversation" : "Delete conversation"}
+                        variant="danger"
+                        darkMode={darkMode}
+                        onClick={(event) => { event.stopPropagation(); setDeleteCandidate(chat); }}
+                      />
                     </div>
                   </div>
                 );
@@ -1025,14 +1032,14 @@ export default function Messages({ user, darkMode }) {
           <div className={`w-full h-full animate-in fade-in zoom-in-95 duration-200 ${panelClass}`}>
             <div className={`p-5 border-b flex justify-between items-center z-10 ${darkMode ? "border-white/10" : "border-slate-100"}`}>
               <div className="flex items-center gap-3">
-                <button onClick={() => setActiveChat(null)} className="p-2 -ml-2 text-[#0F8F83] dark:text-[#71CFC2] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"><ArrowLeft size={20} /></button>
+                <IconButton icon={ArrowLeft} label="Back to conversations" darkMode={darkMode} onClick={() => setActiveChat(null)} />
                 <div className="h-11 w-11 rounded-full bg-[#E8F8F5] text-[#0F8F83] flex items-center justify-center font-black text-lg shadow-inner">{activeChat.isGroup ? <Users size={18} /> : activeChat.colleague?.full_name?.charAt(0) || <User size={18} />}</div>
                 <div>
                   <h3 className={`font-black text-lg leading-tight ${textPrimary}`}>{activeChat.colleague?.full_name}</h3>
                   <p className="text-xs font-bold opacity-50">{activeChat.isGroup ? activeChat.colleague?.title : "VetLearn Messenger"}</p>
                 </div>
               </div>
-              <button onClick={() => setActiveChat(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition"><X size={20} className="opacity-50" /></button>
+              <IconButton icon={X} label="Close conversation" darkMode={darkMode} onClick={() => setActiveChat(null)} />
             </div>
 
             <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${darkMode ? "bg-black/10" : "bg-slate-50/50"}`}>
@@ -1072,9 +1079,7 @@ export default function Messages({ user, darkMode }) {
               )}
               <div className={`flex gap-3 items-center rounded-lg p-3 border ${darkMode ? "bg-white/10 border-white/10" : "bg-[#F0F6F5] border-[#DCEDEA]"}`}>
                 <input ref={attachmentInputRef} type="file" multiple className="hidden" onChange={handleAttachmentPick} />
-                <button type="button" onClick={() => attachmentInputRef.current?.click()} className={`h-11 w-11 rounded-lg grid place-items-center shrink-0 ${darkMode ? "bg-[#071A24] text-white" : "bg-white text-[#0F8F83]"}`} title="Add attachment" aria-label="Add attachment">
-                  <Paperclip size={18} />
-                </button>
+                <IconButton icon={Paperclip} label="Add attachment" darkMode={darkMode} className="!h-11 !w-11" onClick={() => attachmentInputRef.current?.click()} />
                 <textarea ref={chatInputRef} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className={`flex-1 rounded-lg px-4 py-3 text-sm border-none outline-none resize-none max-h-12 overflow-hidden ${darkMode ? "bg-[#071A24] text-white placeholder:text-slate-400" : "bg-white text-[#113247] placeholder:text-slate-400"}`} rows={1} />
                 <button type="submit" disabled={(!newMessage.trim() && pendingAttachments.length === 0) || sending} className="h-11 w-11 rounded-lg bg-[#71CFC2] text-[#0B3760] flex items-center justify-center disabled:opacity-40 disabled:grayscale transition-all shrink-0">{sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-1" />}</button>
               </div>

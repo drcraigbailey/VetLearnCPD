@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import LoadingState from "../components/LoadingState";
 import PageBanner from "../components/PageBanner";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import { IconButton } from "../components/VetLearnUI";
 import { supabase } from "../supabaseClient";
 
 const categories = ["Veterinary Platforms", "CPD Providers", "Government Services", "Finance", "Insurance", "Personal", "Custom"];
@@ -31,10 +32,6 @@ export default function Vault({ user, darkMode }) {
   const quietButtonClass = darkMode
     ? "bg-white/10 text-slate-100 hover:bg-white/15"
     : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DDF5F1]";
-  const dangerButtonClass = darkMode
-    ? "bg-transparent text-red-400 hover:bg-red-500/10"
-    : "bg-transparent text-red-600 hover:bg-red-50";
-
   useEffect(() => {
     if (user) loadEntries();
   }, [user]);
@@ -181,7 +178,7 @@ export default function Vault({ user, darkMode }) {
               <h2 className="text-lg font-black">{editingId ? "Edit Vault Entry" : "Add New Entry"}</h2>
               <p className="text-sm opacity-60 leading-6">Save platform credentials and notes in your private Vault.</p>
             </div>
-            <button onClick={resetForm} className={`p-2 rounded-lg ${quietButtonClass}`} aria-label="Close entry form"><X size={18} /></button>
+            <IconButton icon={X} label="Close entry form" darkMode={darkMode} onClick={resetForm} />
           </div>
           <div className="grid gap-3">
             <input className={fieldClass} placeholder="Platform name" value={form.platform_name} onChange={(e) => updateForm("platform_name", e.target.value)} />
@@ -223,21 +220,21 @@ export default function Vault({ user, darkMode }) {
                 <p className="text-xs opacity-60">{entry.category} | Updated {new Date(entry.updated_at || entry.created_at).toLocaleDateString()}</p>
               </div>
               <div className="flex gap-1 shrink-0">
-                <button onClick={() => editEntry(entry)} className={`p-2 rounded-lg ${quietButtonClass}`} aria-label="Edit"><Pencil size={16} /></button>
-                <button onClick={() => requestDeleteEntry(entry)} className={`p-2 rounded-lg ${dangerButtonClass}`} aria-label="Delete"><Trash2 size={16} /></button>
+                <IconButton icon={Pencil} label="Edit vault entry" darkMode={darkMode} onClick={() => editEntry(entry)} />
+                <IconButton icon={Trash2} label="Delete vault entry" variant="danger" darkMode={darkMode} onClick={() => requestDeleteEntry(entry)} />
               </div>
             </div>
 
             {entry.website_url && <a className="text-sm font-bold text-[#0F8F83] break-all" href={entry.website_url} target="_blank" rel="noreferrer">{entry.website_url}</a>}
-            <CredentialRow label="Username" value={entry.username} onCopy={() => copyText(entry.username, "Username")} buttonClass={quietButtonClass} />
+            <CredentialRow label="Username" value={entry.username} onCopy={() => copyText(entry.username, "Username")} darkMode={darkMode} />
             <div className="flex items-center justify-between gap-3 py-2 border-t border-black/5 dark:border-white/10">
               <div className="min-w-0">
                 <div className="text-xs opacity-50 font-bold uppercase">Password / Key</div>
                 <div className="font-mono text-sm truncate">{visible ? entry.password_value || "-" : entry.password_value ? "••••••••••••" : "-"}</div>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => setVisiblePasswords(prev => ({ ...prev, [entry.id]: !visible }))} className={`p-2 rounded-lg ${quietButtonClass}`}>{visible ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-                <button onClick={() => copyText(entry.password_value, "Password")} className={`p-2 rounded-lg ${quietButtonClass}`}><Copy size={16} /></button>
+                <IconButton icon={visible ? EyeOff : Eye} label={visible ? "Hide password" : "Show password"} darkMode={darkMode} onClick={() => setVisiblePasswords(prev => ({ ...prev, [entry.id]: !visible }))} />
+                <IconButton icon={Copy} label="Copy password" darkMode={darkMode} onClick={() => copyText(entry.password_value, "Password")} />
               </div>
             </div>
             {entry.notes && <p className="text-sm opacity-75 mt-2 whitespace-pre-wrap">{entry.notes}</p>}
@@ -256,14 +253,14 @@ export default function Vault({ user, darkMode }) {
   );
 }
 
-function CredentialRow({ label, value, onCopy, buttonClass }) {
+function CredentialRow({ label, value, onCopy, darkMode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2 border-t border-black/5 dark:border-white/10">
       <div className="min-w-0">
         <div className="text-xs opacity-50 font-bold uppercase">{label}</div>
         <div className="text-sm truncate">{value || "-"}</div>
       </div>
-      <button onClick={onCopy} className={`p-2 rounded-lg ${buttonClass}`}><Copy size={16} /></button>
+      <IconButton icon={Copy} label={`Copy ${label.toLowerCase()}`} darkMode={darkMode} onClick={onCopy} />
     </div>
   );
 }

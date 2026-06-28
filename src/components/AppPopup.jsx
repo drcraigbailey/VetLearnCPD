@@ -177,7 +177,7 @@ export default function AppPopup({
             type="button"
             onClick={onClose}
             disabled={controlsDisabled}
-            className={`absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full transition disabled:opacity-40 ${
+            className={`absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-lg transition disabled:opacity-40 ${
               darkMode
                 ? "bg-white/10 text-slate-200 hover:bg-white/15"
                 : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF7F3]"

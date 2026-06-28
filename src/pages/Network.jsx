@@ -1019,12 +1019,8 @@ function NetworkPost({ post, user, darkMode, panelClass, fieldClass, editForm, e
         
         {isAuthor && (
           <div className="flex gap-2 shrink-0">
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-white/10 text-slate-200" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Edit post">
-              <Edit3 size={15} />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(post.id); }} className={`h-9 w-9 rounded-full grid place-items-center ${darkMode ? "bg-red-500/15 text-red-200" : "bg-red-50 text-red-600"}`} aria-label="Delete post">
-              <Trash2 size={15} />
-            </button>
+            <IconButton icon={Edit3} label="Edit post" darkMode={darkMode} onClick={(e) => { e.stopPropagation(); onEdit(); }} />
+            <IconButton icon={Trash2} label="Delete post" variant="danger" darkMode={darkMode} onClick={(e) => { e.stopPropagation(); onDelete(post.id); }} />
           </div>
         )}
       </div>
@@ -1227,9 +1223,7 @@ function SharedAttachmentModal({ post, user, darkMode, onClose }) {
 function PostImagePreviewModal({ url, darkMode, onClose }) {
   return (
     <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition">
-        <X size={24} />
-      </button>
+      <IconButton icon={X} label="Close image preview" darkMode className="!absolute top-4 right-4 !bg-white/10 !text-white hover:!bg-white/20" onClick={onClose} />
       <img src={url} alt="Expanded preview" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
     </div>
   );
@@ -1413,7 +1407,7 @@ function ColleaguesTab({ requests, connections, supportContact, supportUserId, p
               </button>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => onOpenAdminContact(supportContact)} className={`h-10 rounded-full px-4 text-xs font-black transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}>Contact</button>
-                <Link to="/messages?admin=1" className={`h-10 w-10 rounded-full grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}><MessageSquare size={18} /></Link>
+                <Link to="/messages?admin=1" aria-label="Message admin" title="Message admin" className={`h-10 w-10 rounded-lg grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1]"}`}><MessageSquare size={18} /></Link>
               </div>
             </div>
           )}
@@ -1433,7 +1427,7 @@ function ColleaguesTab({ requests, connections, supportContact, supportUserId, p
                   </div>
                 </button>
                 <div className="flex gap-2 shrink-0">
-                  <Link to={`/messages?colleague=${c.colleague?.id}`} className={`h-10 w-10 rounded-full grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-white"}`}><MessageSquare size={18} /></Link>
+                  <Link to={`/messages?colleague=${c.colleague?.id}`} aria-label={`Message ${c.colleague?.full_name || "colleague"}`} title="Message colleague" className={`h-10 w-10 rounded-lg grid place-items-center transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1]"}`}><MessageSquare size={18} /></Link>
                   <IconButton icon={busyId === c.connection_id ? Loader2 : Trash2} variant="danger" darkMode={darkMode} disabled={busyId === c.connection_id} onClick={() => onRemoveConnection(c)} />
                 </div>
               </div>

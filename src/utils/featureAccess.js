@@ -1,5 +1,7 @@
 import { supabase } from "../supabaseClient";
 
+const FEATURE_ACCESS_CACHE_KEY = "vetlearn-feature-access";
+
 export const featureKeys = {
   clinicalTools: "clinical_tools",
   drugCalculator: "drug_calculator",
@@ -23,16 +25,41 @@ export const defaultFeatureAccess = Object.values(featureKeys).reduce((acc, key)
   return acc;
 }, {});
 
+export const getCachedFeatureAccess = () => {
+  if (typeof localStorage === "undefined") return defaultFeatureAccess;
+  try {
+    const cached = JSON.parse(localStorage.getItem(FEATURE_ACCESS_CACHE_KEY) || "null");
+    return cached && typeof cached === "object"
+      ? { ...defaultFeatureAccess, ...cached }
+      : defaultFeatureAccess;
+  } catch {
+    return defaultFeatureAccess;
+  }
+};
+
 export const loadFeatureAccess = async () => {
+  const cached = getCachedFeatureAccess();
   const entries = await Promise.all(
     Object.values(featureKeys).map(async (featureKey) => {
-      const { data, error } = await supabase.rpc("has_feature", { feature: featureKey });
-      if (error) return [featureKey, false];
-      return [featureKey, Boolean(data)];
+      try {
+        const { data, error } = await supabase.rpc("has_feature", { feature: featureKey });
+        if (error) return [featureKey, cached[featureKey]];
+        return [featureKey, Boolean(data)];
+      } catch {
+        return [featureKey, cached[featureKey]];
+      }
     })
   );
 
-  return Object.fromEntries(entries);
+  const access = Object.fromEntries(entries);
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(FEATURE_ACCESS_CACHE_KEY, JSON.stringify(access));
+    } catch {
+      // Storage may be unavailable in a restricted browser context.
+    }
+  }
+  return access;
 };
 
 export const canUseFeature = (featureAccess, featureKey) => {

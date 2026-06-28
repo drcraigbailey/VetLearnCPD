@@ -202,7 +202,7 @@ function AdminMessageAttachmentList({ attachments, darkMode }) {
       })}
       {previewImage && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4" onClick={() => setPreviewImage(null)}>
-          <button type="button" className="absolute right-5 top-5 rounded-full bg-white/15 p-2 text-white" aria-label="Close image preview">
+          <button type="button" className="absolute right-5 top-5 rounded-lg bg-white/15 p-2 text-white" aria-label="Close image preview">
             <X size={22} />
           </button>
           <img src={previewImage.url} alt={previewImage.label} className="max-h-[86vh] max-w-full rounded-xl object-contain shadow-2xl" />
@@ -1815,7 +1815,7 @@ function MessagingPanel({ panelClass, darkMode, message, setMessage, onSend, wor
                     <p className="mt-2 text-xs opacity-55">{new Date(item.createdAt).toLocaleString()} · {item.count} notification{item.count === 1 ? "" : "s"} · {item.unreadCount} unread</p>
                   </div>
                   {canDeleteHistory && (
-                    <button disabled={working} onClick={() => setDeleteCandidate(item)} className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-red-500/15 text-red-200 hover:bg-red-500/25" : "bg-red-50 text-red-600 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={16} /></button>
+                    <button disabled={working} onClick={() => setDeleteCandidate(item)} className={`h-10 w-10 rounded-lg grid place-items-center shrink-0 transition disabled:opacity-60 ${darkMode ? "bg-red-500/15 text-red-400 hover:bg-red-500/25" : "bg-red-50 text-red-500 hover:bg-red-100"}`} title="Delete admin message" aria-label="Delete admin message"><Trash2 size={18} /></button>
                   )}
                 </div>
               </div>

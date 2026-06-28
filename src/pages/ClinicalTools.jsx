@@ -16,12 +16,26 @@ import {
   Syringe,
   AlertOctagon,
   Pill,
+  WifiOff,
   X,
   Loader2
 } from "lucide-react";
 import PageBanner from "../components/PageBanner";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import ProtocolContextSelector from "../components/ProtocolContextSelector";
+import useOnlineStatus from "../hooks/useOnlineStatus";
+import {
+  cacheCalculatorData,
+  cacheLocalCalculation,
+  calculatorDataTypes,
+  getCachedCalculatorData,
+  getLastCalculatorCacheUpdate,
+  getLocalCalculationHistory,
+  getOfflineDoseRows,
+  getOfflineDrugOptions,
+  getOfflineInteractions,
+  mergeCalculatorData
+} from "../services/calculatorDataService";
 import { supabase } from "../supabaseClient";
 import { drugService } from "../services/drugService";
 import { canUseFeature, featureKeys } from "../utils/featureAccess";
@@ -69,6 +83,39 @@ const uniqueValues = (values = []) => [...new Set(values.map((value) => String(v
 
 const compactResultText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
+const calculatorDataConfig = [
+  { stateKey: "drugCalculators", cacheType: calculatorDataTypes.drugCalculators, table: "drug_calculators", order: "drug_name" },
+  { stateKey: "criProtocols", cacheType: calculatorDataTypes.criProtocols, table: "cri_protocols", order: "drug_name" },
+  { stateKey: "emergencyDrugs", cacheType: calculatorDataTypes.emergencyDrugs, table: "emergency_drug_calculator", order: "drug_name" },
+  { stateKey: "fluidCalculators", cacheType: calculatorDataTypes.fluidCalculators, table: "fluid_calculators", order: "calculation_name" },
+  { stateKey: "transfusionCalculators", cacheType: calculatorDataTypes.transfusionCalculators, table: "transfusion_calculators", order: "species" },
+  { stateKey: "toxicities", cacheType: calculatorDataTypes.toxicities, table: "species_toxicities", order: "toxin" }
+];
+
+const emptyCalculatorData = Object.fromEntries(calculatorDataConfig.map(({ stateKey }) => [stateKey, []]));
+
+const mergeRows = (...groups) => {
+  const rows = new Map();
+  groups.flat().filter(Boolean).forEach((row) => {
+    const semanticKey = [
+      normalise(row.drug_name || row.name || row.calculation_name || row.toxin),
+      normalise(row.species),
+      normalise(row.route),
+      normalise(row.indication),
+      String(row.concentration || ""),
+      String(row.min_dose ?? row.dose_min ?? ""),
+      String(row.max_dose ?? row.dose_max ?? "")
+    ].join("|");
+    const key = semanticKey.replace(/\|/g, "") ? semanticKey : String(row.id);
+    rows.set(key, row);
+  });
+  return Array.from(rows.values());
+};
+
+const latestDate = (values) => values.filter(Boolean).reduce((latest, value) => (
+  !latest || Date.parse(value) > Date.parse(latest) ? value : latest
+), null);
+
 const buildDoseSummary = ({ name, route, doseLabel, concentrationLabel, result, guidance }) => ({
   name: name || "Selected drug",
   route: route || "Route not recorded",
@@ -78,11 +125,21 @@ const buildDoseSummary = ({ name, route, doseLabel, concentrationLabel, result, 
   guidance: guidance || ""
 });
 
-const fetchInteractionWarningsForDrugNames = async (names = []) => {
+const filterInteractionWarningsForDrugNames = (interactions, names) => {
+  const selected = new Set(names.map(normalise));
+  return (interactions || []).filter((warning) => (
+    selected.has(normalise(warning.drug_name))
+    && selected.has(normalise(warning.interacting_drug))
+  ));
+};
+
+const fetchInteractionWarningsForDrugNames = async (names = [], { isOnline = true, cachedInteractions = [] } = {}) => {
   const searchNames = uniqueValues(names)
     .map((name) => name.replace(/[,%]/g, " ").replace(/\s+/g, " ").trim())
     .filter(Boolean);
   if (searchNames.length < 2) return [];
+  const cachedMatches = filterInteractionWarningsForDrugNames(cachedInteractions, searchNames);
+  if (!isOnline) return cachedMatches;
 
   const orConditions = [];
   for (let i = 0; i < searchNames.length; i += 1) {
@@ -96,7 +153,8 @@ const fetchInteractionWarningsForDrugNames = async (names = []) => {
 
   if (!orConditions.length) return [];
   const { data, error } = await supabase.from("drug_interactions").select("*").or(orConditions.join(","));
-  if (error) throw error;
+  if (error) return cachedMatches;
+  await mergeCalculatorData(calculatorDataTypes.interactions, data || []);
 
   const seen = new Set();
   return (data || []).filter((warning) => {
@@ -113,24 +171,37 @@ const fetchInteractionWarningsForDrugNames = async (names = []) => {
 
 const firstBySpecies = (rows, species) => rows.find((row) => row.species === species) || rows[0] || null;
 const doseMapFrom = (context) => context?.doseMap || context?.protocol?.drug_doses || {};
+const hasCompleteDoseData = (row) => Boolean(
+  row
+  && row.species
+  && (numberValue(row.min_dose ?? row.dose_min, NaN) > 0 || numberValue(row.max_dose ?? row.dose_max, NaN) > 0)
+  && row.dose_unit
+  && numberValue(row.concentration, 0) > 0
+);
+
+const missingDoseFields = (row) => [
+  !row?.species ? "species" : null,
+  !(numberValue(row?.min_dose ?? row?.dose_min, NaN) > 0 || numberValue(row?.max_dose ?? row?.dose_max, NaN) > 0) ? "dose" : null,
+  !row?.dose_unit ? "dose unit" : null,
+  !(numberValue(row?.concentration, 0) > 0) ? "concentration" : null
+].filter(Boolean);
+
+const formatCacheDate = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+};
 
 export default function ClinicalTools({ user, darkMode = false, showBanner = true, featureAccess, adminAccess = false, initialTab = "drug" }) {
+  const isOnline = useOnlineStatus();
   const appliedInitialTabRef = useRef(initialTab || "drug");
   const [activeTab, setActiveTab] = useState(initialTab || "drug");
   const [protocolContext, setProtocolContext] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
-    drugCalculators: [],
-    criProtocols: [],
-    emergencyDrugs: [],
-    fluidCalculators: [],
-    transfusionCalculators: [],
-    toxicities: []
-  });
-
-  useEffect(() => {
-    loadClinicalTools();
-  }, []);
+  const [data, setData] = useState(emptyCalculatorData);
+  const [offlineDrugOptions, setOfflineDrugOptions] = useState([]);
+  const [offlineInteractions, setOfflineInteractions] = useState([]);
+  const [cacheStatus, setCacheStatus] = useState({ usingCache: false, lastUpdated: null });
 
   // STRICT ACCESS CONTROL: Safely deeply evaluates feature matrices to hide tabs 
   // without breaking the app if user records lack the new database keys yet.
@@ -180,44 +251,103 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
 
   const loadClinicalTools = async () => {
     setLoading(true);
-    const [drugCalculators, criProtocols, emergencyDrugs, fluidCalculators, transfusionCalculators, toxicities] = await Promise.all([
-      supabase.from("drug_calculators").select("*").order("drug_name"),
-      supabase.from("cri_protocols").select("*").order("drug_name"),
-      supabase.from("emergency_drug_calculator").select("*").order("drug_name"),
-      supabase.from("fluid_calculators").select("*").order("calculation_name"),
-      supabase.from("transfusion_calculators").select("*").order("species"),
-      supabase.from("species_toxicities").select("*").order("toxin")
-    ]);
+    try {
+      const [cachedEntries, offlineDoses, cachedDrugOptions, cachedInteractions, cacheDates] = await Promise.all([
+        Promise.all(calculatorDataConfig.map(({ cacheType }) => getCachedCalculatorData(cacheType))),
+        getOfflineDoseRows(),
+        getOfflineDrugOptions(),
+        getOfflineInteractions(),
+        Promise.all(calculatorDataConfig.map(({ cacheType }) => getLastCalculatorCacheUpdate(cacheType)))
+      ]);
+      const cachedData = Object.fromEntries(calculatorDataConfig.map(({ stateKey }, index) => [stateKey, cachedEntries[index] || []]));
+      cachedData.drugCalculators = mergeRows(cachedData.drugCalculators, offlineDoses);
+      setData(cachedData);
+      setOfflineDrugOptions(cachedDrugOptions);
+      setOfflineInteractions(cachedInteractions);
+      const offlineDoseDates = offlineDoses.map((row) => row.offline_updated_at).filter(Boolean);
+      setCacheStatus({ usingCache: !isOnline, lastUpdated: latestDate([...cacheDates, ...offlineDoseDates]) });
 
-    const errors = [drugCalculators, criProtocols, emergencyDrugs, fluidCalculators, transfusionCalculators, toxicities].filter((result) => result.error);
-    if (errors.length) toast.error("Clinical tools need the Supabase calculator SQL first");
+      if (!isOnline) return;
 
-    setData({
-      drugCalculators: drugCalculators.data || [],
-      criProtocols: criProtocols.data || [],
-      emergencyDrugs: emergencyDrugs.data || [],
-      fluidCalculators: fluidCalculators.data || [],
-      transfusionCalculators: transfusionCalculators.data || [],
-      toxicities: toxicities.data || []
-    });
-    setLoading(false);
+      const remoteResults = await Promise.all(calculatorDataConfig.map(({ table, order }) => (
+        supabase.from(table).select("*").order(order)
+      )));
+      const nextData = { ...cachedData };
+      let usedFallback = false;
+
+      await Promise.all(remoteResults.map(async (result, index) => {
+        const config = calculatorDataConfig[index];
+        if (result.error) {
+          usedFallback = true;
+          return;
+        }
+        nextData[config.stateKey] = result.data || [];
+        await cacheCalculatorData(config.cacheType, result.data || []);
+      }));
+
+      nextData.drugCalculators = mergeRows(nextData.drugCalculators, offlineDoses);
+      setData(nextData);
+      setCacheStatus({
+        usingCache: usedFallback,
+        lastUpdated: latestDate([
+          ...await Promise.all(calculatorDataConfig.map(({ cacheType }) => getLastCalculatorCacheUpdate(cacheType))),
+          ...offlineDoseDates
+        ])
+      });
+      if (usedFallback) toast("Some calculator data is being loaded from the offline cache.");
+    } catch (error) {
+      console.error("Could not load calculator data", error);
+      setCacheStatus((current) => ({ ...current, usingCache: true }));
+      toast.error("Could not load saved calculator data");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    loadClinicalTools();
+  }, [isOnline]);
+
   const logCalculation = async ({ calculator_type, drug_name, patient_weight, result }) => {
-    if (!user?.id) return false;
-    const { error } = await supabase.from("calculator_logs").insert({
+    if (!user?.id) return true;
+    const payload = {
       user_id: user.id,
       calculator_type,
       drug_name: drug_name || null,
       patient_weight: patient_weight || null,
       result
-    });
+    };
+    if (!isOnline) {
+      const saved = await cacheLocalCalculation(user.id, payload);
+      if (saved) toast.success("Calculation saved locally");
+      else toast("Calculation completed, but local history could not be saved.");
+      return true;
+    }
+    const { error } = await supabase.from("calculator_logs").insert(payload);
     if (error) {
-      toast.error("Could not save calculation history");
-      return false;
+      const saved = await cacheLocalCalculation(user.id, payload);
+      toast(saved
+        ? "Calculation saved locally; cloud history is unavailable."
+        : "Calculation completed, but cloud and local history are unavailable.");
+      return true;
     }
     return true;
   };
+
+  const activeDataRows = {
+    drug: data.drugCalculators,
+    protocol: data.drugCalculators,
+    emergency: data.emergencyDrugs,
+    fluids: data.fluidCalculators,
+    transfusion: data.transfusionCalculators,
+    cri: data.criProtocols,
+    toxicology: data.toxicities,
+    interaction: offlineDrugOptions
+  }[activeTab];
+  const missingOfflineData = !isOnline
+    && Array.isArray(activeDataRows)
+    && activeDataRows.length === 0
+    && activeTab !== "pill_counter";
 
   return (
     <div className="space-y-6 pb-8">
@@ -250,6 +380,10 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
         })}
       </div>
 
+      {(!isOnline || cacheStatus.usingCache) && (
+        <OfflineCalculatorBanner darkMode={darkMode} lastUpdated={cacheStatus.lastUpdated} />
+      )}
+
       {loading ? (
         <div className={`${panelClass(darkMode)} flex flex-col items-center justify-center py-16 gap-4`}>
           <HeartbeatLoader size={72} />
@@ -257,14 +391,20 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={null} user={user} />}
-          {activeTab === "protocol" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} setProtocolContext={setProtocolContext} protocolMode user={user} />}
-          {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} />}
-          {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
-          {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
-          {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
-          {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
-          {activeTab === "interaction" && <InteractionChecker darkMode={darkMode} user={user} />}
+          {missingOfflineData ? (
+            <MissingOfflineCalculatorData darkMode={darkMode} />
+          ) : (
+            <>
+              {activeTab === "drug" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={null} user={user} isOnline={isOnline} offlineDrugOptions={offlineDrugOptions} offlineInteractions={offlineInteractions} />}
+              {activeTab === "protocol" && <DrugCalculator rows={data.drugCalculators} darkMode={darkMode} onLog={logCalculation} protocolContext={protocolContext} setProtocolContext={setProtocolContext} protocolMode user={user} isOnline={isOnline} offlineDrugOptions={offlineDrugOptions} offlineInteractions={offlineInteractions} />}
+              {activeTab === "emergency" && <EmergencyCalculator rows={data.emergencyDrugs} darkMode={darkMode} onLog={logCalculation} isOnline={isOnline} offlineInteractions={offlineInteractions} />}
+              {activeTab === "fluids" && <FluidCalculator rows={data.fluidCalculators} darkMode={darkMode} onLog={logCalculation} />}
+              {activeTab === "transfusion" && <TransfusionCalculator rows={data.transfusionCalculators} darkMode={darkMode} onLog={logCalculation} />}
+              {activeTab === "cri" && <CriCalculator rows={data.criProtocols} darkMode={darkMode} onLog={logCalculation} />}
+              {activeTab === "toxicology" && <Toxicology rows={data.toxicities} darkMode={darkMode} />}
+              {activeTab === "interaction" && <InteractionChecker darkMode={darkMode} user={user} isOnline={isOnline} offlineDrugOptions={offlineDrugOptions} offlineInteractions={offlineInteractions} />}
+            </>
+          )}
           {activeTab === "pill_counter" && <PillCounterTab darkMode={darkMode} />}
         </div>
       )}
@@ -273,12 +413,19 @@ export default function ClinicalTools({ user, darkMode = false, showBanner = tru
 }
 
 export function ClinicalToolsHistory({ user, darkMode = false }) {
+  const isOnline = useOnlineStatus();
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState([]);
 
   const loadCalculationHistory = async () => {
     if (!user?.id) return;
     setHistoryLoading(true);
+    const localHistory = await getLocalCalculationHistory(user.id);
+    if (!isOnline) {
+      setHistory(localHistory);
+      setHistoryLoading(false);
+      return;
+    }
     const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
     const { data: logs, error } = await supabase
       .from("calculator_logs")
@@ -287,14 +434,18 @@ export function ClinicalToolsHistory({ user, darkMode = false }) {
       .gte("created_at", since)
       .order("created_at", { ascending: false });
 
-    if (error) toast.error("Could not load calculation history");
-    else setHistory(logs || []);
+    if (error) {
+      setHistory(localHistory);
+      toast("Cloud history is unavailable. Showing locally saved calculations.");
+    } else {
+      setHistory([...(localHistory || []), ...(logs || [])].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)));
+    }
     setHistoryLoading(false);
   };
 
   useEffect(() => {
     loadCalculationHistory();
-  }, [user?.id]);
+  }, [user?.id, isOnline]);
 
   return <CalculationHistory rows={history} loading={historyLoading} darkMode={darkMode} onRefresh={loadCalculationHistory} />;
 }
@@ -315,7 +466,7 @@ function PillCounterTab({ darkMode }) {
   );
 }
 
-function CalculationSummaryModal({ open, onClose, doses, interactions, darkMode }) {
+function CalculationSummaryModal({ open, onClose, doses, interactions, darkMode, offlineData = false }) {
   if (!open) return null;
 
   return (
@@ -325,7 +476,7 @@ function CalculationSummaryModal({ open, onClose, doses, interactions, darkMode 
           <h3 className="font-black text-xl flex items-center gap-2">
             <AlertTriangle size={22} className="text-amber-500" /> Calculated Dose Set
           </h3>
-          <button onClick={onClose} className={`p-2 rounded-full transition ${darkMode ? "bg-white/10 hover:bg-white/20" : "bg-slate-100 hover:bg-slate-200"}`}>
+          <button onClick={onClose} className={`h-10 w-10 grid place-items-center rounded-lg transition ${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/15" : "bg-[#E8F8F5] text-[#0F8F83] hover:bg-[#DFF4F1]"}`} aria-label="Close">
             <X size={20} />
           </button>
         </div>
@@ -352,7 +503,9 @@ function CalculationSummaryModal({ open, onClose, doses, interactions, darkMode 
           <div>
             <p className="text-xs font-black uppercase tracking-widest opacity-45 mb-3">Interaction warnings</p>
             {!interactions || interactions.length === 0 ? (
-              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No known interactions found between selected drugs.</p>
+              <p className={`text-sm font-bold ${offlineData ? "text-amber-700 dark:text-amber-300" : "text-emerald-600 dark:text-emerald-400"}`}>
+                {offlineData ? "No interaction was found in saved offline data. This does not confirm that no interaction exists." : "No known interactions found between selected drugs."}
+              </p>
             ) : (
               <div className="space-y-3">
                 {interactions.map((warning, index) => (
@@ -376,7 +529,7 @@ function CalculationSummaryModal({ open, onClose, doses, interactions, darkMode 
   );
 }
 
-function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user }) {
+function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolContext, protocolMode = false, user, isOnline, offlineDrugOptions, offlineInteractions }) {
   const [species, setSpecies] = useState("Dog");
   const [weight, setWeight] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -394,7 +547,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
     const row = speciesRows.find((item) => String(item.id) === String(selectedId));
     if (row) return row;
     if (selectedDatabaseDrug) return buildCalculatorRowFromDrug(selectedDatabaseDrug, species, rows);
-    return firstBySpecies(speciesRows, species);
+    return firstBySpecies(speciesRows.filter(hasCompleteDoseData), species) || firstBySpecies(speciesRows, species);
   }, [rows, selectedDatabaseDrug, selectedId, species, speciesRows]);
   const doseMap = doseMapFrom(protocolContext);
 
@@ -443,10 +596,21 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
     setDrugSearchLoading(true);
     const timer = window.setTimeout(async () => {
       try {
-        const results = await drugService.searchCalculatorDrugs(query, user?.id);
+        const results = isOnline
+          ? await drugService.searchCalculatorDrugs(query, user?.id)
+          : (offlineDrugOptions || []).filter((drug) => [
+            drug.name,
+            drug.category,
+            drug.species,
+            drug.route,
+            ...(drug.drug_aliases || []).map((alias) => alias.alias || alias.name)
+          ].some((value) => normalise(value).includes(normalise(query)))).slice(0, 20);
         if (!cancelled) setDrugSearchResults(results);
       } catch {
-        if (!cancelled) toast.error("Could not search drug database");
+        if (!cancelled) {
+          setDrugSearchResults((offlineDrugOptions || []).filter((drug) => normalise(drug.name).includes(normalise(query))).slice(0, 20));
+          toast("Using saved formulary drugs");
+        }
       } finally {
         if (!cancelled) setDrugSearchLoading(false);
       }
@@ -456,10 +620,13 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [drugSearch, user?.id]);
+  }, [drugSearch, user?.id, isOnline, offlineDrugOptions]);
 
   const addCalculatorRowToSet = (row, drugName = row?.drug_name) => {
     if (!row) return toast.error("Select a drug first");
+    if (!hasCompleteDoseData(row)) {
+      return toast.error(`Cannot calculate: missing ${missingDoseFields(row).join(", ")}`);
+    }
     const resolvedName = drugName || row.drug_name;
     const entryKey = `${row.id || resolvedName}|${row.route || ""}|${row.concentration || ""}`;
     if (doseSet.some((entry) => entry.entryKey === entryKey)) {
@@ -498,10 +665,14 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
     setSelectedId(calculatorRow ? String(calculatorRow.id) : "");
     setDose(calculatorRow?.min_dose || calculatorRow?.max_dose || drug.dose_min || drug.min_dose || "");
 
-    try {
-      setSelectedDrugDetails(await drugService.getDrugClinicalDetails(drug));
-    } catch {
-      setSelectedDrugDetails(null);
+    if (!isOnline && drug.offline_summary) {
+      setSelectedDrugDetails(drug.offline_summary);
+    } else {
+      try {
+        setSelectedDrugDetails(await drugService.getDrugClinicalDetails(drug));
+      } catch {
+        setSelectedDrugDetails(drug.offline_summary || null);
+      }
     }
   };
 
@@ -547,12 +718,14 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
         dose: String(dose || selected.min_dose || selected.max_dose || "")
       }]
       : doseSet;
+    const incomplete = entries.find((entry) => !hasCompleteDoseData(entry.row));
+    if (incomplete) return toast.error(`Cannot calculate ${incomplete.drugName || incomplete.row?.drug_name}: missing ${missingDoseFields(incomplete.row).join(", ")}`);
     const doseSummaries = entries.map(buildMainDoseSummary);
     const result = doseSummaries.map((item) => item.result).join("; ");
     const drugNames = uniqueValues(doseSummaries.map((item) => item.name));
     let interactions = [];
     try {
-      interactions = await fetchInteractionWarningsForDrugNames(drugNames);
+      interactions = await fetchInteractionWarningsForDrugNames(drugNames, { isOnline, cachedInteractions: offlineInteractions });
     } catch {
       toast.error("Could not check interactions");
     }
@@ -564,6 +737,8 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
 
   const saveProtocolLog = () => {
     if (!protocolContext?.protocol || weightValue <= 0 || protocolRows.length === 0) return toast.error("Add a weight and check protocol drugs are available");
+    const incomplete = protocolRows.find((row) => !hasCompleteDoseData(row));
+    if (incomplete) return toast.error(`Cannot calculate ${incomplete.drug_name}: missing ${missingDoseFields(incomplete).join(", ")}`);
     const result = protocolRows.map((row) => formatProtocolCalculation(row, weightValue, doseMap, protocolContext.drugs || [])).join("; ");
     onLog({ calculator_type: "protocol", drug_name: protocolContext.protocol.name, patient_weight: weightValue, result });
     toast.success("Protocol calculation logged");
@@ -583,6 +758,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
           doses={summaryModal.doses}
           interactions={summaryModal.interactions}
           darkMode={darkMode}
+          offlineData={!isOnline}
         />
       )}
       {protocolMode && <ProtocolContextSelector user={user} darkMode={darkMode} onProtocolChange={setProtocolContext} />}
@@ -610,12 +786,14 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
                   key={`calc-row-${row.id}`}
                   type="button"
                   onClick={() => addCalculatorRowToSet(row)}
+                  disabled={!hasCompleteDoseData(row)}
                   className={`w-full text-left rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-[#DCEDEA] bg-white hover:bg-[#F0F6F5]"}`}
                 >
                   <div className="font-black text-sm">{row.drug_name}</div>
                   <div className="text-xs opacity-60">
                     {[row.route || "General route", row.min_dose || row.max_dose ? `${row.min_dose || row.max_dose}${row.max_dose && row.max_dose !== row.min_dose ? ` - ${row.max_dose}` : ""} ${row.dose_unit || "mg/kg"}` : "", row.concentration ? `${row.concentration} ${row.concentration_unit || "mg/ml"}` : ""].filter(Boolean).join(" | ")}
                   </div>
+                  {!hasCompleteDoseData(row) && <div className="mt-1 text-xs font-bold text-amber-600">Unavailable: missing {missingDoseFields(row).join(", ")}</div>}
                 </button>
               ))}
               {!drugSearchLoading && drugSearchResults.map((drug) => (
@@ -635,7 +813,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
           )}
           <select className={fieldClass(darkMode)} defaultValue="" onChange={(event) => { handleCalculatorSelect(event.target.value); event.target.value = ""; }}>
             <option value="" disabled>Add single drug...</option>
-            {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} ({row.route || "General"})</option>)}
+            {speciesRows.map((row) => <option key={row.id} value={row.id} disabled={!hasCompleteDoseData(row)}>{row.drug_name} ({row.route || "General"})</option>)}
           </select>
         </div>
       )}
@@ -704,20 +882,28 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
             {selectedDatabaseDrug && !speciesRows.some((row) => String(row.id) === String(selectedId)) && (
               <option value={selectedId || `drug-${selectedDatabaseDrug.id}`}>{selectedDatabaseDrug.name} (database record)</option>
             )}
-            {speciesRows.map((row) => <option key={row.id} value={row.id}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
+            {speciesRows.map((row) => <option key={row.id} value={row.id} disabled={!hasCompleteDoseData(row)}>{row.drug_name} {row.route ? `(${row.route})` : ""}</option>)}
           </select>
           {selected && (
             <>
               {selectedDatabaseDrug && (
                 <SelectedDrugSummary drug={selectedDatabaseDrug} details={selectedDrugDetails} darkMode={darkMode} />
               )}
-              <DoseRange row={selected} dose={dose} setDose={setDose} darkMode={darkMode} />
-              <ResultGrid items={[
-                ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit?.split("/")[0] || "mg"}`],
-                ["Give", volume ? `${formatNumber(volume)} ml` : "No concentration"]
-              ]} />
+              {hasCompleteDoseData(selected) ? (
+                <>
+                  <DoseRange row={selected} dose={dose} setDose={setDose} darkMode={darkMode} />
+                  <ResultGrid items={[
+                    ["Dose", `${formatNumber(totalDose)} ${selected.dose_unit.split("/")[0]}`],
+                    ["Give", `${formatNumber(volume)} ml`]
+                  ]} />
+                </>
+              ) : (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+                  Cannot calculate this drug because {missingDoseFields(selected).join(", ")} is missing.
+                </p>
+              )}
               <Notes row={selected} />
-              <LogButton onClick={saveLog} />
+              {hasCompleteDoseData(selected) && <LogButton onClick={saveLog} />}
             </>
           )}
         </>
@@ -726,7 +912,7 @@ function DrugCalculator({ rows, darkMode, onLog, protocolContext, setProtocolCon
   );
 }
 
-function InteractionChecker({ darkMode, user }) {
+function InteractionChecker({ darkMode, user, isOnline, offlineDrugOptions, offlineInteractions }) {
     const [interactionDrugs, setInteractionDrugs] = useState([]);
     const [interactionSearch, setInteractionSearch] = useState("");
     const [interactionSearchResults, setInteractionSearchResults] = useState([]);
@@ -747,10 +933,20 @@ function InteractionChecker({ darkMode, user }) {
         setSearchLoading(true);
         const timer = window.setTimeout(async () => {
             try {
-                const results = await drugService.searchCalculatorDrugs(query, user?.id);
+                const results = isOnline
+                  ? await drugService.searchCalculatorDrugs(query, user?.id)
+                  : (offlineDrugOptions || []).filter((drug) => [
+                    drug.name,
+                    drug.category,
+                    drug.species,
+                    ...(drug.drug_aliases || []).map((alias) => alias.alias || alias.name)
+                  ].some((value) => normalise(value).includes(normalise(query)))).slice(0, 20);
                 if (!cancelled) setInteractionSearchResults(results);
             } catch {
-                if (!cancelled) toast.error("Could not search drug database");
+                if (!cancelled) {
+                    setInteractionSearchResults((offlineDrugOptions || []).filter((drug) => normalise(drug.name).includes(normalise(query))).slice(0, 20));
+                    toast("Using saved formulary drugs");
+                }
             } finally {
                 if (!cancelled) setSearchLoading(false);
             }
@@ -760,7 +956,7 @@ function InteractionChecker({ darkMode, user }) {
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [interactionSearch, user?.id]);
+    }, [interactionSearch, user?.id, isOnline, offlineDrugOptions]);
 
     useEffect(() => {
         const checkInteractions = async () => {
@@ -770,33 +966,21 @@ function InteractionChecker({ darkMode, user }) {
             }
             setInteractionLoading(true);
             try {
-                const pairs = [];
-                for (let i = 0; i < interactionDrugs.length; i++) {
-                    for (let j = i + 1; j < interactionDrugs.length; j++) {
-                        pairs.push([interactionDrugs[i].name, interactionDrugs[j].name]);
-                    }
-                }
-
-                const orConditions = pairs.map(
-                    ([a, b]) => `and(drug_name.ilike.%${a}%,interacting_drug.ilike.%${b}%),and(drug_name.ilike.%${b}%,interacting_drug.ilike.%${a}%)`
-                ).join(",");
-
-                const { data, error } = await supabase
-                    .from("drug_interactions")
-                    .select("*")
-                    .or(orConditions);
-
-                if (error) throw error;
-                setInteractionResults(data || []);
+                const results = await fetchInteractionWarningsForDrugNames(
+                  interactionDrugs.map((drug) => drug.name),
+                  { isOnline, cachedInteractions: offlineInteractions }
+                );
+                setInteractionResults(results);
             } catch (err) {
                 console.error(err);
-                toast.error("Could not check interactions");
+                setInteractionResults(filterInteractionWarningsForDrugNames(offlineInteractions, interactionDrugs.map((drug) => drug.name)));
+                toast("Using saved interaction data");
             } finally {
                 setInteractionLoading(false);
             }
         };
         checkInteractions();
-    }, [interactionDrugs]);
+    }, [interactionDrugs, isOnline, offlineInteractions]);
 
     const addInteractionDrug = (drug) => {
         if (!interactionDrugs.find((d) => d.id === drug.id)) {
@@ -864,7 +1048,12 @@ function InteractionChecker({ darkMode, user }) {
                         ))}
                     </div>
                 ) : (
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">No known interactions found between selected drugs.</p>
+                    <p className={`text-sm font-bold ${isOnline ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-300"}`}>
+                      {isOnline ? "No known interactions found between selected drugs." : "No interaction was found in saved offline data. This does not confirm that no interaction exists."}
+                    </p>
+                )}
+                {!isOnline && interactionDrugs.length >= 2 && (
+                  <p className="mt-3 text-xs leading-5 text-amber-600 dark:text-amber-300">Offline data may be incomplete. Check latest formulary when online.</p>
                 )}
             </div>
         </ToolShell>
@@ -945,6 +1134,14 @@ function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, doseMap, rows, wei
       {rows.length === 0 && weightValue > 0 && <p className="text-sm opacity-65">No calculator rows match this protocol for {species}. Check the protocol species or add calculator records for these drugs.</p>}
 
       {rows.map((row) => {
+        if (!hasCompleteDoseData(row)) {
+          return (
+            <div key={row.id} className={`rounded-lg border p-3 ${darkMode ? "border-amber-400/20 bg-amber-500/10" : "border-amber-200 bg-amber-50"}`}>
+              <div className="font-black">{row.drug_name}</div>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-200">Cannot calculate: missing {missingDoseFields(row).join(", ")}.</p>
+            </div>
+          );
+        }
         const doseSetting = getProtocolDoseSetting(row, doseMap, protocolDrugs);
         const exactDose = numberValue(doseSetting?.dose, NaN);
         const hasProtocolDose = Number.isFinite(exactDose) && exactDose > 0;
@@ -981,7 +1178,7 @@ function ProtocolDoseSet({ darkMode, protocol, protocolDrugs, doseMap, rows, wei
         </p>
       )}
 
-      {rows.length > 0 && <LogButton onClick={onLog} />}
+      {rows.some(hasCompleteDoseData) && <LogButton onClick={onLog} />}
     </div>
   );
 }
@@ -1033,6 +1230,12 @@ const emergencyDoseText = (row) => {
   return row?.dose_unit || "Dose guidance not recorded";
 };
 
+const hasCompleteEmergencyCalculationData = (row) => {
+  const hasNumericDose = numericOrNull(row?.dose_min) !== null || numericOrNull(row?.dose_max) !== null;
+  if (!hasNumericDose) return true;
+  return Boolean(row?.species && row?.dose_unit && numericOrNull(row?.concentration) > 0);
+};
+
 const emergencyVariantLabel = (row, index) => {
   const route = row?.route || "Route not recorded";
   const concentration = row?.concentration ? `${row.concentration} ${row.concentration_unit || "mg/ml"}` : "No concentration";
@@ -1047,12 +1250,10 @@ const matchesEmergencySpecies = (row, species) => {
   return !rowSpecies || rowSpecies === "all" || selectedSpecies === "all" || rowSpecies === selectedSpecies;
 };
 
-function EmergencyCalculator({ rows, darkMode, onLog }) {
+function EmergencyCalculator({ rows, darkMode, onLog, isOnline, offlineInteractions }) {
   const [weight, setWeight] = useState("");
   const [species, setSpecies] = useState("All");
   const [selectedKey, setSelectedKey] = useState(() => emergencyDrugKey(rows[0]));
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [dose, setDose] = useState("");
   const [emergencySearch, setEmergencySearch] = useState("");
   const [doseSet, setDoseSet] = useState([]);
   const [summaryModal, setSummaryModal] = useState({ open: false, doses: [], interactions: [] });
@@ -1068,10 +1269,6 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
     });
     return Array.from(groups, ([key, row]) => ({ key, row }));
   }, [filteredRows]);
-  const selectedRows = useMemo(
-    () => filteredRows.filter((row) => emergencyDrugKey(row) === selectedKey),
-    [filteredRows, selectedKey]
-  );
   const filteredEmergencySearchRows = useMemo(() => {
     const query = normalise(emergencySearch);
     if (!query) return [];
@@ -1079,13 +1276,6 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
       .filter((row) => [row.drug_name, row.indication, row.route, row.dose_unit, row.notes].some((value) => normalise(value).includes(query)))
       .slice(0, 12);
   }, [emergencySearch, filteredRows]);
-  const selected = selectedRows[selectedVariantIndex] || selectedRows[0] || null;
-  const minDose = numericOrNull(selected?.dose_min);
-  const maxDose = numericOrNull(selected?.dose_max);
-  const hasNumericDose = minDose !== null || maxDose !== null;
-  const concentration = numericOrNull(selected?.concentration);
-  const hasConcentration = concentration !== null && concentration > 0;
-  const doseGuidance = emergencyDoseText(selected);
 
   useEffect(() => {
     if (!emergencyOptions.length) return;
@@ -1094,19 +1284,7 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
     }
   }, [emergencyOptions, selectedKey]);
 
-  useEffect(() => {
-    if (selectedVariantIndex >= selectedRows.length) setSelectedVariantIndex(0);
-  }, [selectedRows.length, selectedVariantIndex]);
-
-  useEffect(() => {
-    if (selected && hasNumericDose) setDose(String(minDose ?? maxDose ?? ""));
-    else setDose("");
-  }, [selected?.id]);
-
-  const doseValue = numberValue(dose || minDose || maxDose);
   const weightValue = numberValue(weight);
-  const totalDose = weightValue * doseValue;
-  const volume = hasConcentration && hasNumericDose ? totalDose / concentration : null;
 
   const buildEmergencyDoseSummary = (entry) => {
     const row = entry.row;
@@ -1134,6 +1312,9 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
 
   const addEmergencyRowToSet = (row) => {
     if (!row) return toast.error("Select an emergency drug first");
+    if (!hasCompleteEmergencyCalculationData(row)) {
+      return toast.error("Cannot calculate this emergency drug: species, dose unit or concentration is missing");
+    }
     const entryKey = `${row.id || emergencyDrugKey(row)}|${row.route || ""}|${row.concentration || ""}|${row.dose_min || ""}|${row.dose_max || ""}|${row.dose_unit || ""}`;
     if (doseSet.some((entry) => entry.entryKey === entryKey)) {
       toast.error("That emergency drug is already in this calculation set");
@@ -1161,13 +1342,16 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
 
   const saveLog = async () => {
     if (weightValue <= 0 || doseSet.length === 0) return toast.error("Add a weight and at least one emergency drug");
+    if (doseSet.some((entry) => !hasCompleteEmergencyCalculationData(entry.row))) {
+      return toast.error("One or more emergency drugs are missing species, dose unit or concentration");
+    }
     const entries = doseSet;
     const doseSummaries = entries.map(buildEmergencyDoseSummary);
     const result = doseSummaries.map((item) => item.result).join("; ");
     const drugNames = uniqueValues(doseSummaries.map((item) => item.name));
     let interactions = [];
     try {
-      interactions = await fetchInteractionWarningsForDrugNames(drugNames);
+      interactions = await fetchInteractionWarningsForDrugNames(drugNames, { isOnline, cachedInteractions: offlineInteractions });
     } catch {
       toast.error("Could not check interactions");
     }
@@ -1185,8 +1369,9 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
         doses={summaryModal.doses}
         interactions={summaryModal.interactions}
         darkMode={darkMode}
+        offlineData={!isOnline}
       />
-      <select className={fieldClass(darkMode)} value={species} onChange={(event) => { setSpecies(event.target.value); setSelectedKey(""); setSelectedVariantIndex(0); setDoseSet([]); }}>
+      <select className={fieldClass(darkMode)} value={species} onChange={(event) => { setSpecies(event.target.value); setSelectedKey(""); setDoseSet([]); }}>
         {emergencySpeciesOptions.map((option) => <option key={option}>{option}</option>)}
       </select>
       <input className={fieldClass(darkMode)} type="number" placeholder="Patient weight kg" value={weight} onChange={(event) => setWeight(event.target.value)} />
@@ -1210,17 +1395,19 @@ function EmergencyCalculator({ rows, darkMode, onLog }) {
                 key={`${row.id || emergencyDrugKey(row)}-${index}`}
                 type="button"
                 onClick={() => addEmergencyRowToSet(row)}
+                disabled={!hasCompleteEmergencyCalculationData(row)}
                 className={`w-full text-left rounded-lg p-3 border ${darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-[#DCEDEA] bg-white hover:bg-[#F0F6F5]"}`}
               >
                 <div className="font-black text-sm">{emergencyDrugLabel(row)}</div>
                 <div className="text-xs opacity-60">{emergencyVariantLabel(row, index)}</div>
+                {!hasCompleteEmergencyCalculationData(row) && <div className="mt-1 text-xs font-bold text-amber-600">Unavailable for calculation: required concentration or units are missing.</div>}
               </button>
             ))}
           </div>
         )}
         <select className={fieldClass(darkMode)} defaultValue="" onChange={(event) => { addEmergencyRowToSet(filteredRows[Number(event.target.value)]); event.target.value = ""; }}>
           <option value="" disabled>Add single emergency drug...</option>
-          {filteredRows.map((row, index) => <option key={`${row.id || emergencyDrugKey(row)}-${index}`} value={index}>{emergencyDrugLabel(row)} ({row.route || "Route not recorded"})</option>)}
+          {filteredRows.map((row, index) => <option key={`${row.id || emergencyDrugKey(row)}-${index}`} value={index} disabled={!hasCompleteEmergencyCalculationData(row)}>{emergencyDrugLabel(row)} ({row.route || "Route not recorded"})</option>)}
         </select>
       </div>
 
@@ -1276,7 +1463,8 @@ function CriCalculator({ rows, darkMode, onLog }) {
 
   const weightValue = numberValue(weight);
   const rateValue = numberValue(rate || selected?.cri_rate_min);
-  const unit = String(selected?.rate_unit || "mcg/kg/min").toLowerCase();
+  const unit = String(selected?.rate_unit || "").toLowerCase();
+  const criReady = Boolean(selected?.rate_unit && rateValue > 0 && numberValue(selected?.concentration, 0) > 0);
   let mgPerHour = 0;
 
   if (unit.includes("mcg") && unit.includes("min")) mgPerHour = (weightValue * rateValue / 1000) * 60;
@@ -1289,6 +1477,7 @@ function CriCalculator({ rows, darkMode, onLog }) {
 
   const saveLog = () => {
     if (!selected || weightValue <= 0) return toast.error("Add a weight and select a CRI");
+    if (!criReady) return toast.error("Cannot calculate this CRI: rate, rate unit or concentration is missing");
     const result = `${formatNumber(mgPerHour)} mg/hr${mlPerHour ? `, ${formatNumber(mlPerHour)} ml/hr` : ""}`;
     onLog({ calculator_type: "cri", drug_name: selected.drug_name, patient_weight: weightValue, result });
     toast.success("CRI calculation logged");
@@ -1303,20 +1492,28 @@ function CriCalculator({ rows, darkMode, onLog }) {
       </select>
       {selected && (
         <>
-          <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
-            <input className={fieldClass(darkMode)} type="number" step="0.01" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="CRI rate" />
-            <span className="text-sm font-black opacity-70">{selected.rate_unit || "mcg/kg/min"}</span>
-          </div>
-          <ResultGrid items={[
-            ["mg/min", `${formatNumber(mgPerMin, 3)} mg/min`],
-            ["mg/hr", `${formatNumber(mgPerHour)} mg/hr`],
-            ["Pump rate", mlPerHour ? `${formatNumber(mlPerHour)} ml/hr` : "No concentration"]
-          ]} />
+          {criReady ? (
+            <>
+              <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
+                <input className={fieldClass(darkMode)} type="number" step="0.01" value={rate} onChange={(event) => setRate(event.target.value)} placeholder="CRI rate" />
+                <span className="text-sm font-black opacity-70">{selected.rate_unit}</span>
+              </div>
+              <ResultGrid items={[
+                ["mg/min", `${formatNumber(mgPerMin, 3)} mg/min`],
+                ["mg/hr", `${formatNumber(mgPerHour)} mg/hr`],
+                ["Pump rate", `${formatNumber(mlPerHour)} ml/hr`]
+              ]} />
+            </>
+          ) : (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+              Cannot calculate this CRI because its rate, rate unit or concentration is missing.
+            </p>
+          )}
           <InfoLine label="Loading dose" value={selected.loading_dose} />
           <InfoLine label="Dilution" value={selected.dilution} />
           <InfoLine label="Monitoring" value={selected.monitoring} />
           <Notes row={selected} />
-          <LogButton onClick={saveLog} />
+          {criReady && <LogButton onClick={saveLog} />}
         </>
       )}
     </ToolShell>
@@ -1533,6 +1730,26 @@ function readableCalculatorType(type) {
     cri: "CRI Calculator"
   };
   return labels[type] || "Calculator";
+}
+
+function OfflineCalculatorBanner({ darkMode, lastUpdated }) {
+  return (
+    <div className={`rounded-lg border p-4 text-sm ${darkMode ? "bg-[#71CFC2]/10 border-[#71CFC2]/20 text-slate-200" : "bg-[#E8F8F5] border-[#BDE8E1] text-[#0B3760]"}`}>
+      <div className="flex items-center gap-2 font-black"><WifiOff size={16} /> Offline mode: using saved calculator data</div>
+      {lastUpdated && <p className="mt-1 text-xs opacity-60">Last updated {formatCacheDate(lastUpdated)}.</p>}
+      <p className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">Offline data may be incomplete. Check latest formulary when online.</p>
+    </div>
+  );
+}
+
+function MissingOfflineCalculatorData({ darkMode }) {
+  return (
+    <section className={`${panelClass(darkMode)} text-center py-10`}>
+      <WifiOff className="mx-auto mb-3 text-[#0F8F83]" size={30} />
+      <h2 className="font-black text-lg">Saved calculator data is not available yet</h2>
+      <p className="mt-2 text-sm opacity-65">This calculator needs saved data before it can be used offline. Open it while online first.</p>
+    </section>
+  );
 }
 
 function ToolShell({ darkMode, title, subtitle, icon, children }) {

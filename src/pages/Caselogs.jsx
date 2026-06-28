@@ -2,14 +2,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import toast from "react-hot-toast";
 import {
-  BriefcaseMedical, Loader2, Plus, Trash2, Image as ImageIcon,
-  FileText, X, UploadCloud, Search, Printer, ChevronDown, ChevronUp, Edit3, Share2
+  Loader2, Plus, Trash2, Image as ImageIcon,
+  FileText, X, UploadCloud, Search, Printer, ChevronDown, ChevronUp, Pencil, Share2
 } from "lucide-react";
 import { exportCaseLogs } from "../utils/casePdfExport";
 import { saveLocalFile, getLocalFileUrl, deleteLocalFile } from "../utils/localFiles";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import AppPopup, { popupPresets } from "../components/AppPopup";
 import PageBanner from "../components/PageBanner";
+import { IconButton } from "../components/VetLearnUI";
 import { openPdfViewer } from "../utils/pdfViewerBridge";
 import { isSupabaseSchemaCompatibilityError, uploadFileWithSchemaRetry } from "../utils/supabaseStorageUpload";
 
@@ -50,8 +51,8 @@ export default function Caselogs({ user, darkMode = false }) {
 
   const categories = ["Medicine", "Surgery", "Neurology", "Emergency", "Dermatology", "Cardiology", "Dentistry", "Imaging", "Other"];
 
-  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-3 transition text-sm ${
-    darkMode ? "bg-[#071A24] text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"
+  const fieldClass = `w-full border border-transparent focus:border-[#71CFC2] outline-none rounded-lg p-4 transition text-sm ${
+    darkMode ? "bg-white/10 text-white placeholder:text-slate-400" : "bg-[#F0F6F5] text-[#113247]"
   }`;
 
   useEffect(() => {
@@ -366,9 +367,7 @@ export default function Caselogs({ user, darkMode = false }) {
       {sharingLog && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex flex-col items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl flex flex-col relative ${darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]"}`}>
-            <button onClick={() => setSharingLog(null)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-500/20 transition">
-              <X size={20} />
-            </button>
+            <IconButton icon={X} label="Close sharing" darkMode={darkMode} className="!absolute top-4 right-4" onClick={() => setSharingLog(null)} />
             <h2 className="text-2xl font-black mb-1">Share Case</h2>
             <p className="text-sm opacity-70 mb-4">Select a colleague to securely share "{sharingLog.title}" with.</p>
 
@@ -416,9 +415,7 @@ export default function Caselogs({ user, darkMode = false }) {
       {/* Media Viewer Modal */}
       {(previewUrl || isViewerLoading) && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-          <button onClick={closeViewer} className="absolute top-6 right-6 bg-white/20 text-white rounded-full p-2 hover:bg-white/30 z-[101]">
-            <X size={24} />
-          </button>
+          <IconButton icon={X} label="Close preview" darkMode className="!absolute top-6 right-6 z-[101] !bg-white/20 !text-white hover:!bg-white/30" onClick={closeViewer} />
           
           {isViewerLoading ? (
             <div className="flex flex-col items-center justify-center text-white gap-4">
@@ -437,26 +434,24 @@ export default function Caselogs({ user, darkMode = false }) {
           <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl flex flex-col ${darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]"}`}>
             <div className="flex justify-between items-center mb-5 border-b pb-4 border-slate-200 dark:border-white/10">
               <h2 className="text-2xl font-black">{editingId ? "Edit Case" : "New Case"}</h2>
-              <button onClick={closeEditor} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10">
-                <X size={20} />
-              </button>
+              <IconButton icon={X} label="Close case editor" darkMode={darkMode} onClick={closeEditor} />
             </div>
 
             <div className="space-y-4 flex-grow">
-              <div className="grid grid-cols-[2fr_1fr] gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3">
                 <input className={fieldClass} placeholder="Case Title (e.g. Diabetes M.)" value={form.title} onChange={(e) => updateForm("title", e.target.value)} />
                 <select className={fieldClass} value={form.category} onChange={(e) => updateForm("category", e.target.value)}>
                   {categories.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
 
-              <button onClick={() => setShowAdvanced(!showAdvanced)} className={`flex items-center gap-2 text-sm font-bold w-full p-3 rounded-lg ${darkMode ? "bg-white/5 hover:bg-white/10" : "bg-slate-50 hover:bg-slate-100"}`}>
+              <button onClick={() => setShowAdvanced(!showAdvanced)} className={`flex items-center gap-2 text-sm font-bold w-full p-4 rounded-lg transition ${darkMode ? "bg-white/10 text-slate-200 hover:bg-white/15" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#DFF4F1]"}`}>
                 {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 {showAdvanced ? "Hide Patient Details" : "Add Patient Details"}
               </button>
 
               {showAdvanced && (
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-black/5 dark:bg-white/5 animate-in slide-in-from-top-2">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-lg border animate-in slide-in-from-top-2 ${darkMode ? "bg-white/5 border-white/10" : "bg-white/70 border-[#DCEDEA]"}`}>
                   <input className={fieldClass} placeholder="Patient Name" value={form.patient_name} onChange={(e) => updateForm("patient_name", e.target.value)} />
                   <input className={fieldClass} placeholder="Species (e.g. Canine)" value={form.species} onChange={(e) => updateForm("species", e.target.value)} />
                   <input className={fieldClass} placeholder="Breed" value={form.breed} onChange={(e) => updateForm("breed", e.target.value)} />
@@ -467,7 +462,7 @@ export default function Caselogs({ user, darkMode = false }) {
                 </div>
               )}
 
-              <textarea rows="5" className={fieldClass} placeholder="Clinical presentation, treatment, and outcome..." value={form.description} onChange={(e) => updateForm("description", e.target.value)} />
+              <textarea rows="5" className={`${fieldClass} resize-y`} placeholder="Clinical presentation, treatment, and outcome..." value={form.description} onChange={(e) => updateForm("description", e.target.value)} />
 
               <div className="mt-4">
                 <label className={`flex flex-col items-center justify-center gap-2 w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition ${darkMode ? "border-white/20 hover:border-[#71CFC2] text-slate-300" : "border-[#DCEDEA] hover:border-[#0F8F83] text-slate-500"}`}>
@@ -522,9 +517,7 @@ export default function Caselogs({ user, darkMode = false }) {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button onClick={handlePrintPDF} className={`p-2 rounded-lg transition flex items-center gap-2 text-sm font-bold ${selectedLogs.length > 0 ? "bg-[#0F8F83] text-white" : "bg-transparent text-slate-400"}`}>
-          <Printer size={18} />
-        </button>
+        <IconButton icon={Printer} label="Print selected cases" darkMode={darkMode} onClick={handlePrintPDF} />
         <button onClick={() => openEditor()} className="bg-[#71CFC2] text-[#062F63] p-2 rounded-lg font-bold flex items-center gap-1 shadow-sm">
           <Plus size={18} />
         </button>
@@ -549,20 +542,23 @@ export default function Caselogs({ user, darkMode = false }) {
             </div>
 
             <div className="pl-6">
-              <div className="flex justify-between items-start gap-3 mb-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-2">
                 <div className="cursor-pointer" onClick={() => openEditor(log)}>
                   <h3 className={`font-black text-lg ${darkMode ? "text-white" : "text-[#113247]"}`}>{log.title || "Untitled Case"}</h3>
                 </div>
-                <div className="flex gap-1 bg-black/5 dark:bg-white/5 rounded-lg p-1">
-                  <button onClick={() => openShareMenu(log)} title="Share with Colleague" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-white/10 hover:text-white" : "text-slate-400 hover:bg-slate-100 hover:text-black"}`}>
-                    <Share2 size={16} />
-                  </button>
-                  <button onClick={() => openEditor(log)} title="Edit Case" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-white/10 hover:text-white" : "text-slate-400 hover:bg-slate-100 hover:text-black"}`}>
-                    <Edit3 size={16} />
-                  </button>
-                  <button onClick={() => setAppPopup(popupPresets.deleteCaseLog({ caseTitle: log.title, onPrimary: () => { closeAppPopup(); deleteLog(log); }, onSecondary: closeAppPopup }))} title="Delete Case" className={`p-2 rounded-md transition ${darkMode ? "text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "text-slate-400 hover:bg-red-50 hover:text-red-500"}`}>
-                    {busyId === log.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                  </button>
+                <div className="flex flex-wrap justify-end gap-2 shrink-0">
+                  <IconButton icon={Share2} label="Share case" darkMode={darkMode} onClick={() => openShareMenu(log)} />
+                  <IconButton icon={Pencil} label="Edit case" darkMode={darkMode} onClick={() => openEditor(log)} />
+                  <IconButton icon={Printer} label="Print case" darkMode={darkMode} onClick={() => exportCaseLogs([log])} />
+                  <IconButton
+                    icon={busyId === log.id ? Loader2 : Trash2}
+                    label="Delete case"
+                    variant="danger"
+                    darkMode={darkMode}
+                    disabled={busyId === log.id}
+                    className={busyId === log.id ? "[&_svg]:animate-spin" : ""}
+                    onClick={() => setAppPopup(popupPresets.deleteCaseLog({ caseTitle: log.title, onPrimary: () => { closeAppPopup(); deleteLog(log); }, onSecondary: closeAppPopup }))}
+                  />
                 </div>
               </div>
               {log.description && (

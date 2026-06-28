@@ -13,9 +13,10 @@ import LoadingState from "./components/LoadingState";
 import Navbar from "./components/Navbar";
 import NotificationDrawer from "./components/NotificationDrawer";
 import PdfViewerModal from "./components/PdfViewerModal";
+import { IconButton } from "./components/VetLearnUI";
 import { supabase } from "./supabaseClient";
 import { authenticateBiometric, disableBiometric, isBiometricAvailable, isBiometricEnabled, registerBiometric, syncBiometricSession } from "./utils/biometricAuth";
-import { canUseFeature, defaultFeatureAccess, featureKeys, loadFeatureAccess } from "./utils/featureAccess";
+import { canUseFeature, featureKeys, getCachedFeatureAccess, loadFeatureAccess } from "./utils/featureAccess";
 import { subscribePdfViewer } from "./utils/pdfViewerBridge";
 import { setupPushNotifications } from "./utils/pushNotifications";
 import { configureStatusBar } from "./lib/statusBar";
@@ -193,9 +194,7 @@ function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotif
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {showBack && (
-              <button onClick={goBack} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Go back">
-                <ArrowLeft size={19} />
-              </button>
+              <IconButton icon={ArrowLeft} label="Go back" darkMode={darkMode} onClick={goBack} />
             )}
             <button type="button" onClick={onScrollTop} className="flex min-w-0 items-center gap-2 text-left" aria-label="Scroll back to top">
               <img src="/logo.png" alt="VetLearn CPD" className="w-12 h-12 object-contain shrink-0" />
@@ -207,17 +206,10 @@ function AppHeader({ darkMode, displayName, unreadNotificationCount, onOpenNotif
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={onOpenNotifications} className={`relative h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open notifications">
-              <Bell size={18} />
-              {unreadNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">{unreadNotificationCount}</span>}
-            </button>
-            <button onClick={onToggleDarkMode} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-[#71CFC2]" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Toggle dark mode">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+            <IconButton icon={Bell} label="Open notifications" badge={unreadNotificationCount || null} darkMode={darkMode} onClick={onOpenNotifications} />
+            <IconButton icon={darkMode ? Sun : Moon} label="Toggle dark mode" darkMode={darkMode} onClick={onToggleDarkMode} />
             <div className="relative">
-              <button onClick={() => setSecurityMenuOpen(open => !open)} className={`h-10 w-10 rounded-full grid place-items-center shrink-0 ${darkMode ? "bg-white/10 text-slate-100" : "bg-[#E8F8F5] text-[#0B3760]"}`} aria-label="Open logout and lock options">
-                <LogOut size={18} />
-              </button>
+              <IconButton icon={LogOut} label="Open logout and lock options" darkMode={darkMode} onClick={() => setSecurityMenuOpen(open => !open)} />
 
               {securityMenuOpen && (
                 <>
@@ -337,7 +329,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [adminAccess, setAdminAccess] = useState(false);
-  const [featureAccess, setFeatureAccess] = useState(defaultFeatureAccess);
+  const [featureAccess, setFeatureAccess] = useState(getCachedFeatureAccess);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -418,7 +410,7 @@ function App() {
       if (!session?.user) {
         setProfile(null);
         setAdminAccess(false);
-        setFeatureAccess(defaultFeatureAccess);
+        setFeatureAccess(getCachedFeatureAccess());
         setNotifications([]);
         setUnreadNotificationCount(0);
         setUnreadMessageCount(0);
@@ -854,7 +846,7 @@ function App() {
             <div className={`fixed inset-y-0 right-0 z-[60] w-72 shadow-2xl p-6 flex flex-col gap-4 transform transition-transform duration-300 overflow-y-auto ${darkMode ? "bg-[#071A24] border-l border-white/10" : "bg-white border-l border-slate-200"}`}>
               <div className="flex justify-between items-center mb-4 border-b pb-4 border-slate-200 dark:border-white/10">
                 <h2 className={`text-2xl font-black ${darkMode ? "text-white" : "text-[#113247]"}`}>Menu</h2>
-                <button onClick={() => setMenuOpen(false)} className={`p-2 rounded-full transition ${darkMode ? "text-slate-300 hover:bg-white/10" : "text-slate-500 hover:bg-slate-100"}`}><X size={24} /></button>
+                <IconButton icon={X} label="Close menu" darkMode={darkMode} onClick={() => setMenuOpen(false)} />
               </div>
               <div className="flex flex-col gap-2">
                 {menuLinks.map(item => {

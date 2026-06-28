@@ -6,6 +6,7 @@ import { exportCPD } from "../utils/pdfExport";
 import { generateReflection } from "../utils/aiReflection";
 import HeartbeatLoader from "../components/HeartbeatLoader";
 import AppPopup, { popupPresets } from "../components/AppPopup";
+import { IconButton } from "../components/VetLearnUI";
 
 export default function History({ user, darkMode = false }) {
   const [history, setHistory] = useState([]);
@@ -191,7 +192,7 @@ export default function History({ user, darkMode = false }) {
       {sharingItem && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex flex-col items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl flex flex-col relative ${darkMode ? "bg-[#0B242B] text-white" : "bg-white text-[#113247]"}`}>
-            <button onClick={() => setSharingItem(null)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-500/20 transition"><X size={20} /></button>
+            <IconButton icon={X} label="Close sharing" darkMode={darkMode} className="!absolute top-4 right-4" onClick={() => setSharingItem(null)} />
             <h2 className="text-2xl font-black mb-1">Share CPD Record</h2>
             <p className="text-sm opacity-70 mb-6">Select a colleague to share "{sharingItem.title}" with.</p>
 
@@ -256,9 +257,7 @@ export default function History({ user, darkMode = false }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button onClick={() => exportCPD(filtered)} className={darkMode ? "text-slate-300" : "text-[#0B3760]"}>
-          <Download />
-        </button>
+        <IconButton icon={Download} label="Export CPD history" darkMode={darkMode} onClick={() => exportCPD(filtered)} />
       </div>
 
       <div className="space-y-4">
@@ -308,22 +307,22 @@ export default function History({ user, darkMode = false }) {
 
                   <div className="flex justify-end gap-3 mt-3 flex-wrap">
                     {aiEnabled && (
-                      <button className={`${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/20" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#d4f1ec]"} rounded-lg p-3 transition`} onClick={() => generateAIReflection(item)} title="Generate AI Reflection">
-                        <Sparkles size={18} />
-                      </button>
+                      <IconButton icon={Sparkles} label="Generate AI reflection" darkMode={darkMode} onClick={() => generateAIReflection(item)} />
                     )}
 
-                    <button className={`${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/20" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#d4f1ec]"} rounded-lg p-3 transition`} onClick={() => openShareMenu(item)} title="Share CPD">
-                      <Share2 size={18} />
-                    </button>
+                    <IconButton icon={Share2} label="Share CPD" darkMode={darkMode} onClick={() => openShareMenu(item)} />
 
-                    <button className={`${darkMode ? "bg-white/10 text-[#71CFC2] hover:bg-white/20" : "bg-[#E8F8F5] text-[#0B3760] hover:bg-[#d4f1ec]"} rounded-lg p-3 transition`} onClick={() => saveReflection(item)} title="Save Reflection">
-                      <Save size={18} />
-                    </button>
+                    <IconButton icon={Save} label="Save reflection" darkMode={darkMode} onClick={() => saveReflection(item)} />
 
-                    <button className={`${darkMode ? "bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-400" : "bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500"} rounded-lg p-3 transition`} onClick={() => requestDeleteEntry(item)} title="Delete Entry">
-                      {loadingId === item.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                    </button>
+                    <IconButton
+                      icon={loadingId === item.id ? Loader2 : Trash2}
+                      label="Delete entry"
+                      variant="danger"
+                      darkMode={darkMode}
+                      disabled={loadingId === item.id}
+                      className={loadingId === item.id ? "[&_svg]:animate-spin" : ""}
+                      onClick={() => requestDeleteEntry(item)}
+                    />
                   </div>
                 </div>
               );

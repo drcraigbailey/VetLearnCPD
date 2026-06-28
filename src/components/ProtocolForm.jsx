@@ -155,7 +155,7 @@ export default function Protocols({ user, darkMode }) {
                 {protocol.author_id !== user.id && (
                   <button 
                     onClick={() => saveProtocol(protocol.id)}
-                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#0F8F83] dark:text-[#71CFC2] transition-colors"
+                    className="h-10 w-10 grid place-items-center rounded-lg bg-[#E8F8F5] hover:bg-[#DFF4F1] dark:bg-white/10 dark:hover:bg-white/15 text-[#0F8F83] dark:text-[#71CFC2] transition-colors"
                     title="Save to Library"
                   >
                     <Bookmark size={18} />

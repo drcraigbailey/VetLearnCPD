@@ -477,7 +477,7 @@ function ConsentModal({ title, children, onClose, onAccept, acceptLabel }) {
       <div className="w-full max-w-lg rounded-2xl border border-[#DCEDEA] bg-white text-[#113247] shadow-2xl max-h-[86vh] flex flex-col">
         <div className="flex items-start justify-between gap-3 border-b border-[#DCEDEA] p-5">
           <h3 className="text-xl font-black">{title}</h3>
-          <button type="button" onClick={onClose} className="rounded-full bg-[#F0F6F5] p-2 text-[#0B3760]" aria-label="Close">
+          <button type="button" onClick={onClose} className="rounded-lg bg-[#E8F8F5] p-2.5 text-[#0F8F83]" aria-label="Close">
             <X size={18} />
           </button>
         </div>

@@ -218,7 +218,7 @@ export default function Protocols({ user, darkMode }) {
                         <div className="font-black">{drug?.name || "Drug"}</div>
                         <div className="text-xs opacity-55">{drug?.species || "Species"} | {drug?.route || "General route"}</div>
                       </div>
-                      <IconButton icon={Trash2} label="Remove drug" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => removeDrugFromProtocol(id)} />
+                      <IconButton icon={Trash2} label="Remove drug" variant="danger" darkMode={darkMode} onClick={() => removeDrugFromProtocol(id)} />
                     </div>
                     <div className="grid grid-cols-[1fr_110px] gap-2 mb-2">
                       <input className={fieldClass} type="number" step="0.01" placeholder="Protocol dose" value={dose.dose || ""} onChange={(event) => updateDrugDose(id, { dose: event.target.value })} />
@@ -285,11 +285,11 @@ export default function Protocols({ user, darkMode }) {
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-bold text-lg">{p.name}</h3>
                 <div className="flex gap-2">
-                  <IconButton icon={Share2} label="Share protocol" darkMode={darkMode} className="h-8 w-8" onClick={() => openShareMenu(p)} />
+                  <IconButton icon={Share2} label="Share protocol" darkMode={darkMode} onClick={() => openShareMenu(p)} />
                   {p.user_id === user.id && (
                     <>
-                      <IconButton icon={Edit3} label="Edit protocol" darkMode={darkMode} className="h-8 w-8" onClick={() => openEditor(p)} />
-                      <IconButton icon={Trash2} label="Delete protocol" variant="danger" darkMode={darkMode} className="h-8 w-8" onClick={() => requestDeleteProtocol(p)} />
+                      <IconButton icon={Edit3} label="Edit protocol" darkMode={darkMode} onClick={() => openEditor(p)} />
+                      <IconButton icon={Trash2} label="Delete protocol" variant="danger" darkMode={darkMode} onClick={() => requestDeleteProtocol(p)} />
                     </>
                   )}
                 </div>
