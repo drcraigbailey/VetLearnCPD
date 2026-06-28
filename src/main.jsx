@@ -58,7 +58,7 @@ window.addEventListener('click', (event) => {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
     <OfflineIndicator />
+    <App />
   </StrictMode>,
 )
