@@ -38,27 +38,33 @@ export default function OfflineIndicator() {
   if (!isOffline) return null
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.6rem+env(safe-area-inset-bottom))] z-[75] flex justify-center px-4">
+    <>
+      <style>
+        {`@keyframes vetlearnOfflineDrop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}
+      </style>
       <div
         role="status"
         aria-live="polite"
-        className={`pointer-events-auto flex max-w-md items-center gap-3 rounded-full border px-4 py-3 text-sm font-black shadow-[0_14px_34px_rgba(11,55,96,0.22)] backdrop-blur-xl transition ${
+        style={{ animation: 'vetlearnOfflineDrop 220ms ease-out' }}
+        className={`w-full border-b px-4 py-2.5 shadow-[0_8px_24px_rgba(11,55,96,0.12)] ${
           darkMode
-            ? 'border-[#71CFC2]/30 bg-[#071A24]/95 text-slate-100'
-            : 'border-[#DCEDEA] bg-white/95 text-[#0B3760]'
+            ? 'border-[#71CFC2]/25 bg-[#071A24] text-slate-100'
+            : 'border-[#DCEDEA] bg-white text-[#0B3760]'
         }`}
       >
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${darkMode ? 'bg-white/10 text-[#71CFC2]' : 'bg-[#E8F8F5] text-[#0B3760]'}`}>
-          <WifiOff size={18} aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block leading-tight">You are offline</span>
-          <span className={`block text-xs font-semibold leading-tight ${darkMode ? 'text-slate-300' : 'text-[#0F8F83]'}`}>
-            Offline content will still open where available.
+        <div className="mx-auto flex max-w-md items-center gap-3">
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${darkMode ? 'bg-white/10 text-[#71CFC2]' : 'bg-[#E8F8F5] text-[#0B3760]'}`}>
+            <WifiOff size={17} aria-hidden="true" />
           </span>
-        </span>
-        <span className="ml-1 h-3 w-3 shrink-0 rounded-full bg-[#71CFC2]" aria-hidden="true" />
+          <span className="min-w-0 flex-1 text-sm font-black leading-tight">
+            You are offline
+            <span className={`ml-2 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-[#0F8F83]'}`}>
+              Offline content will still open where available.
+            </span>
+          </span>
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#71CFC2]" aria-hidden="true" />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
