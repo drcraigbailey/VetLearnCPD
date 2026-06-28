@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { WifiOff } from 'lucide-react'
 
 function getThemeIsDark() {
@@ -8,9 +9,23 @@ function getThemeIsDark() {
   return document.querySelector('.vetlearn-app-shell')?.classList.contains('dark') || false
 }
 
+function getBannerRoot() {
+  const header = document.querySelector('.vetlearn-app-shell .sticky.top-0')
+  if (!header) return null
+
+  let root = document.getElementById('vetlearn-offline-banner-root')
+  if (!root) {
+    root = document.createElement('div')
+    root.id = 'vetlearn-offline-banner-root'
+    header.after(root)
+  }
+  return root
+}
+
 export default function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(() => (typeof navigator !== 'undefined' ? !navigator.onLine : false))
   const [darkMode, setDarkMode] = useState(getThemeIsDark)
+  const [bannerRoot, setBannerRoot] = useState(null)
 
   useEffect(() => {
     const updateOnlineStatus = () => setIsOffline(!navigator.onLine)
@@ -24,47 +39,45 @@ export default function OfflineIndicator() {
   }, [])
 
   useEffect(() => {
-    const updateTheme = () => setDarkMode(getThemeIsDark())
-    const observer = new MutationObserver(updateTheme)
-    updateTheme()
+    const refresh = () => {
+      setDarkMode(getThemeIsDark())
+      setBannerRoot(getBannerRoot())
+    }
+    const observer = new MutationObserver(refresh)
+    refresh()
     observer.observe(document.body, { attributes: true, childList: true, subtree: true })
-    window.addEventListener('storage', updateTheme)
+    window.addEventListener('storage', refresh)
     return () => {
       observer.disconnect()
-      window.removeEventListener('storage', updateTheme)
+      window.removeEventListener('storage', refresh)
     }
   }, [])
 
-  if (!isOffline) return null
+  if (!isOffline || !bannerRoot) return null
 
-  return (
-    <>
-      <style>
-        {`@keyframes vetlearnOfflineDrop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}
-      </style>
-      <div
-        role="status"
-        aria-live="polite"
-        style={{ animation: 'vetlearnOfflineDrop 220ms ease-out' }}
-        className={`w-full border-b px-4 py-2.5 shadow-[0_8px_24px_rgba(11,55,96,0.12)] ${
-          darkMode
-            ? 'border-[#71CFC2]/25 bg-[#071A24] text-slate-100'
-            : 'border-[#DCEDEA] bg-white text-[#0B3760]'
-        }`}
-      >
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${darkMode ? 'bg-white/10 text-[#71CFC2]' : 'bg-[#E8F8F5] text-[#0B3760]'}`}>
-            <WifiOff size={17} aria-hidden="true" />
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className={`w-full animate-[vetlearnOfflineDrop_220ms_ease-out] border-b px-4 py-2.5 shadow-[0_8px_24px_rgba(11,55,96,0.12)] ${
+        darkMode
+          ? 'border-[#71CFC2]/25 bg-[#071A24] text-slate-100'
+          : 'border-[#DCEDEA] bg-white text-[#0B3760]'
+      }`}
+    >
+      <div className="mx-auto flex max-w-md items-center gap-3">
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${darkMode ? 'bg-white/10 text-[#71CFC2]' : 'bg-[#E8F8F5] text-[#0B3760]'}`}>
+          <WifiOff size={17} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1 text-sm font-black leading-tight">
+          You are offline
+          <span className={`ml-2 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-[#0F8F83]'}`}>
+            Offline content will still open where available.
           </span>
-          <span className="min-w-0 flex-1 text-sm font-black leading-tight">
-            You are offline
-            <span className={`ml-2 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-[#0F8F83]'}`}>
-              Offline content will still open where available.
-            </span>
-          </span>
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#71CFC2]" aria-hidden="true" />
-        </div>
+        </span>
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#71CFC2]" aria-hidden="true" />
       </div>
-    </>
+    </div>,
+    bannerRoot
   )
 }
